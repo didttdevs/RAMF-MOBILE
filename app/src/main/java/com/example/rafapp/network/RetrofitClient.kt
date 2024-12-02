@@ -12,7 +12,7 @@ interface WeatherStationService {
 }
 
 object RetrofitClient {
-    private const val BASE_URL = "https://api.formosa.gob.ar/api-raf/api/"
+    private const val BASE_URL = "https://ramf.formosa.gob.ar/api/"
 
     val instance: WeatherStationService by lazy {
         val retrofit = Retrofit.Builder()

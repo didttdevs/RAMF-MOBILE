@@ -16,26 +16,26 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.refreshButton.setOnClickListener {
-            refreshData()
-        }
+        //binding.refreshButton.setOnClickListener {
+        //    refreshData()
+        //}
 
-        binding.btnLogout.setOnClickListener {
-            logout()
-        }
+        //binding.btnLogout.setOnClickListener {
+        //    logout()
+        //}
 
-        if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainer, DashboardFragment())
-                .commitNow()
-        }
+        //if (savedInstanceState == null) {
+        //    supportFragmentManager.beginTransaction()
+        //        .replace(R.id.fragmentContainer, DashboardFragment())
+        //        .commitNow()
+        //}
     }
 
     private fun refreshData() {
-        val fragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
-        if (fragment is DashboardFragment) {
-            fragment.refreshData()
-        }
+        //val fragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
+        //if (fragment is DashboardFragment) {
+        //    fragment.refreshData()
+        //}
     }
 
     private fun logout() {
