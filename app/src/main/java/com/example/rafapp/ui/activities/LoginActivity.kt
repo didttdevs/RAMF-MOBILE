@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.rafapp.MainActivity
 import com.example.rafapp.databinding.ActivityLoginBinding
 
 class LoginActivity : AppCompatActivity() {

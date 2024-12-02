@@ -5,16 +5,44 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.activities.MainActivity">
+    tools:context=".MainActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:gravity="right"
+        android:layout_marginTop="40dp"
+        android:orientation="vertical">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="200dp"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="16dp"
+            android:layout_height="wrap_content">
+
+            <Spinner
+                android:id="@+id/stationSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+        </androidx.cardview.widget.CardView>
+
+
+    </LinearLayout>
 
     <ImageView
         android:layout_width="100dp"
         android:layout_height="55dp"
-        android:layout_marginTop="-10dp"
+        android:layout_marginTop="-8dp"
+        android:layout_marginStart="10dp"
         android:src="@drawable/lg_ramf"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/white" />
+
 
 
     <ImageView
@@ -77,6 +105,7 @@
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/lastComTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="02/12/2024" />
@@ -85,11 +114,11 @@
 
 
             <TextView
-                android:id="@+id/temperatureTextView"
+                android:id="@+id/tempTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="16.65°C"
+                android:text="--.-°C"
                 android:textSize="36sp"
                 android:textStyle="bold" />
 
@@ -100,21 +129,21 @@
                 android:orientation="horizontal">
 
                 <TextView
-                    android:id="@+id/maxTemperatureTextView"
+                    android:id="@+id/tempMaxTextView"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
-                    android:text="Máx: 24°"
+                    android:text=""
                     android:textSize="14sp" />
 
                 <TextView
-                    android:id="@+id/minTemperatureTextView"
+                    android:id="@+id/tempMinTextView"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
-                    android:text="Min: 16.65°"
+                    android:text=""
                     android:textSize="14sp" />
 
             </LinearLayout>
@@ -156,7 +185,6 @@
                 android:src="@drawable/ic_humedad" />
 
             <TextView
-                android:id="@+id/humidityTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -216,6 +244,7 @@
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/solarRadiationTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center|end"
@@ -224,14 +253,16 @@
                 android:text="0W/m2" />
 
             <TextView
+                android:id="@+id/humidityTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center|end"
                 android:layout_marginTop="42dp"
                 android:layout_marginEnd="20dp"
-                android:text="98%" />
+                android:text="" />
 
             <TextView
+                android:id="@+id/windTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center|end"
@@ -271,10 +302,11 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/rainLast1hTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:text="8.8"
+                    android:text=""
                     android:textSize="20dp" />
 
                 <TextView
@@ -288,7 +320,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="60dp"
+                android:layout_marginStart="30dp"
                 android:text="-"
                 android:textSize="30dp" />
 
@@ -296,7 +328,7 @@
                 android:layout_width="30dp"
                 android:layout_height="30dp"
                 android:layout_gravity="center"
-                android:layout_marginStart="55dp"
+                android:layout_marginStart="20dp"
                 android:src="@drawable/ic_lluvia" />
 
             <LinearLayout
@@ -306,31 +338,51 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/rainLast24hTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:text="8.8"
+                    android:text=""
                     android:textSize="20dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:text="1 hora" />
+                    android:text="24 horas" />
 
             </LinearLayout>
 
 
         </LinearLayout>
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="15dp"
+            android:layout_marginTop="430dp"
+            android:text="Ultima semana"
+            android:textColor="@color/background_color_gb"
+            android:textSize="15dp"
+            android:textStyle="bold" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginTop="450dp"
+            android:layout_marginStart="13dp"
+            android:textSize="10dp"
+            android:backgroundTint="@color/background_color_gb"
+            android:text="Temperatura"/>
+
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/lineChart"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginTop="430dp"
-            android:layout_marginEnd="10dp"
+            android:layout_height="200dp"
             android:layout_marginStart="10dp"
-            android:layout_marginBottom="10dp"/>
+            android:layout_marginTop="480dp"
+            android:layout_marginEnd="10dp"
+            />
 
 
     </androidx.cardview.widget.CardView>

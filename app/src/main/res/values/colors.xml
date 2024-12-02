@@ -17,5 +17,6 @@
 
     <color name="background_color_gb">#003662</color>
     <color name="temp_calor">#DB8709</color>
-    <color name="colorAccent">#FF1100</color>
+
+    <color name="colorAccent">#FF4081</color> <!-- Color del gráfico -->
 </resources>
