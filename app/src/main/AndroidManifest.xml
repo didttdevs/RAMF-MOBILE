@@ -16,6 +16,7 @@
         android:roundIcon="@drawable/ic_logoraf"
         android:supportsRtl="true"
         android:theme="@style/Theme.RAFapp"
+        android:configChanges="uiMode|screenSize|smallestScreenSize|orientation|screenLayout"
         tools:targetApi="31">
 
         <activity

@@ -10,18 +10,19 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:gravity="right"
         android:layout_marginTop="40dp"
-        android:orientation="vertical">
+        android:gravity="right"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <androidx.cardview.widget.CardView
-            android:layout_width="200dp"
+            android:layout_width="250dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            app:cardCornerRadius="16dp"
-            android:layout_height="wrap_content">
+            android:layout_marginEnd="20dp"
+            app:cardCornerRadius="16dp">
 
             <Spinner
                 android:id="@+id/stationSpinner"
@@ -36,20 +37,19 @@
     <ImageView
         android:layout_width="100dp"
         android:layout_height="55dp"
-        android:layout_marginTop="-8dp"
         android:layout_marginStart="10dp"
+        android:layout_marginTop="-8dp"
         android:src="@drawable/lg_ramf"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/white" />
 
 
-
     <ImageView
-        android:layout_width="200dp"
+        android:layout_width="180dp"
         android:layout_height="30dp"
         android:layout_marginTop="5dp"
-        android:layout_marginEnd="5dp"
+        android:layout_marginEnd="7dp"
         android:src="@drawable/logo_gob_todos_unidos_trans"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -130,20 +130,20 @@
 
                 <TextView
                     android:id="@+id/tempMaxTextView"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
-                    android:text=""
+                    android:text="Min: 16°"
                     android:textSize="14sp" />
 
                 <TextView
                     android:id="@+id/tempMinTextView"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
-                    android:text=""
+                    android:text="Max: 29°"
                     android:textSize="14sp" />
 
             </LinearLayout>
@@ -298,7 +298,7 @@
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="30dp"
+                android:layout_weight="1"
                 android:orientation="vertical">
 
                 <TextView
@@ -334,7 +334,7 @@
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
+                android:layout_weight="1"
                 android:orientation="vertical">
 
                 <TextView
@@ -369,11 +369,11 @@
         <Button
             android:layout_width="wrap_content"
             android:layout_height="40dp"
-            android:layout_marginTop="450dp"
             android:layout_marginStart="13dp"
-            android:textSize="10dp"
+            android:layout_marginTop="450dp"
             android:backgroundTint="@color/background_color_gb"
-            android:text="Temperatura"/>
+            android:text="Temperatura"
+            android:textSize="10dp" />
 
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/lineChart"
@@ -381,8 +381,7 @@
             android:layout_height="200dp"
             android:layout_marginStart="10dp"
             android:layout_marginTop="480dp"
-            android:layout_marginEnd="10dp"
-            />
+            android:layout_marginEnd="10dp" />
 
 
     </androidx.cardview.widget.CardView>
