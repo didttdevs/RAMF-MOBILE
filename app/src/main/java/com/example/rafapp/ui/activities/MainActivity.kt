@@ -66,26 +66,36 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun fetchWeatherData() {
-        RetrofitClient.instance.getWeatherStations().enqueue(object : Callback<List<WeatherStation>> {
-            override fun onFailure(call: Call<List<WeatherStation>>, t: Throwable) {
-                Toast.makeText(this@MainActivity, "Error de conexión", Toast.LENGTH_SHORT).show()
-            }
-
-            override fun onResponse(call: Call<List<WeatherStation>>, response: Response<List<WeatherStation>>) {
-                if (response.isSuccessful) {
-                    // Guardamos la lista de estaciones meteorológicas
-                    weatherStations = response.body() ?: emptyList()
-                    setupStationSpinner()  // Configurar el Spinner con los nombres de las estaciones
-                } else {
-                    Toast.makeText(this@MainActivity, "Error al obtener los datos", Toast.LENGTH_SHORT).show()
+        RetrofitClient.instance.getWeatherStations()
+            .enqueue(object : Callback<List<WeatherStation>> {
+                override fun onFailure(call: Call<List<WeatherStation>>, t: Throwable) {
+                    Toast.makeText(this@MainActivity, "Error de conexión", Toast.LENGTH_SHORT)
+                        .show()
                 }
-            }
-        })
+
+                override fun onResponse(
+                    call: Call<List<WeatherStation>>,
+                    response: Response<List<WeatherStation>>
+                ) {
+                    if (response.isSuccessful) {
+                        // Guardamos la lista de estaciones meteorológicas
+                        weatherStations = response.body() ?: emptyList()
+                        setupStationSpinner()  // Configurar el Spinner con los nombres de las estaciones
+                    } else {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Error al obtener los datos",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            })
     }
 
     private fun setupStationSpinner() {
         // Extraemos los nombres de las estaciones (o un identificador si no tienen nombre)
-        val stationNames = weatherStations.map { "Estación ${it.name?.custom}" }  // Usamos el custom name
+        val stationNames =
+            weatherStations.map { "Estación ${it.name?.custom}" }  // Usamos el custom name
 
         // Crear un adaptador para el Spinner
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, stationNames)
@@ -94,7 +104,12 @@ class MainActivity : AppCompatActivity() {
 
         // Establecer un listener para cuando se seleccione una estación
         stationSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: android.view.View?,
+                position: Int,
+                id: Long
+            ) {
                 val selectedStation = weatherStations[position]  // Obtiene la estación seleccionada
                 createChart(selectedStation)  // Crear el gráfico con los datos de la estación seleccionada
                 updateStationInfo(selectedStation)  // Actualizar los TextViews con los datos de la estación
@@ -114,7 +129,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun createChart(weatherStation: WeatherStation) {
         // Obtener la lista de lluvias de las últimas 24 horas
-        val rainHistory = weatherStation.meta?.rain24h?.vals  // Lista de valores de lluvia en las últimas 24 horas
+        val rainHistory =
+            weatherStation.meta?.rain24h?.vals  // Lista de valores de lluvia en las últimas 24 horas
 
         val entries = mutableListOf<Entry>()
 
@@ -128,7 +144,8 @@ class MainActivity : AppCompatActivity() {
         // Crear el dataset para las lluvias históricas
         val lineDataSet = LineDataSet(entries, "Lluvia Histórica (24h)")
         lineDataSet.color = resources.getColor(R.color.colorAccent) // Color de la línea
-        lineDataSet.valueTextColor = resources.getColor(R.color.black) // Color del valor en el gráfico
+        lineDataSet.valueTextColor =
+            resources.getColor(R.color.black) // Color del valor en el gráfico
 
         // Aquí es donde desactivamos los valores numéricos sobre las líneas
         lineDataSet.setDrawValues(false)  // Esto elimina los números sobre las líneas
@@ -150,7 +167,8 @@ class MainActivity : AppCompatActivity() {
 
         // Mantener visibles los ejes (sin desactivarlos)
         lineChart.axisLeft.isEnabled = true  // Mantener visible el eje Y izquierdo
-        lineChart.axisRight.isEnabled = false  // Mantener el eje Y derecho deshabilitado si no es necesario
+        lineChart.axisRight.isEnabled =
+            false  // Mantener el eje Y derecho deshabilitado si no es necesario
         lineChart.xAxis.isEnabled = true  // Mantener visible el eje X
     }
 
@@ -161,8 +179,10 @@ class MainActivity : AppCompatActivity() {
 
         // Actualizar los TextViews con los datos correspondientes
         tempTextView.text = "${meta?.airTemp} °C"
-        solarRadiationTextView.text = "${meta?.solarRadiation} W/m²"  // Ahora se incluye la radiación solar
-        windTextView.text = "${meta?.windSpeed} m/s, Dirección: ${meta?.windSpeed}" // Si tienes la dirección, actualízala aquí
+        solarRadiationTextView.text =
+            "${meta?.solarRadiation} W/m²"  // Ahora se incluye la radiación solar
+        windTextView.text =
+            "${meta?.windSpeed} m/s, Dirección: ${meta?.windSpeed}" // Si tienes la dirección, actualízala aquí
 
         // Aseguramos que el valor mínimo y máximo sean diferentes
         tempMinTextView.text = "Temp. Mínima: 16.48°" // Puedes usar otro campo si lo tienes
