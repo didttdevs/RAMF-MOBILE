@@ -377,6 +377,7 @@
 
 
                 <TextView
+                    android:id="@+id/rainLast48hTextView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
@@ -418,6 +419,7 @@
                 </LinearLayout>
 
                 <TextView
+                    android:id="@+id/rainLast7dTextView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"

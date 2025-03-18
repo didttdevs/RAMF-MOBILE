@@ -1,25 +1,25 @@
 package com.example.rafapp.network
 
-import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.GET
-import com.example.rafapp.models.WeatherStation
-
-interface WeatherStationService {
-    @GET("station")
-    fun getWeatherStations(): Call<List<WeatherStation>>
-}
 
 object RetrofitClient {
     private const val BASE_URL = "https://ramf.formosa.gob.ar/api/"
 
-    val instance: WeatherStationService by lazy {
-        val retrofit = Retrofit.Builder()
+    private val retrofit: Retrofit by lazy {
+        Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
+    }
 
+    // Instancia del servicio de estaciones meteorológicas
+    val weatherStationService: WeatherStationService by lazy {
         retrofit.create(WeatherStationService::class.java)
+    }
+
+    // Instancia del servicio de autenticación
+    val authService: AuthService by lazy {
+        retrofit.create(AuthService::class.java)
     }
 }
