@@ -6,7 +6,7 @@ data class WeatherStation(
     @SerializedName("_id") val id: String,
     @SerializedName("meta") val meta: Meta?,
     @SerializedName("name") val name: Name?,
-    @SerializedName("dates") val dates: WeatherDates? //
+    @SerializedName("dates") val dates: WeatherDates?
 )
 
 data class WeatherDates(
@@ -33,6 +33,12 @@ data class Meta(
     @SerializedName("rainCurrentDay") val rainCurrentDay: RainData?
 )
 
+data class TemperatureMaxMin(
+    val max: Double?,
+    val min: Double?,
+    val unit: String?
+)
+
 data class RainData(
     @SerializedName("vals") val vals: List<Double>?,
     @SerializedName("sum") val sum: Double?
@@ -42,3 +48,28 @@ data class Name(
     @SerializedName("original") val original: String,
     @SerializedName("custom") val custom: String
 )
+
+data class WeatherDataLastDayResponse(
+    val date: String,
+    val sensors: SensorsData
+)
+
+data class SensorsData(
+    val windSpeed: SensorData?,
+    val windOrientation: WindOrientation?,
+    val pressure: SensorData?,
+    val dewPoint: SensorData?,
+    @SerializedName("uSonicWindSpeed") val uSonicWindSpeed: SensorData? = null,
+    @SerializedName("vPD") val vPD: SensorData? = null // Presión
+)
+
+data class WindOrientation(
+    val result: Double?  // Dirección del viento (en grados)
+)
+
+data class SensorData(
+    val avg: Double?,
+    val max: Double?,
+    val min: Double?
+)
+

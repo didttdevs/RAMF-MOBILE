@@ -11,8 +11,10 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.rafapp.R
 import com.example.rafapp.models.LoginRequest
 import com.example.rafapp.models.LoginResponse
+import com.example.rafapp.models.User
 import com.example.rafapp.network.RetrofitClient
 import com.example.rafapp.network.AuthService
+import com.google.gson.Gson
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -55,9 +57,10 @@ class LoginActivity : AppCompatActivity() {
             override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
                 if (response.isSuccessful && response.body() != null) {
                     val token = response.body()?.token
+                    val user = response.body()?.user  // Obtenemos el objeto 'user' de la respuesta
 
-                    if (!token.isNullOrEmpty()) {
-                        saveToken(token)
+                    if (!token.isNullOrEmpty() && user != null) {
+                        saveUserData(user, token)  // Guardamos tanto el usuario como el token
                         goToMainActivity()
                     } else {
                         Toast.makeText(this@LoginActivity, "Error: Token vacío", Toast.LENGTH_SHORT).show()
@@ -71,13 +74,22 @@ class LoginActivity : AppCompatActivity() {
                 Toast.makeText(this@LoginActivity, "Error en login: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
             }
         })
+
     }
-
-
 
     private fun saveToken(token: String) {
         with(sharedPref.edit()) {
             putString("auth_token", token)
+            apply()
+        }
+    }
+
+    // Guardamos la información del usuario
+    private fun saveUserData(user: User, token: String) {
+        val userJson = Gson().toJson(user)  // Convierte el objeto User a JSON
+        with(sharedPref.edit()) {
+            putString("auth_token", token)
+            putString("user_data", userJson)  // Guarda los datos del usuario en SharedPreferences
             apply()
         }
     }

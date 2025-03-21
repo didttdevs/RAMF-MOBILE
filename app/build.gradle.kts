@@ -45,6 +45,14 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.6.2")
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
+    //Glide para imagenes
+
+    implementation(libs.glide)
+    annotationProcessor(libs.glide.compiler)
+
+    //Swipe refresh
+    implementation(libs.androidx.swiperefreshlayout)
+
     // AndroidX y Material Design
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
