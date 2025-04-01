@@ -29,4 +29,10 @@ interface WeatherStationService {
         @Header("Authorization") token: String,
         @Path("stationId") stationId: String
     ): Call<List<WeatherDataLastDayResponse>>
+
+    @GET("station-data/last-day/{station-last-id}")
+    fun getWeatherDataLastID(
+        @Header("Authorization") token: String,
+        @Path("stationId") stationId: String
+    ): Call<List<WeatherDataLastDayResponse>>
 }

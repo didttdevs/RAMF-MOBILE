@@ -10,6 +10,7 @@ import android.widget.*
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.cardview.widget.CardView
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
@@ -17,14 +18,17 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.example.rafapp.R
+import com.example.rafapp.models.Meta
 import com.example.rafapp.models.User
 import com.example.rafapp.models.WeatherDataLastDayResponse
 import com.example.rafapp.models.WeatherStation
 import com.example.rafapp.ui.adapters.ViewPagerAdapter
 import com.example.rafapp.ui.fragments.WeatherInfoFragment
 import com.example.rafapp.viewmodel.WeatherStationViewModel
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.navigation.NavigationView
 import com.google.gson.Gson
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -39,7 +43,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tempMaxTextView: TextView
 
     private var weatherStations: List<WeatherStation> = listOf()
-    private var selectedStationPosition = 0  // Guardar la estación seleccionada
+    private var selectedStationPosition = 0
     private val viewModel: WeatherStationViewModel by viewModels()
 
     private lateinit var drawerLayout: DrawerLayout
@@ -92,11 +96,11 @@ class MainActivity : AppCompatActivity() {
 
         if (user != null) {
             navHeaderName.text = "${user.firstName} ${user.lastName}"
-            navHeaderRoleUser.text = user.role  // Mostrar el tipo de usuario
+            navHeaderRoleUser.text = user.role
 
             Glide.with(this)
-                .load(user.avatar)  // URL de la imagen de perfil
-                .circleCrop()  // Esto hará que la imagen sea redonda
+                .load(user.avatar)
+                .circleCrop()
                 .into(navHeaderProfileImage)
         } else {
             Log.e("MainActivity", "Error: No se encontraron datos de usuario")
@@ -149,16 +153,18 @@ class MainActivity : AppCompatActivity() {
         viewModel.selectedStationData.observe(this) { station ->
             updateMainUI(station)
             updateWeatherFragment(station)
+
+            // Obtener la condición del clima
+            val weatherCondition = determineSkyCondition(station.meta, isDaytime = true) // Asumimos que es de día
+            updateBackgroundAndIcon(weatherCondition, isDaytime = true)
         }
 
         viewModel.temperatureMaxMin.observe(this) { tempMaxMin ->
-            // Mostrar las temperaturas máximas y mínimas en la UI
             tempMinTextView.text = "Min: ${tempMaxMin.min ?: "--"}°"
             tempMaxTextView.text = "Max: ${tempMaxMin.max ?: "--"}°"
         }
 
         viewModel.weatherData.observe(this) { weatherData ->
-            // Actualizamos la UI con los datos del clima del último día
             updateWeatherFragmentLastDay(weatherData)
         }
 
@@ -185,9 +191,7 @@ class MainActivity : AppCompatActivity() {
                 selectedStationPosition = position
                 val selectedStationId = weatherStations[position].id
                 viewModel.fetchStationData(this@MainActivity, selectedStationId)
-                // Obtener las temperaturas max y min
                 viewModel.fetchTemperatureMaxMin(this@MainActivity, selectedStationId)
-                // Obtener los datos del último día
                 viewModel.fetchWeatherDataLastDay(this@MainActivity, selectedStationId)
             }
 
@@ -206,12 +210,10 @@ class MainActivity : AppCompatActivity() {
         fragment?.updateWeatherData(weatherStation)
     }
 
-    // Función para actualizar los datos del clima del último día
     private fun updateWeatherFragmentLastDay(weatherData: List<WeatherDataLastDayResponse>) {
         val fragment = getFragmentByPosition(0) as? WeatherInfoFragment
-        // Si la lista no está vacía, pasamos el primer item
         weatherData.firstOrNull()?.let {
-            fragment?.updateWeatherDataLastDay(it)  // Pasamos solo un objeto, no la lista
+            fragment?.updateWeatherDataLastDay(it)
         }
     }
 
@@ -231,5 +233,44 @@ class MainActivity : AppCompatActivity() {
     private fun getUserDataFromSharedPreferences(): User? {
         val userJson = sharedPref.getString("user_data", null) ?: return null
         return Gson().fromJson(userJson, User::class.java)
+    }
+
+    // Determinar el estado del clima
+    fun determineSkyCondition(sensors: Meta?, isDaytime: Boolean): String {
+        return if (isDaytime) {
+            // Condiciones durante el día
+            when {
+                sensors?.solarRadiation ?: 0.0 > 500 -> "Despejado"
+                sensors?.solarRadiation ?: 0.0 in 100.0..500.0 -> "Parcialmente Nublado"
+                sensors?.solarRadiation ?: 0.0 <= 100 -> "Nublado"
+                else -> "Muy Nublado"
+            }
+        } else {
+            // Condiciones durante la noche
+            when {
+                (sensors?.rh ?: 0.0) < 80.0 && (sensors?.solarRadiation ?: 0.0) > 1000 -> "Noche Despejada"
+                (sensors?.rh ?: 0.0) >= 80.0 -> "Noche Parcialmente Nublada"
+                else -> "Noche Muy Nublada"
+            }
+        }
+    }
+
+    // Actualizar el fondo y el icono
+    private fun updateBackgroundAndIcon(weatherCondition: String, isDaytime: Boolean) {
+        val card_view = findViewById<MaterialCardView>(R.id.card_temp)
+        val weatherIcon = findViewById<ImageView>(R.id.weatherIcon)
+
+        // Cambiar el icono según el clima
+        val iconRes = when (weatherCondition) {
+            "Despejado" -> R.drawable.ic_weather_sunny
+            "Parcialmente Nublado" -> R.drawable.ic_weather_sun_cloud
+            "Nublado" -> R.drawable.ic_weather_cloud
+            "Muy Nublado" -> R.drawable.ic_weather_very_cloudy
+            "Noche Despejada" -> R.drawable.ic_weather_clear_night
+            "Noche Parcialmente Nublada" -> R.drawable.ic_weather_cloudy_night
+            "Noche Nublada" -> R.drawable.ic_weather_cloudy_night
+            else -> R.drawable.ic_weather_sunny
+        }
+        weatherIcon.setImageResource(iconRes)
     }
 }

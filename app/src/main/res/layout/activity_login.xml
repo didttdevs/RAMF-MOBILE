@@ -31,9 +31,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="50dp"
+        android:layout_marginTop="52dp"
         android:gravity="center"
         android:orientation="vertical"
-        app:layout_constraintTop_toBottomOf="@+id/lyTitle">
+        app:layout_constraintTop_toBottomOf="@+id/lyTitle"
+        tools:layout_editor_absoluteX="49dp">
 
         <!--
         <TextView
@@ -51,10 +53,10 @@
             android:layout_height="50dp"
             android:layout_marginTop="50dp"
             android:layout_marginBottom="50dp"
+            android:background="@drawable/circular_background"
             android:gravity="center"
             android:hint="Usuario"
-            android:inputType="textPersonName"
-            android:textColor="@color/white" />
+            android:inputType="textPersonName" />
 
         <!--
         <TextView
@@ -70,19 +72,19 @@
             android:id="@+id/etPassword"
             android:layout_width="match_parent"
             android:layout_height="50dp"
+            android:background="@drawable/circular_background"
+            android:fallbackLineSpacing="false"
             android:gravity="center"
             android:hint="Contraseña"
-            android:inputType="textPassword"
-            android:fallbackLineSpacing="false"
-            android:textColor="@color/white" />
+            android:inputType="textPassword" />
 
         <Button
             android:id="@+id/btnLogin"
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_marginTop="50dp"
+            android:backgroundTint="@color/background_color_btn"
             android:text="Login"
-            android:backgroundTint="@color/white"
             android:textColor="@color/black"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.498"
