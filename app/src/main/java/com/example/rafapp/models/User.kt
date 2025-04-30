@@ -5,6 +5,6 @@ data class User(
     val lastName: String,
     val email: String,
     val avatar: String,
-    val role: String  // Asegúrate de que este campo esté presente
+    val role: String
 )
 

@@ -22,4 +22,6 @@
     <color name="cloud">#FBFBFB</color>
 
     <color name="colorAccent">#FF4081</color> <!-- Color del gráfico -->
+    <color name="colorPrimaryDark">#2196F3</color> <!-- Color para el círculo -->
+
 </resources>

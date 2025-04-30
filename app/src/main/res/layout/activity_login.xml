@@ -78,17 +78,41 @@
             android:hint="Contraseña"
             android:inputType="textPassword" />
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_margin="10dp"
+            android:gravity="end"
+            android:layout_height="match_parent"
+            android:textSize="15sp"
+            android:textColor="@color/white"
+            android:text="¿Olvidaste tu Contraseña?"/>
+
         <Button
             android:id="@+id/btnLogin"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:layout_marginTop="50dp"
             android:backgroundTint="@color/background_color_btn"
             android:text="Login"
-            android:textColor="@color/black"
+            android:textColor="@color/white"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.498"
             app:layout_constraintStart_toStartOf="parent" />
 
+        <FrameLayout
+            android:id="@+id/btnGoogle"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            android:background="@drawable/square_background"
+            android:padding="8dp">
+
+            <!-- Icono de Apple centrado en el círculo -->
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="center"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_google" />
+        </FrameLayout>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

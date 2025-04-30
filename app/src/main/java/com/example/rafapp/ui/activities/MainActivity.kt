@@ -10,7 +10,6 @@ import android.widget.*
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.cardview.widget.CardView
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
@@ -27,12 +26,14 @@ import com.example.rafapp.ui.fragments.WeatherInfoFragment
 import com.example.rafapp.viewmodel.WeatherStationViewModel
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.navigation.NavigationView
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 import com.google.gson.Gson
-import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var viewPager: ViewPager2
+    private lateinit var tabLayout: TabLayout // Añadimos un TabLayout para los puntos indicadores
     private lateinit var stationSpinner: Spinner
     private lateinit var sharedPref: SharedPreferences
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
@@ -75,6 +76,7 @@ class MainActivity : AppCompatActivity() {
 
         // Inicia las vistas
         viewPager = findViewById(R.id.viewPager)
+        tabLayout = findViewById(R.id.tabLayout) // Inicializamos el TabLayout
         stationSpinner = findViewById(R.id.stationSpinner)
         swipeRefreshLayout = findViewById(R.id.swiperefresh)
 
@@ -83,7 +85,18 @@ class MainActivity : AppCompatActivity() {
         tempMinTextView = findViewById(R.id.tempMinTextView)
         tempMaxTextView = findViewById(R.id.tempMaxTextView)
 
+        // Configurar el ViewPager2
         viewPager.adapter = ViewPagerAdapter(this)
+        viewPager.orientation = ViewPager2.ORIENTATION_HORIZONTAL // Aseguramos que el desplazamiento sea horizontal
+
+        // Conectar el TabLayout con el ViewPager2 para mostrar puntos indicadores
+        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
+            tab.text = when (position) {
+                0 -> "Datos"
+                1 -> "Gráficos"
+                else -> ""
+            }
+        }.attach()
 
         // Configurar el menú lateral
         val headerView = navigationView.getHeaderView(0)

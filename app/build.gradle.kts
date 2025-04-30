@@ -41,6 +41,8 @@ android {
 }
 
 dependencies {
+    // Ingreso con google
+    implementation(libs.google.signin)
 
     implementation("androidx.fragment:fragment-ktx:1.6.2")
     implementation(libs.androidx.lifecycle.runtime.ktx)
