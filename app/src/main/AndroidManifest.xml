@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen">
 
     <uses-permission android:name="android.permission.INTERNET" />
 
-
     <application
         android:allowBackup="true"
+        android:configChanges="uiMode|screenSize|smallestScreenSize|orientation|screenLayout"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@drawable/ic_logoraf"
@@ -16,23 +16,22 @@
         android:roundIcon="@drawable/ic_logoraf"
         android:supportsRtl="true"
         android:theme="@style/Theme.RAFapp"
-        android:configChanges="uiMode|screenSize|smallestScreenSize|orientation|screenLayout"
         tools:targetApi="31">
-
+        <activity
+            android:name=".ui.activities.ProfileActivity"
+            android:exported="false" />
         <activity
             android:name=".ui.activities.LoginActivity"
             android:exported="false" />
-
         <activity
-            android:name="com.example.rafapp.ui.activities.MainActivity"
+            android:name=".ui.activities.MainActivity"
             android:exported="true">
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
     </application>
 
 </manifest>
