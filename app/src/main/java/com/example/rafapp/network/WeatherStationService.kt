@@ -1,38 +1,55 @@
 package com.example.rafapp.network
 
-import retrofit2.Call
+import com.example.rafapp.models.*
+import retrofit2.Response
 import retrofit2.http.GET
-import retrofit2.http.Header
-import com.example.rafapp.models.WeatherStation
-import com.example.rafapp.models.TemperatureMaxMin
-import com.example.rafapp.models.WeatherDataLastDayResponse
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface WeatherStationService {
-    @GET("station")
-    fun getWeatherStations(@Header("Authorization") token: String): Call<List<WeatherStation>>
 
-    @GET("station/{id}") // Si necesitas obtener datos de una estación específica
-    fun getWeatherStationById(
-        @Header("Authorization") token: String,
-        @Path("id") stationId: String
-    ): Call<WeatherStation>
+    // Nueva API local: /stations -> devuelve { data: [ WeatherStation ] }
+    @GET("stations")
+    suspend fun getWeatherStations(): Response<WeatherStationsResponse>
 
-    @GET("station-data/temp-max-min/{stationId}")
-    fun getTemperatureMaxMin(
-        @Header("Authorization") token: String,
-        @Path("stationId") stationId: String
-    ): Call<TemperatureMaxMin>
+    // Nueva API: obtener estación específica por nombre
+    @GET("stations/{stationName}")
+    suspend fun getWeatherStation(
+        @Path("stationName") stationName: String
+    ): Response<WeatherStation>
 
-    @GET("station-data/last-day/{stationId}")
-    fun getWeatherDataLastDay(
-        @Header("Authorization") token: String,
-        @Path("stationId") stationId: String
-    ): Call<List<WeatherDataLastDayResponse>>
+    // Nueva API: obtener sensores de una estación
+    @GET("stations/{stationName}/sensors")
+    suspend fun getStationSensors(
+        @Path("stationName") stationName: String
+    ): Response<List<Any>> // TODO: definir modelo de sensor
 
-    @GET("station-data/last-day/{station-last-id}")
-    fun getWeatherDataLastID(
-        @Header("Authorization") token: String,
-        @Path("stationId") stationId: String
-    ): Call<List<WeatherDataLastDayResponse>>
+    // Widget de temp máx/mín usando stationName
+    @GET("stations-measurement/widget/{stationName}")
+    suspend fun getTemperatureMaxMin(
+        @Path("stationName") stationName: String
+    ): Response<TemperatureMaxMin>
+
+    // Datos en rango de tiempo usando stationName
+    @GET("stations-measurement/data-time-range/{stationName}")
+    suspend fun getWeatherDataTimeRange(
+        @Path("stationName") stationName: String,
+        @Query("from") from: String,
+        @Query("to") to: String,
+        @Query("timeRange") timeRange: String = "custom"
+    ): Response<WrapperResponse>
+
+    // Datos para gráficos
+    @GET("stations-measurement/data-time-range-charts/{stationName}")
+    suspend fun getWeatherDataForCharts(
+        @Path("stationName") stationName: String,
+        @Query("from") from: String,
+        @Query("to") to: String
+    ): Response<WrapperResponse>
+
+    // Todos los datos de una estación
+    @GET("stations-measurement/allByStationName/{stationName}")
+    suspend fun getAllStationMeasurements(
+        @Path("stationName") stationName: String
+    ): Response<WrapperResponse>
 }

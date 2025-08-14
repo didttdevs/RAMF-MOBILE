@@ -24,7 +24,7 @@
             android:orientation="vertical"
             android:padding="12dp">
 
-            <!-- Selector de fechas -->
+            <!-- Selector de estación y fechas -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -32,12 +32,29 @@
                 android:gravity="center_vertical"
                 android:layout_marginBottom="8dp">
 
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/stationSpinnerLayout"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:hint="Estación">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/stationSpinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none"
+                        android:text="Estación Actual" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/dateRangeButton"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton.Icon"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
                     android:text="24h"
                     android:textSize="12sp"
                     app:icon="@drawable/ic_time"

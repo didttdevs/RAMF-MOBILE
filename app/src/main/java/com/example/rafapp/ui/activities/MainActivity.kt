@@ -7,34 +7,35 @@ import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.widget.*
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
+import com.google.android.material.button.MaterialButton
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.fragment.app.Fragment
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.example.rafapp.R
-import com.example.rafapp.models.Meta
+import com.example.rafapp.models.Sensors
 import com.example.rafapp.models.User
-import com.example.rafapp.models.WeatherDataLastDayResponse
+import com.example.rafapp.models.WeatherData
 import com.example.rafapp.models.WeatherStation
 import com.example.rafapp.ui.adapters.ViewPagerAdapter
-import com.example.rafapp.ui.fragments.WeatherInfoFragment
 import com.example.rafapp.viewmodel.WeatherStationViewModel
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.gson.Gson
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var viewPager: ViewPager2
-    private lateinit var tabLayout: TabLayout // Añadimos un TabLayout para los puntos indicadores
-    private lateinit var stationSpinner: Spinner
+    private lateinit var tabLayout: TabLayout
+    private lateinit var stationSpinner: MaterialAutoCompleteTextView
     private lateinit var sharedPref: SharedPreferences
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
 
@@ -43,16 +44,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tempMinTextView: TextView
     private lateinit var tempMaxTextView: TextView
 
-    private var weatherStations: List<WeatherStation> = listOf()
-    private var selectedStationPosition = 0
-    private val viewModel: WeatherStationViewModel by viewModels()
-
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var navigationView: NavigationView
 
     private lateinit var navHeaderProfileImage: ImageView
     private lateinit var navHeaderName: TextView
     private lateinit var navHeaderRoleUser: TextView
+
+    private val viewModel: WeatherStationViewModel by viewModels()
+    private lateinit var viewPagerAdapter: ViewPagerAdapter
+    private var weatherStations: List<WeatherStation> = listOf()
+    private var selectedStationPosition = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,70 +76,41 @@ class MainActivity : AppCompatActivity() {
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
         actionBar?.hide()
 
-        // Inicia las vistas
         viewPager = findViewById(R.id.viewPager)
-        tabLayout = findViewById(R.id.tabLayout) // Inicializamos el TabLayout
+        tabLayout = findViewById(R.id.tabLayout)
         stationSpinner = findViewById(R.id.stationSpinner)
         swipeRefreshLayout = findViewById(R.id.swiperefresh)
-
         tempTextView = findViewById(R.id.tempTextView)
         lastComTextView = findViewById(R.id.lastComTextView)
         tempMinTextView = findViewById(R.id.tempMinTextView)
         tempMaxTextView = findViewById(R.id.tempMaxTextView)
 
-        // Configurar el ViewPager2
-        viewPager.adapter = ViewPagerAdapter(this)
-        viewPager.orientation = ViewPager2.ORIENTATION_HORIZONTAL // Aseguramos que el desplazamiento sea horizontal
+        viewPagerAdapter = ViewPagerAdapter(this)
+        viewPager.adapter = viewPagerAdapter
+        viewPager.orientation = ViewPager2.ORIENTATION_HORIZONTAL
 
-        // Conectar el TabLayout con el ViewPager2 para mostrar puntos indicadores
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
-            tab.text = when (position) {
-                0 -> "Datos"
-                1 -> "Gráficos"
-                else -> ""
-            }
+            tab.text = if (position == 0) "Datos" else "Gráficos"
         }.attach()
 
-        // Configurar el menú lateral
         val headerView = navigationView.getHeaderView(0)
         navHeaderProfileImage = headerView.findViewById(R.id.navHeaderProfileImage)
         navHeaderName = headerView.findViewById(R.id.navHeaderUsername)
         navHeaderRoleUser = headerView.findViewById(R.id.navHeaderDetailsUser)
 
-        // Obtener los datos del usuario
         val user = getUserDataFromSharedPreferences()
-
-        if (user != null) {
-            navHeaderName.text = "${user.firstName} ${user.lastName}"
-            navHeaderRoleUser.text = user.role
-
-            Glide.with(this)
-                .load(user.avatar)
-                .circleCrop()
-                .into(navHeaderProfileImage)
-        } else {
-            Log.e("MainActivity", "Error: No se encontraron datos de usuario")
+        user?.let {
+            navHeaderName.text = "${it.firstName} ${it.lastName}"
+            navHeaderRoleUser.text = it.role
+            Glide.with(this).load(it.avatar).circleCrop().into(navHeaderProfileImage)
         }
 
-        // Abre el drawer cuando el botón de hamburguesa es presionado
         findViewById<ImageButton>(R.id.menuButton).setOnClickListener {
             drawerLayout.openDrawer(GravityCompat.START)
         }
 
-        // Configura el listener para el menú
         navigationView.setNavigationItemSelectedListener { item: MenuItem ->
             when (item.itemId) {
-                R.id.nav_home -> {
-                    startActivity(Intent(this, MainActivity::class.java))
-                    fetchWeatherData()
-                    true
-                }
-                R.id.nav_profile -> {
-                    true
-                }
-                R.id.nav_settings -> {
-                    true
-                }
                 R.id.nav_logout -> {
                     logout()
                     true
@@ -146,30 +119,37 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        swipeRefreshLayout.setOnRefreshListener {
-            fetchWeatherData()
-        }
+        swipeRefreshLayout.setOnRefreshListener { fetchWeatherData() }
 
         setupObservers()
-        fetchWeatherData()  // Llamada para obtener las estaciones por primera vez
+        fetchWeatherData()
     }
 
     private fun setupObservers() {
         viewModel.weatherStations.observe(this) { stations ->
+            Log.d("MainActivity", "weatherStations observer called with ${stations.size} stations")
             if (stations.isNotEmpty()) {
                 weatherStations = stations
                 setupStationSpinner(weatherStations)
-                stationSpinner.setSelection(selectedStationPosition)
+                
+                // Cargar datos de la primera estación por defecto
+                if (stations.isNotEmpty()) {
+                    val firstStation = stations[0]
+                    val stationName = firstStation.id // En la nueva API, id es el stationName
+                    Log.d("MainActivity", "Loading data for first station: ${firstStation.name} (${stationName})")
+                    viewModel.fetchStationData(stationName)
+                    viewModel.fetchTemperatureMaxMin(stationName)
+                    viewModel.fetchWeatherDataLastDay(stationName)
+                    stationSpinner.setText(firstStation.name ?: "Desconocida", false)
+                }
+            } else {
+                Log.e("MainActivity", "No weather stations received")
             }
         }
 
         viewModel.selectedStationData.observe(this) { station ->
             updateMainUI(station)
-            updateWeatherFragment(station)
-
-            // Obtener la condición del clima
-            val weatherCondition = determineSkyCondition(station.meta, isDaytime = true) // Asumimos que es de día
-            updateBackgroundAndIcon(weatherCondition, isDaytime = true)
+            // El WeatherInfoFragment ya observa al ViewModel y se actualiza solo.
         }
 
         viewModel.temperatureMaxMin.observe(this) { tempMaxMin ->
@@ -177,8 +157,18 @@ class MainActivity : AppCompatActivity() {
             tempMaxTextView.text = "Max: ${tempMaxMin.max ?: "--"}°"
         }
 
-        viewModel.weatherData.observe(this) { weatherData ->
-            updateWeatherFragmentLastDay(weatherData)
+        // Usamos esta lista para refrescar temperatura actual y el ícono de estado del cielo
+        viewModel.weatherDataLastDay.observe(this) { weatherDataList ->
+            val latest = weatherDataList.firstOrNull()
+            latest?.let { wd ->
+                // Temperatura actual (si está disponible)
+                wd.sensors.hcAirTemperature?.avg?.let { t ->
+                    tempTextView.text = String.format(Locale.getDefault(), "%.1f °C", t)
+                }
+                // Determinar condición del cielo con sensores (si hay radiación/humedad)
+                val condition = determineSkyConditionFromSensors(wd.sensors, isDaytime = true)
+                updateBackgroundAndIcon(condition, isDaytime = true)
+            }
         }
 
         viewModel.error.observe(this) { errorMessage ->
@@ -188,59 +178,40 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun fetchWeatherData() {
+        Log.d("MainActivity", "fetchWeatherData called")
         swipeRefreshLayout.isRefreshing = true
-        viewModel.fetchWeatherStations(this)
+        viewModel.fetchWeatherStations()
+        
+        // También cargar una estación por defecto si no hay ninguna seleccionada
+        if (weatherStations.isEmpty()) {
+            Log.d("MainActivity", "Loading default station data")
+            viewModel.fetchStationData("00213962") // stationName por defecto basado en API
+            viewModel.fetchTemperatureMaxMin("00213962")
+            viewModel.fetchWeatherDataLastDay("00213962")
+        }
+        
         swipeRefreshLayout.isRefreshing = false
     }
 
-    private fun setupStationSpinner(weatherStations: List<WeatherStation>) {
-        val stationNames = weatherStations.map { it.name?.custom ?: "Desconocida" }
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, stationNames)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        stationSpinner.adapter = adapter
+    private fun setupStationSpinner(stations: List<WeatherStation>) {
+        val stationNames = stations.map { it.name ?: "Desconocida" }
+        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, stationNames)
+        stationSpinner.setAdapter(adapter)
 
-        stationSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                selectedStationPosition = position
-                val selectedStationId = weatherStations[position].id
-                viewModel.fetchStationData(this@MainActivity, selectedStationId)
-                viewModel.fetchTemperatureMaxMin(this@MainActivity, selectedStationId)
-                viewModel.fetchWeatherDataLastDay(this@MainActivity, selectedStationId)
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        stationSpinner.setOnItemClickListener { _, _, position, _ ->
+            selectedStationPosition = position
+            val stationName = stations[position].id // En la nueva API, id contiene el stationName
+            Log.d("MainActivity", "Selected station: ${stations[position].name} (${stationName})")
+            viewModel.fetchStationData(stationName)
+            viewModel.fetchTemperatureMaxMin(stationName)
+            viewModel.fetchWeatherDataLastDay(stationName)
         }
     }
 
-    private fun updateMainUI(weatherStation: WeatherStation) {
-        val meta = weatherStation.meta
-        tempTextView.text = "${meta?.airTemp ?: "--"} °C"
-        lastComTextView.text = weatherStation.dates?.lastCommunication ?: "--/--/----"
-    }
-
-    private fun updateWeatherFragment(weatherStation: WeatherStation) {
-        val fragment = getFragmentByPosition(0) as? WeatherInfoFragment
-        fragment?.updateWeatherData(weatherStation)
-    }
-
-    private fun updateWeatherFragmentLastDay(weatherData: List<WeatherDataLastDayResponse>) {
-        val fragment = getFragmentByPosition(0) as? WeatherInfoFragment
-        weatherData.firstOrNull()?.let {
-            fragment?.updateWeatherDataLastDay(it)
-        }
-    }
-
-    private fun getFragmentByPosition(position: Int): Fragment? {
-        return supportFragmentManager.findFragmentByTag("f$position")
-    }
-
-    private fun logout() {
-        with(sharedPref.edit()) {
-            remove("auth_token")
-            apply()
-        }
-        startActivity(Intent(this, LoginActivity::class.java))
-        finish()
+    private fun updateMainUI(station: WeatherStation) {
+        // La nueva API no trae 'meta' en la estación; usamos lastCommunication y dejamos temp hasta que lleguen datos
+        lastComTextView.text = station.lastCommunication ?: "--/--/----"
+        if (tempTextView.text.isNullOrBlank()) tempTextView.text = "-- °C"
     }
 
     private fun getUserDataFromSharedPreferences(): User? {
@@ -248,32 +219,34 @@ class MainActivity : AppCompatActivity() {
         return Gson().fromJson(userJson, User::class.java)
     }
 
-    // Determinar el estado del clima
-    fun determineSkyCondition(sensors: Meta?, isDaytime: Boolean): String {
+    private fun logout() {
+        sharedPref.edit().remove("auth_token").apply()
+        startActivity(Intent(this, LoginActivity::class.java))
+        finish()
+    }
+
+    private fun determineSkyConditionFromSensors(sensors: Sensors, isDaytime: Boolean): String {
+        val rh = sensors.hcRelativeHumidity?.avg ?: 0.0
+        val sr = sensors.solarRadiation?.avg ?: 0.0
         return if (isDaytime) {
-            // Condiciones durante el día
             when {
-                sensors?.solarRadiation ?: 0.0 > 500 -> "Despejado"
-                sensors?.solarRadiation ?: 0.0 in 100.0..500.0 -> "Parcialmente Nublado"
-                sensors?.solarRadiation ?: 0.0 <= 100 -> "Nublado"
+                sr > 500 -> "Despejado"
+                sr in 100.0..500.0 -> "Parcialmente Nublado"
+                sr <= 100 -> "Nublado"
                 else -> "Muy Nublado"
             }
         } else {
-            // Condiciones durante la noche
             when {
-                (sensors?.rh ?: 0.0) < 80.0 && (sensors?.solarRadiation ?: 0.0) > 1000 -> "Noche Despejada"
-                (sensors?.rh ?: 0.0) >= 80.0 -> "Noche Parcialmente Nublada"
+                rh < 80.0 && sr > 1000 -> "Noche Despejada"
+                rh >= 80.0 -> "Noche Parcialmente Nublada"
                 else -> "Noche Muy Nublada"
             }
         }
     }
 
-    // Actualizar el fondo y el icono
     private fun updateBackgroundAndIcon(weatherCondition: String, isDaytime: Boolean) {
-        val card_view = findViewById<MaterialCardView>(R.id.card_temp)
+        val cardView = findViewById<MaterialCardView>(R.id.card_temp)
         val weatherIcon = findViewById<ImageView>(R.id.weatherIcon)
-
-        // Cambiar el icono según el clima
         val iconRes = when (weatherCondition) {
             "Despejado" -> R.drawable.ic_weather_sunny
             "Parcialmente Nublado" -> R.drawable.ic_weather_sun_cloud
@@ -281,9 +254,9 @@ class MainActivity : AppCompatActivity() {
             "Muy Nublado" -> R.drawable.ic_weather_very_cloudy
             "Noche Despejada" -> R.drawable.ic_weather_clear_night
             "Noche Parcialmente Nublada" -> R.drawable.ic_weather_cloudy_night
-            "Noche Nublada" -> R.drawable.ic_weather_cloudy_night
             else -> R.drawable.ic_weather_sunny
         }
         weatherIcon.setImageResource(iconRes)
+        // Si querés cambiar fondo del card según condición, podés hacerlo acá con setCardBackgroundColor(...)
     }
 }

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mv:*)",
+      "Bash(./gradlew:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(cp:*)",
+      "Bash(dir:*)",
+      "Bash(del activity_main_redesigned.xml)",
+      "Bash(rm:*)",
+      "Bash(.gradlew assembleDebug)"
+    ],
+    "defaultMode": "acceptEdits"
+  }
+}

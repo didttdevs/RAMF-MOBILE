@@ -43,7 +43,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="68dp"
                     android:hint="Estación"
-                    app:boxBackgroundColor="#FFFFFF"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/menuButton"
                     app:layout_constraintTop_toTopOf="parent">

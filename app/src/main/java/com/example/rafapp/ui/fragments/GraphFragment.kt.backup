@@ -14,20 +14,24 @@ import androidx.lifecycle.Lifecycle
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import com.google.android.material.datepicker.MaterialDatePicker
-import com.example.rafapp.R
-import com.example.rafapp.databinding.FragmentGraphBinding
-import com.example.rafapp.models.WrapperResponse
-import com.example.rafapp.network.RetrofitClient
 import com.example.rafapp.utils.ChartUtils
 import com.example.rafapp.utils.Constants
 import com.example.rafapp.utils.NetworkUtils
 import com.example.rafapp.viewmodels.GraphViewModel
 import com.example.rafapp.viewmodels.GraphViewModelFactory
 import com.example.rafapp.repository.WeatherRepository
+import kotlinx.coroutines.flow.collectLatest
+import com.example.rafapp.R
+import com.example.rafapp.databinding.FragmentGraphBinding
+import com.example.rafapp.models.WrapperResponse
+import com.example.rafapp.network.RetrofitClient
 import com.github.mikephil.charting.components.Description
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.components.YAxis
@@ -39,7 +43,6 @@ import com.github.mikephil.charting.animation.Easing
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.flow.collectLatest
 
 class GraphFragment : Fragment() {
 
@@ -107,11 +110,9 @@ class GraphFragment : Fragment() {
     }
     
     private fun observeViewModel() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collectLatest { state ->
-                    updateUI(state)
-                }
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.uiState.collectLatest { state ->
+                updateUI(state)
             }
         }
     }
@@ -137,61 +138,6 @@ class GraphFragment : Fragment() {
             viewModel.loadWeatherData(from, to)
         } else {
             showError(true, "Sin conexión a internet")
-        }
-    }
-
-    private fun setupChart() {
-        binding.lineChart.apply {
-            // Configuraciones básicas
-            setTouchEnabled(true)
-            setPinchZoom(true)
-            isDragEnabled = true
-            setScaleEnabled(true)
-            setBackgroundColor(Color.WHITE)
-            
-            // Descripción
-            description = Description().apply { 
-                text = "" 
-                textColor = Color.GRAY
-                textSize = 12f
-            }
-            
-            // Configurar eje X (tiempo)
-            xAxis.apply {
-                position = XAxis.XAxisPosition.BOTTOM
-                textColor = Color.DKGRAY
-                textSize = 10f
-                setDrawGridLines(true)
-                gridColor = Color.LTGRAY
-                gridLineWidth = 0.5f
-                valueFormatter = ChartUtils.createTimeFormatter()
-            }
-            
-            // Configurar eje Y izquierdo
-            axisLeft.apply {
-                textColor = Color.DKGRAY
-                textSize = 10f
-                setDrawGridLines(true)
-                gridColor = Color.LTGRAY
-                gridLineWidth = 0.5f
-                isGranularityEnabled = true
-            }
-            
-            // Deshabilitar eje Y derecho
-            axisRight.isEnabled = false
-            
-            // Configurar leyenda
-            legend.apply {
-                isEnabled = true
-                textColor = Color.DKGRAY
-                textSize = 12f
-                form = com.github.mikephil.charting.components.Legend.LegendForm.LINE
-            }
-            
-            // Configuraciones adicionales
-            setExtraOffsets(10f, 10f, 10f, 10f)
-            setNoDataText("No hay datos disponibles")
-            setNoDataTextColor(Color.GRAY)
         }
     }
     
@@ -240,10 +186,71 @@ class GraphFragment : Fragment() {
                     selectedParameters.add(param)
                     Toast.makeText(requireContext(), "Debe seleccionar al menos un parámetro", Toast.LENGTH_SHORT).show()
                 } else {
-                    viewModel.updateSelectedParameters(selectedParameters)
-                    fetchAndPlotMultipleData()
+                    val (from, to) = generateDateRange()
+                    viewModel.loadWeatherData(from, to)
+                    viewModel.updateDateRangeLabel(selected.label)
                 }
             }
+        }
+    }
+
+    private fun setupChart() {
+        binding.lineChart.apply {
+            // Configuraciones básicas
+            setTouchEnabled(true)
+            setPinchZoom(true)
+            isDragEnabled = true
+            setScaleEnabled(true)
+            setBackgroundColor(Color.WHITE)
+            
+            // Descripción
+            description = Description().apply { 
+                text = "" 
+                textColor = Color.GRAY
+                textSize = 12f
+            }
+            
+            // Configurar eje X (tiempo)
+            xAxis.apply {
+                position = XAxis.XAxisPosition.BOTTOM
+                textColor = Color.DARK_GRAY
+                textSize = 10f
+                setDrawGridLines(true)
+                gridColor = Color.LTGRAY
+                gridLineWidth = 0.5f
+                valueFormatter = object : ValueFormatter() {
+                    private val timeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+                    override fun getFormattedValue(value: Float): String {
+                        return timeFormatter.format(Date(value.toLong()))
+                    }
+                }
+            }
+            
+            // Configurar eje Y izquierdo
+            axisLeft.apply {
+                textColor = Color.DARK_GRAY
+                textSize = 10f
+                setDrawGridLines(true)
+                gridColor = Color.LTGRAY
+                gridLineWidth = 0.5f
+                isGranularityEnabled = true
+            }
+            
+            // Deshabilitar eje Y derecho
+            axisRight.isEnabled = false
+            
+            // Configurar leyenda
+            legend.apply {
+                isEnabled = true
+                textColor = Color.DARK_GRAY
+                textSize = 12f
+                form = com.github.mikephil.charting.components.Legend.LegendForm.LINE
+            }
+            
+            // Configuraciones adicionales
+            setExtraOffsets(10f, 10f, 10f, 10f)
+            setNoDataText("No hay datos disponibles")
+            setNoDataTextColor(Color.GRAY)
         }
     }
 
@@ -271,10 +278,7 @@ class GraphFragment : Fragment() {
                     "precipitacion"   -> point.sensors.precipitation?.sum?.toFloat()
                     "direccionViento" -> point.sensors.usonicWindDir?.last?.toFloat()
                     "vientoVel"       -> point.sensors.usonicWindSpeed?.avg?.toFloat()
-                    "solarDuration"   -> point.sensors.solarRadiation?.avg?.toFloat() // Placeholder
-                    "dewPoint"        -> point.sensors.dewPoint?.avg?.toFloat()
-                    "airPressure"     -> point.sensors.airPressure?.avg?.toFloat()
-                    "windGust"        -> point.sensors.windGust?.max?.toFloat()
+                    "solarDuration"   -> point.sensors.solarRadiation?.avg?.toFloat() // Placeholder - actualizar cuando esté disponible
                     else -> null
                 }
                 if (y != null) Entry(x, y) else null
@@ -291,7 +295,7 @@ class GraphFragment : Fragment() {
         selectedParameters.forEach { parameter ->
             val entries = mapDataToEntries(data, parameter)
             if (entries.isNotEmpty()) {
-                val dataSet = createLineDataSet(entries, parameter)
+                val dataSet = createLineDataSet(entries, getLabel(parameter), parameter)
                 dataSets.add(dataSet)
             }
         }
@@ -299,17 +303,62 @@ class GraphFragment : Fragment() {
         if (dataSets.isNotEmpty()) {
             val lineData = LineData(dataSets.toList())
             binding.lineChart.data = lineData
-            binding.lineChart.animateX(Constants.CHART_ANIMATION_DURATION, Easing.EaseInOutCubic)
+            binding.lineChart.animateX(800, Easing.EaseInOutCubic)
             binding.lineChart.invalidate()
         } else {
             binding.lineChart.clear()
-            showError(true, Constants.ERROR_NO_DATA)
+            showError(true, "No hay datos disponibles para los parámetros seleccionados")
         }
     }
     
     private fun createLineDataSet(entries: List<Entry>, parameter: String): LineDataSet {
         val optimizedEntries = ChartUtils.optimizeEntries(ChartUtils.validateEntries(entries))
         return ChartUtils.createLineDataSet(optimizedEntries, parameter, selectedParameters.size > 1)
+    }
+    
+    private fun createLineDataSetLegacy(entries: List<Entry>, label: String, parameter: String): LineDataSet {
+        // Colores profesionales según el parámetro
+        val parameterColors = mapOf(
+            "temperatura" to Color.rgb(255, 87, 34),     // Naranja
+            "humedad" to Color.rgb(33, 150, 243),        // Azul
+            "radiacion" to Color.rgb(255, 193, 7),       // Amarillo
+            "precipitacion" to Color.rgb(76, 175, 80),   // Verde
+            "direccionViento" to Color.rgb(156, 39, 176), // Púrpura
+            "vientoVel" to Color.rgb(96, 125, 139),      // Gris azulado
+            "solarDuration" to Color.rgb(255, 152, 0)    // Naranja claro
+        )
+        
+        val selectedColor = parameterColors[parameter] ?: Color.rgb(33, 150, 243)
+        
+        return LineDataSet(entries, label).apply {
+            // Configuración de línea
+            color = selectedColor
+            lineWidth = if (selectedParameters.size == 1) 2.5f else 2f
+            setDrawCircles(selectedParameters.size == 1)
+            setDrawValues(false)
+            setDrawFilled(false)
+            
+            // Configuración de círculos de datos
+            setCircleColor(selectedColor)
+            circleRadius = 2.5f
+            setDrawCircleHole(true)
+            circleHoleRadius = 1f
+            circleHoleColor = Color.WHITE
+            
+            // Configuración de valores
+            valueTextColor = Color.DARK_GRAY
+            valueTextSize = 9f
+            
+            // Modo de dibujo suave
+            mode = LineDataSet.Mode.CUBIC_BEZIER
+            cubicIntensity = 0.15f
+            
+            // Configuración adicional
+            isHighlightEnabled = true
+            setDrawHorizontalHighlightIndicator(false)
+            highlightLineWidth = 1f
+            highLightColor = selectedColor
+        }
     }
 
     private fun getLabel(param: String): String = when (param) {
@@ -376,11 +425,9 @@ class GraphFragment : Fragment() {
                     dialog.dismiss()
                     showCustomDatePicker()
                 } else {
-                    val label = selected.label
-                    viewModel.updateDateRangeLabel(label)
-                    val (from, to) = generateDateRange()
-                    viewModel.loadWeatherData(from, to)
+                    binding.dateRangeButton.text = selected.label
                     dialog.dismiss()
+                    fetchAndPlotMultipleData()
                 }
             }
             .setNegativeButton("Cancelar", null)
