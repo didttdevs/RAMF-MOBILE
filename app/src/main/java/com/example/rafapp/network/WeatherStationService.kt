@@ -30,6 +30,12 @@ interface WeatherStationService {
         @Path("stationName") stationName: String
     ): Response<TemperatureMaxMin>
 
+    // Widget con todos los datos principales
+    @GET("stations-measurement/widget/{stationName}")
+    suspend fun getWidgetData(
+        @Path("stationName") stationName: String
+    ): Response<WidgetData>
+
     // Datos en rango de tiempo usando stationName
     @GET("stations-measurement/data-time-range/{stationName}")
     suspend fun getWeatherDataTimeRange(
@@ -44,8 +50,17 @@ interface WeatherStationService {
     suspend fun getWeatherDataForCharts(
         @Path("stationName") stationName: String,
         @Query("from") from: String,
+        @Query("to") to: String,
+        @Query("timeRange") timeRange: String = "custom"
+    ): Response<List<WeatherData>>
+
+    // Datos desde/hasta (alternativo para filtros)
+    @GET("stations-measurement/data-from-to/{stationName}")
+    suspend fun getWeatherDataFromTo(
+        @Path("stationName") stationName: String,
+        @Query("from") from: String,
         @Query("to") to: String
-    ): Response<WrapperResponse>
+    ): Response<List<WeatherData>>
 
     // Todos los datos de una estación
     @GET("stations-measurement/allByStationName/{stationName}")

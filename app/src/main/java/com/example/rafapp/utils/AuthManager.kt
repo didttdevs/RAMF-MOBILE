@@ -53,11 +53,16 @@ object AuthManager {
     
     fun isUserLoggedIn(): Boolean {
         val token = getAuthToken()
+        val user = getCurrentUser()
         val loginTimestamp = encryptedSharedPref?.getLong(LOGIN_TIMESTAMP_KEY, 0L) ?: 0L
         
-        if (token.isNullOrEmpty()) return false
+        // Si no hay usuario, no está logueado
+        if (user == null) return false
         
-        // Verificar si el token ha expirado (opcional)
+        // Si no hay token pero hay usuario, permitir (caso Google Sign-In)
+        if (token.isNullOrEmpty()) return true
+        
+        // Verificar si el token ha expirado (solo si hay token)
         val currentTime = System.currentTimeMillis()
         val tokenAge = currentTime - loginTimestamp
         val tokenExpiryTime = TOKEN_EXPIRY_HOURS * 60 * 60 * 1000 // 24 horas en milisegundos

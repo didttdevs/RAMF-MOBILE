@@ -9,7 +9,10 @@
       "Bash(dir:*)",
       "Bash(del activity_main_redesigned.xml)",
       "Bash(rm:*)",
-      "Bash(.gradlew assembleDebug)"
+      "Bash(.gradlew assembleDebug)",
+      "Bash(gradlew:*)",
+      "Bash(adb install:*)",
+      "Bash(del \"app\\src\\main\\java\\com\\example\\rafapp\\ui\\fragments\\GraphFragment.kt.backup\")"
     ],
     "defaultMode": "acceptEdits"
   }

@@ -116,4 +116,18 @@
         <item name="hintTextColor">@color/text_secondary_gray</item>
     </style>
 
+    <!-- Theme for full-screen charts activity -->
+    <style name="Theme.RAFapp.NoActionBar" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/formosa_blue_primary</item>
+        <item name="colorPrimaryVariant">@color/formosa_blue_dark</item>
+        <item name="colorOnPrimary">@color/text_white_primary</item>
+        <item name="colorSecondary">@color/formosa_blue_accent</item>
+        <item name="colorSecondaryVariant">@color/formosa_blue_light</item>
+        <item name="colorOnSecondary">@color/text_white_primary</item>
+        
+        <item name="android:windowBackground">@color/background_color</item>
+        <item name="android:statusBarColor">@color/formosa_blue_primary</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
+    </style>
+
 </resources>

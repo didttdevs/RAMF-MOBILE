@@ -15,26 +15,26 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.example.rafapp.R
 import com.example.rafapp.models.Sensors
 import com.example.rafapp.models.User
 import com.example.rafapp.models.WeatherData
 import com.example.rafapp.models.WeatherStation
-import com.example.rafapp.ui.adapters.ViewPagerAdapter
+import com.example.rafapp.models.WidgetData
 import com.example.rafapp.viewmodel.WeatherStationViewModel
+import com.example.rafapp.ui.activities.FullScreenChartsActivity
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.navigation.NavigationView
-import com.google.android.material.tabs.TabLayout
-import com.google.android.material.tabs.TabLayoutMediator
 import com.google.gson.Gson
 import java.util.Locale
+import java.util.TimeZone
+import java.util.Date
+import java.text.SimpleDateFormat
+import com.example.rafapp.utils.AuthManager
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var viewPager: ViewPager2
-    private lateinit var tabLayout: TabLayout
     private lateinit var stationSpinner: MaterialAutoCompleteTextView
     private lateinit var sharedPref: SharedPreferences
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
@@ -52,16 +52,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navHeaderRoleUser: TextView
 
     private val viewModel: WeatherStationViewModel by viewModels()
-    private lateinit var viewPagerAdapter: ViewPagerAdapter
     private var weatherStations: List<WeatherStation> = listOf()
     private var selectedStationPosition = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        AuthManager.initialize(this)
         sharedPref = getSharedPreferences("auth_prefs", MODE_PRIVATE)
 
-        if (sharedPref.getString("auth_token", null) == null) {
+        if (!AuthManager.isUserLoggedIn()) {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
             return
@@ -76,8 +76,6 @@ class MainActivity : AppCompatActivity() {
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
         actionBar?.hide()
 
-        viewPager = findViewById(R.id.viewPager)
-        tabLayout = findViewById(R.id.tabLayout)
         stationSpinner = findViewById(R.id.stationSpinner)
         swipeRefreshLayout = findViewById(R.id.swiperefresh)
         tempTextView = findViewById(R.id.tempTextView)
@@ -85,13 +83,12 @@ class MainActivity : AppCompatActivity() {
         tempMinTextView = findViewById(R.id.tempMinTextView)
         tempMaxTextView = findViewById(R.id.tempMaxTextView)
 
-        viewPagerAdapter = ViewPagerAdapter(this)
-        viewPager.adapter = viewPagerAdapter
-        viewPager.orientation = ViewPager2.ORIENTATION_HORIZONTAL
+        // Configurar fragment de datos meteorológicos
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.weatherDataFragment, com.example.rafapp.ui.fragments.WeatherInfoFragment())
+            .commit()
 
-        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
-            tab.text = if (position == 0) "Datos" else "Gráficos"
-        }.attach()
+        // Los gráficos ahora se abren desde el menú lateral
 
         val headerView = navigationView.getHeaderView(0)
         navHeaderProfileImage = headerView.findViewById(R.id.navHeaderProfileImage)
@@ -111,6 +108,11 @@ class MainActivity : AppCompatActivity() {
 
         navigationView.setNavigationItemSelectedListener { item: MenuItem ->
             when (item.itemId) {
+                R.id.nav_charts -> {
+                    openChartsActivity()
+                    drawerLayout.closeDrawer(GravityCompat.START)
+                    true
+                }
                 R.id.nav_logout -> {
                     logout()
                     true
@@ -124,6 +126,19 @@ class MainActivity : AppCompatActivity() {
         setupObservers()
         fetchWeatherData()
     }
+    
+    private fun openChartsActivity() {
+        if (weatherStations.isNotEmpty()) {
+            val currentStation = weatherStations[selectedStationPosition]
+            val intent = Intent(this, FullScreenChartsActivity::class.java).apply {
+                putExtra(FullScreenChartsActivity.EXTRA_STATION_ID, currentStation.id)
+                putExtra(FullScreenChartsActivity.EXTRA_STATION_NAME, currentStation.name)
+                // Abrimos con temperatura por defecto
+                putExtra("selected_parameter", "temperatura")
+            }
+            startActivity(intent)
+        }
+    }
 
     private fun setupObservers() {
         viewModel.weatherStations.observe(this) { stations ->
@@ -133,15 +148,14 @@ class MainActivity : AppCompatActivity() {
                 setupStationSpinner(weatherStations)
                 
                 // Cargar datos de la primera estación por defecto
-                if (stations.isNotEmpty()) {
-                    val firstStation = stations[0]
-                    val stationName = firstStation.id // En la nueva API, id es el stationName
-                    Log.d("MainActivity", "Loading data for first station: ${firstStation.name} (${stationName})")
-                    viewModel.fetchStationData(stationName)
-                    viewModel.fetchTemperatureMaxMin(stationName)
-                    viewModel.fetchWeatherDataLastDay(stationName)
-                    stationSpinner.setText(firstStation.name ?: "Desconocida", false)
-                }
+                val firstStation = stations[0]
+                val stationName = firstStation.id // En la nueva API, id es el stationName
+                Log.d("MainActivity", "Loading data for first station: ${firstStation.name} (${stationName})")
+                // No llamar fetchStationData porque el ViewModel ya lo hace automáticamente
+                viewModel.fetchTemperatureMaxMin(stationName)
+                viewModel.fetchWeatherDataLastDay(stationName)
+                viewModel.fetchWidgetData(stationName)
+                stationSpinner.setText(firstStation.name ?: "Desconocida", false)
             } else {
                 Log.e("MainActivity", "No weather stations received")
             }
@@ -157,17 +171,31 @@ class MainActivity : AppCompatActivity() {
             tempMaxTextView.text = "Max: ${tempMaxMin.max ?: "--"}°"
         }
 
-        // Usamos esta lista para refrescar temperatura actual y el ícono de estado del cielo
+        // Observamos los datos del widget para temperatura actual
+        viewModel.widgetData.observe(this) { widgetData ->
+            widgetData?.let { widget ->
+                // Temperatura actual desde el widget
+                tempTextView.text = String.format(Locale.getDefault(), "%.1f °C", widget.temperature)
+                
+                // Determinar condición del cielo con los datos del widget
+                val condition = determineSkyConditionFromWidget(widget, isDaytime = true)
+                updateBackgroundAndIcon(condition, isDaytime = true)
+            }
+        }
+
+        // Fallback: Usamos esta lista para refrescar temperatura actual y el ícono de estado del cielo
         viewModel.weatherDataLastDay.observe(this) { weatherDataList ->
             val latest = weatherDataList.firstOrNull()
             latest?.let { wd ->
-                // Temperatura actual (si está disponible)
-                wd.sensors.hcAirTemperature?.avg?.let { t ->
-                    tempTextView.text = String.format(Locale.getDefault(), "%.1f °C", t)
+                // Solo usar como fallback si no tenemos datos del widget
+                if (tempTextView.text.isNullOrBlank() || tempTextView.text == "-- °C") {
+                    wd.sensors.hcAirTemperature?.avg?.let { t ->
+                        tempTextView.text = String.format(Locale.getDefault(), "%.1f °C", t)
+                    }
+                    // Determinar condición del cielo con sensores (si hay radiación/humedad)
+                    val condition = determineSkyConditionFromSensors(wd.sensors, isDaytime = true)
+                    updateBackgroundAndIcon(condition, isDaytime = true)
                 }
-                // Determinar condición del cielo con sensores (si hay radiación/humedad)
-                val condition = determineSkyConditionFromSensors(wd.sensors, isDaytime = true)
-                updateBackgroundAndIcon(condition, isDaytime = true)
             }
         }
 
@@ -180,14 +208,20 @@ class MainActivity : AppCompatActivity() {
     private fun fetchWeatherData() {
         Log.d("MainActivity", "fetchWeatherData called")
         swipeRefreshLayout.isRefreshing = true
-        viewModel.fetchWeatherStations()
         
-        // También cargar una estación por defecto si no hay ninguna seleccionada
-        if (weatherStations.isEmpty()) {
-            Log.d("MainActivity", "Loading default station data")
-            viewModel.fetchStationData("00213962") // stationName por defecto basado en API
-            viewModel.fetchTemperatureMaxMin("00213962")
-            viewModel.fetchWeatherDataLastDay("00213962")
+        // Solo actualizar datos de la estación actual, no resetear a la primera
+        if (weatherStations.isNotEmpty() && selectedStationPosition >= 0) {
+            val currentStation = weatherStations[selectedStationPosition]
+            val stationName = currentStation.id
+            Log.d("MainActivity", "Refreshing data for current station: ${currentStation.name} (${stationName})")
+            
+            // Actualizar datos de la estación actual
+            viewModel.fetchTemperatureMaxMin(stationName)
+            viewModel.fetchWeatherDataLastDay(stationName)
+            viewModel.fetchWidgetData(stationName)
+        } else {
+            // Fallback: cargar estaciones solo si no tenemos ninguna
+            viewModel.fetchWeatherStations()
         }
         
         swipeRefreshLayout.isRefreshing = false
@@ -205,22 +239,41 @@ class MainActivity : AppCompatActivity() {
             viewModel.fetchStationData(stationName)
             viewModel.fetchTemperatureMaxMin(stationName)
             viewModel.fetchWeatherDataLastDay(stationName)
+            viewModel.fetchWidgetData(stationName)
         }
     }
 
     private fun updateMainUI(station: WeatherStation) {
         // La nueva API no trae 'meta' en la estación; usamos lastCommunication y dejamos temp hasta que lleguen datos
-        lastComTextView.text = station.lastCommunication ?: "--/--/----"
+        lastComTextView.text = formatLastCommunication(station.lastCommunication)
         if (tempTextView.text.isNullOrBlank()) tempTextView.text = "-- °C"
     }
 
+    private fun formatLastCommunication(isoDate: String?): String {
+        if (isoDate == null) return "--/--/----"
+        
+        return try {
+            // Parsear fecha ISO: "2025-08-18T11:31:25.000Z"
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+            inputFormat.timeZone = TimeZone.getTimeZone("UTC")
+            val date = inputFormat.parse(isoDate)
+            
+            // Formatear para mostrar: "18/08/25 09:31"
+            val outputFormat = SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault())
+            outputFormat.timeZone = TimeZone.getDefault() // Hora local
+            outputFormat.format(date ?: Date())
+        } catch (e: Exception) {
+            // Si no se puede parsear, mostrar la fecha original recortada
+            isoDate.take(10) // Solo la parte de fecha
+        }
+    }
+
     private fun getUserDataFromSharedPreferences(): User? {
-        val userJson = sharedPref.getString("user_data", null) ?: return null
-        return Gson().fromJson(userJson, User::class.java)
+        return AuthManager.getCurrentUser()
     }
 
     private fun logout() {
-        sharedPref.edit().remove("auth_token").apply()
+        AuthManager.logout()
         startActivity(Intent(this, LoginActivity::class.java))
         finish()
     }
@@ -228,6 +281,25 @@ class MainActivity : AppCompatActivity() {
     private fun determineSkyConditionFromSensors(sensors: Sensors, isDaytime: Boolean): String {
         val rh = sensors.hcRelativeHumidity?.avg ?: 0.0
         val sr = sensors.solarRadiation?.avg ?: 0.0
+        return if (isDaytime) {
+            when {
+                sr > 500 -> "Despejado"
+                sr in 100.0..500.0 -> "Parcialmente Nublado"
+                sr <= 100 -> "Nublado"
+                else -> "Muy Nublado"
+            }
+        } else {
+            when {
+                rh < 80.0 && sr > 1000 -> "Noche Despejada"
+                rh >= 80.0 -> "Noche Parcialmente Nublada"
+                else -> "Noche Muy Nublada"
+            }
+        }
+    }
+
+    private fun determineSkyConditionFromWidget(widget: WidgetData, isDaytime: Boolean): String {
+        val rh = widget.relativeHumidity
+        val sr = widget.solarRadiation.toDouble()
         return if (isDaytime) {
             when {
                 sr > 500 -> "Despejado"

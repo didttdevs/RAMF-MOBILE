@@ -3,6 +3,7 @@ package com.example.rafapp.repository
 import com.example.rafapp.models.WrapperResponse
 import com.example.rafapp.models.WeatherStation
 import com.example.rafapp.models.WeatherStationsResponse
+import com.example.rafapp.models.WidgetData
 import com.example.rafapp.network.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -89,6 +90,23 @@ class WeatherRepository {
                     to = to
                 )
                 
+                if (response.isSuccessful && response.body() != null) {
+                    // La API devuelve List<WeatherData> directamente, lo envolvemos en WrapperResponse
+                    val wrappedResponse = WrapperResponse(data = response.body()!!)
+                    Result.Success(wrappedResponse)
+                } else {
+                    Result.Error(Exception("Error ${response.code()}: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Result.Error(e)
+            }
+        }
+    }
+    
+    suspend fun getWidgetData(stationName: String): Result<WidgetData> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = weatherService.getWidgetData(stationName)
                 if (response.isSuccessful && response.body() != null) {
                     Result.Success(response.body()!!)
                 } else {

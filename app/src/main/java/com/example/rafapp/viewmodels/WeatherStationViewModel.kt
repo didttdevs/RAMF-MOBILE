@@ -22,6 +22,9 @@ class WeatherStationViewModel : ViewModel() {
     // Alias para no romper observadores existentes en MainActivity
     val weatherDataLastDay: LiveData<List<WeatherData>> get() = _weatherDataLast
 
+    private val _widgetData = MutableLiveData<WidgetData>()
+    val widgetData: LiveData<WidgetData> = _widgetData
+
     private val _error = MutableLiveData<String>()
     val error: LiveData<String> = _error
 
@@ -98,6 +101,23 @@ class WeatherStationViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 _error.postValue("Error al obtener datos: ${e.message}")
+            }
+        }
+    }
+
+    fun fetchWidgetData(stationName: String) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.weatherStationService.getWidgetData(stationName)
+                if (response.isSuccessful) {
+                    response.body()?.let { widgetData ->
+                        _widgetData.postValue(widgetData)
+                    }
+                } else {
+                    _error.postValue("Error al obtener datos del widget: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                _error.postValue("Error al obtener datos del widget: ${e.message}")
             }
         }
     }

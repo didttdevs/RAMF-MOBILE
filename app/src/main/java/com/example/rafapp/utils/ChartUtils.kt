@@ -35,6 +35,30 @@ object ChartUtils {
         "windGust" to "m/s"
     )
     
+    val PARAMETER_RANGES = mapOf(
+        "temperatura" to Pair(-30f, 60f),      // Rango típico para estación meteorológica
+        "humedad" to Pair(0f, 100f),          // Porcentaje de humedad
+        "radiacion" to Pair(0f, 1500f),       // W/m² radiación solar máxima teórica
+        "precipitacion" to Pair(0f, 200f),    // mm/hora máximo extremo
+        "direccionViento" to Pair(0f, 360f),  // Grados brújula
+        "vientoVel" to Pair(0f, 50f),         // m/s velocidad viento máxima típica
+        "dewPoint" to Pair(-40f, 40f),        // °C punto de rocío
+        "airPressure" to Pair(950f, 1050f),   // hPa presión atmosférica típica
+        "windGust" to Pair(0f, 80f)           // m/s ráfagas máximas extremas
+    )
+    
+    val PARAMETER_DECIMAL_PLACES = mapOf(
+        "temperatura" to 1,
+        "humedad" to 0,           // % sin decimales
+        "radiacion" to 0,         // W/m² sin decimales
+        "precipitacion" to 2,     // mm con 2 decimales para precisión
+        "direccionViento" to 0,   // grados sin decimales
+        "vientoVel" to 1,
+        "dewPoint" to 1,
+        "airPressure" to 1,
+        "windGust" to 1
+    )
+    
     val PARAMETER_LABELS = mapOf(
         "temperatura" to "Temperatura del aire",
         "humedad" to "Humedad relativa",
@@ -54,40 +78,58 @@ object ChartUtils {
         isMultiParameter: Boolean = false
     ): LineDataSet {
         val color = PARAMETER_COLORS[parameter] ?: Color.rgb(33, 150, 243)
-        val label = getParameterLabel(parameter)
+        val label = getParameterLabelWithUnit(parameter)
         
         return LineDataSet(entries, label).apply {
-            // Color configuration
+            // Color configuration mejorada
             this.color = color
-            lineWidth = if (isMultiParameter) 2f else 2.5f
+            lineWidth = if (isMultiParameter) 2.5f else 3f
             
-            // Circle configuration
-            setDrawCircles(!isMultiParameter)
+            // Circle configuration para mejor visualización
+            setDrawCircles(entries.size <= 50) // Solo mostrar círculos si hay pocos datos
             setCircleColor(color)
-            circleRadius = if (isMultiParameter) 2f else 3f
+            circleRadius = 3f
             setDrawCircleHole(true)
-            circleHoleRadius = if (isMultiParameter) 1f else 1.5f
+            circleHoleRadius = 1.5f
             circleHoleColor = Color.WHITE
             
-            // Fill configuration
-            setDrawFilled(false)
+            // Fill configuration con gradiente sutil
+            setDrawFilled(true)
+            fillAlpha = 30
+            fillColor = color
             
             // Value configuration
             setDrawValues(false)
             valueTextColor = Color.DKGRAY
             valueTextSize = 9f
             
-            // Line style
+            // Line style más suave
             mode = LineDataSet.Mode.CUBIC_BEZIER
-            cubicIntensity = 0.15f
+            cubicIntensity = 0.2f
             
-            // Highlight configuration
+            // Highlight configuration mejorada
             isHighlightEnabled = true
-            setDrawHorizontalHighlightIndicator(false)
+            setDrawHorizontalHighlightIndicator(true)
             setDrawVerticalHighlightIndicator(true)
-            highlightLineWidth = 1f
-            highLightColor = color
+            highlightLineWidth = 1.5f
+            highLightColor = adjustColorBrightness(color, 0.8f)
+            
+            // Configuración adicional para suavizar líneas
+            setDrawIcons(false)
+            
+            // Configuración de transparencia para líneas superpuestas
+            if (isMultiParameter) {
+                fillAlpha = 20
+            }
         }
+    }
+    
+    private fun adjustColorBrightness(color: Int, factor: Float): Int {
+        val a = Color.alpha(color)
+        val r = Math.round(Color.red(color) * factor).coerceIn(0, 255)
+        val g = Math.round(Color.green(color) * factor).coerceIn(0, 255)
+        val b = Math.round(Color.blue(color) * factor).coerceIn(0, 255)
+        return Color.argb(a, r, g, b)
     }
     
     fun getParameterColor(parameter: String): Int {
@@ -99,6 +141,10 @@ object ChartUtils {
     }
     
     fun getParameterLabel(parameter: String): String {
+        return PARAMETER_LABELS[parameter] ?: parameter
+    }
+    
+    fun getParameterLabelWithUnit(parameter: String): String {
         val baseLabel = PARAMETER_LABELS[parameter] ?: parameter
         val unit = getParameterUnit(parameter)
         return if (unit.isNotEmpty()) "$baseLabel ($unit)" else baseLabel
@@ -143,5 +189,29 @@ object ChartUtils {
         return entries.filter { entry ->
             entry.x.isFinite() && entry.y.isFinite() && !entry.y.isNaN()
         }.sortedBy { it.x }
+    }
+    
+    fun getParameterRange(parameter: String): Pair<Float, Float>? {
+        return PARAMETER_RANGES[parameter]
+    }
+    
+    fun getParameterDecimalPlaces(parameter: String): Int {
+        return PARAMETER_DECIMAL_PLACES[parameter] ?: 1
+    }
+    
+    fun formatParameterValue(value: Float, parameter: String): String {
+        val decimals = getParameterDecimalPlaces(parameter)
+        val unit = getParameterUnit(parameter)
+        return String.format("%.${decimals}f %s", value, unit)
+    }
+    
+    fun calculateOptimalGranularity(timeRangeMillis: Long): Float {
+        return when {
+            timeRangeMillis <= 3600000L -> 300000f      // <= 1h: 5 min
+            timeRangeMillis <= 21600000L -> 1800000f    // <= 6h: 30 min
+            timeRangeMillis <= 86400000L -> 3600000f    // <= 1d: 1h
+            timeRangeMillis <= 604800000L -> 21600000f  // <= 1w: 6h
+            else -> 86400000f                           // > 1w: 1d
+        }
     }
 }

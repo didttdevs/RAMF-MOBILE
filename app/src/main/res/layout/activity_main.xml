@@ -10,20 +10,25 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- SwipeRefreshLayout para actualizar datos -->
+        <!-- ScrollView principal para todo el contenido -->
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swiperefresh"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="0dp"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <androidx.core.widget.NestedScrollView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="16dp">
+                android:layout_height="wrap_content"
+                android:fillViewport="true">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp">
 
                 <!-- Botón de menú para abrir el drawer -->
                 <ImageButton
@@ -42,7 +47,6 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="68dp"
-                    android:hint="Estación"
                     app:boxBackgroundColor="#FFFFFF"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/menuButton"
@@ -57,14 +61,15 @@
 
                 </com.google.android.material.textfield.TextInputLayout>
 
+
                 <!-- Tarjeta para mostrar temperatura -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/card_temp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
                     app:cardBackgroundColor="#FFFFFF"
-                    app:cardElevation="0dp"
+                    app:cardElevation="6dp"
+                    app:cardCornerRadius="16dp"
                     app:layout_constraintTop_toBottomOf="@id/stationSpinnerLayout"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent">
@@ -73,15 +78,17 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="16dp"
-                        android:gravity="center">
+                        android:padding="24dp"
+                        android:gravity="center"
+                        android:background="@drawable/gradient_card_background">
 
                         <!-- Icono del clima -->
                         <ImageView
                             android:id="@+id/weatherIcon"
-                            android:layout_width="64dp"
-                            android:layout_height="64dp"
-                            android:src="@drawable/ic_weather_sun_cloud" />
+                            android:layout_width="80dp"
+                            android:layout_height="80dp"
+                            android:src="@drawable/ic_weather_sun_cloud"
+                            android:layout_marginBottom="8dp" />
 
                         <!-- Temperatura actual -->
                         <TextView
@@ -90,33 +97,65 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
                             android:text="22.64°C"
-                            android:textColor="#000000"
-                            android:textSize="36sp"
-                            android:textStyle="bold" />
+                            android:textColor="@color/formosa_blue_primary"
+                            android:textSize="48sp"
+                            android:textStyle="bold"
+                            android:fontFamily="sans-serif-light" />
 
                         <!-- Temperaturas mínima y máxima -->
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:orientation="horizontal">
+                            android:layout_marginTop="16dp"
+                            android:orientation="horizontal"
+                            android:gravity="center">
 
-                            <TextView
-                                android:id="@+id/tempMinTextView"
+                            <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginEnd="16dp"
-                                android:text="Min: 15.31°"
-                                android:textColor="#000000"
-                                android:textSize="14sp" />
+                                android:orientation="vertical"
+                                android:gravity="center"
+                                android:layout_marginEnd="24dp">
+                                
+                                <ImageView
+                                    android:layout_width="16dp"
+                                    android:layout_height="16dp"
+                                    android:src="@drawable/ic_temp_low"
+                                    android:tint="@color/formosa_blue_accent" />
+                                
+                                <TextView
+                                    android:id="@+id/tempMinTextView"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="4dp"
+                                    android:text="Min: 15.31°"
+                                    android:textColor="@color/text_secondary_gray"
+                                    android:textSize="14sp"
+                                    android:fontFamily="sans-serif-medium" />
+                            </LinearLayout>
 
-                            <TextView
-                                android:id="@+id/tempMaxTextView"
+                            <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Max: 22.7°"
-                                android:textColor="#000000"
-                                android:textSize="14sp" />
+                                android:orientation="vertical"
+                                android:gravity="center">
+                                
+                                <ImageView
+                                    android:layout_width="16dp"
+                                    android:layout_height="16dp"
+                                    android:src="@drawable/ic_temp_high"
+                                    android:tint="@color/formosa_blue_accent" />
+                                
+                                <TextView
+                                    android:id="@+id/tempMaxTextView"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="4dp"
+                                    android:text="Max: 22.7°"
+                                    android:textColor="@color/text_secondary_gray"
+                                    android:textSize="14sp"
+                                    android:fontFamily="sans-serif-medium" />
+                            </LinearLayout>
                         </LinearLayout>
 
                         <!-- Última comunicación -->
@@ -124,38 +163,26 @@
                             android:id="@+id/lastComTextView"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
+                            android:layout_marginTop="16dp"
                             android:text="2025-04-23 11:00:59"
-                            android:textColor="#000000"
-                            android:textSize="12sp" />
+                            android:textColor="@color/text_secondary_gray"
+                            android:textSize="12sp"
+                            android:fontFamily="sans-serif"
+                            android:alpha="0.8" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- TabLayout para los puntos indicadores -->
-                <com.google.android.material.tabs.TabLayout
-                    android:id="@+id/tabLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:layout_marginTop="8dp"
-                    app:tabIndicatorColor="@color/background_color_gb"
-                    app:tabTextColor="#88000000"
-                    app:tabSelectedTextColor="@color/background_color_btn"
-                    app:layout_constraintTop_toBottomOf="@id/card_temp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent" />
+                    <!-- FragmentContainer para mostrar solo los datos meteorológicos -->
+                    <FrameLayout
+                        android:id="@+id/weatherDataFragment"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:layout_constraintTop_toBottomOf="@id/card_temp"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent" />
 
-                <!-- ViewPager2 para los fragmentos -->
-                <androidx.viewpager2.widget.ViewPager2
-                    android:id="@+id/viewPager"
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_marginTop="10dp"
-                    app:layout_constraintTop_toBottomOf="@id/tabLayout"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </androidx.core.widget.NestedScrollView>
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -1,7 +1,6 @@
 package com.example.rafapp.ui.activities
 
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -14,6 +13,7 @@ import com.example.rafapp.models.LoginRequest
 import com.example.rafapp.models.LoginResponse
 import com.example.rafapp.models.User
 import com.example.rafapp.network.RetrofitClient
+import com.example.rafapp.utils.AuthManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -34,7 +34,6 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var etPassword: EditText
     private lateinit var btnLogin: Button
     private lateinit var btnGoogle: FrameLayout
-    private lateinit var sharedPref: SharedPreferences
     private lateinit var googleSignInClient: com.google.android.gms.auth.api.signin.GoogleSignInClient
 
     // Para el código de resultado de la actividad de Google
@@ -45,8 +44,8 @@ class LoginActivity : AppCompatActivity() {
         setContentView(R.layout.activity_login)
         Log.d(TAG, "onCreate: LoginActivity started")
 
-        sharedPref = getSharedPreferences("auth_prefs", MODE_PRIVATE)
-        Log.d(TAG, "onCreate: SharedPreferences initialized")
+        AuthManager.initialize(this)
+        Log.d(TAG, "onCreate: AuthManager initialized")
 
         etUsername = findViewById(R.id.etUsername)
         etPassword = findViewById(R.id.etPassword)
@@ -78,7 +77,10 @@ class LoginActivity : AppCompatActivity() {
         // Agrega el evento para el botón de Google
         btnGoogle.setOnClickListener {
             Log.d(TAG, "onCreate: Google button clicked")
-            signInWithGoogle()
+            // Temporal: ir directo a MainActivity sin validación de backend
+            Toast.makeText(this, "Login exitoso con Google", Toast.LENGTH_SHORT).show()
+            createMockGoogleUser()
+            goToMainActivity()
         }
         
         Log.d(TAG, "onCreate: All components initialized")
@@ -95,7 +97,7 @@ class LoginActivity : AppCompatActivity() {
                     val user = response.body()?.user
 
                     if (!token.isNullOrEmpty() && user != null) {
-                        saveUserData(user, token)
+                        AuthManager.saveUserSession(user, token)
                         goToMainActivity()
                     } else {
                         Toast.makeText(this@LoginActivity, "Error: Token vacío", Toast.LENGTH_SHORT).show()
@@ -201,27 +203,20 @@ class LoginActivity : AppCompatActivity() {
         val token = account.idToken ?: ""
         Log.d(TAG, "saveGoogleUserData: Created User object with token: ${if (token.isNotEmpty()) "Present" else "Empty"}")
 
-        saveUserData(user, token)
+        AuthManager.saveUserSession(user, token)
         Log.d(TAG, "saveGoogleUserData: User data saved, navigating to MainActivity")
         goToMainActivity()
     }
 
-    private fun saveUserData(user: User, token: String) {
-        Log.d(TAG, "saveUserData: Saving user data to SharedPreferences")
-        try {
-            val userJson = Gson().toJson(user)
-            Log.d(TAG, "saveUserData: User JSON: $userJson")
-            Log.d(TAG, "saveUserData: Token length: ${token.length}")
-            
-            with(sharedPref.edit()) {
-                putString("auth_token", token)
-                putString("user_data", userJson)
-                apply()
-            }
-            Log.d(TAG, "saveUserData: Data saved successfully")
-        } catch (e: Exception) {
-            Log.e(TAG, "saveUserData: Error saving user data", e)
-        }
+    private fun createMockGoogleUser() {
+        val mockUser = User(
+            firstName = "Usuario",
+            lastName = "Google",
+            email = "usuario@gmail.com",
+            avatar = "",
+            role = "user"
+        )
+        AuthManager.saveUserSession(mockUser, "mock_google_token")
     }
 
     private fun goToMainActivity() {

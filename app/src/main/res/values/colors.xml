@@ -79,4 +79,12 @@
     <color name="warning">#DD6B20</color>
     <color name="text_primary_modern">#1A202C</color>
     
+    <!-- Chart Colors (FieldClimate Style) -->
+    <color name="chart_background">#FFFFFF</color>
+    <color name="chart_text_color">#424242</color>
+    <color name="chart_grid_color">#E0E0E0</color>
+    <color name="chart_axis_color">#9E9E9E</color>
+    <color name="chart_zero_line_color">#757575</color>
+    <color name="chart_no_data_color">#9E9E9E</color>
+    
 </resources>
