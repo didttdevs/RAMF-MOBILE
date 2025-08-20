@@ -108,8 +108,48 @@ class MainActivity : AppCompatActivity() {
 
         navigationView.setNavigationItemSelectedListener { item: MenuItem ->
             when (item.itemId) {
+                R.id.nav_home -> {
+                    // Ya estamos en la pantalla principal, cerrar drawer
+                    drawerLayout.closeDrawer(GravityCompat.START)
+                    true
+                }
                 R.id.nav_charts -> {
                     openChartsActivity()
+                    drawerLayout.closeDrawer(GravityCompat.START)
+                    true
+                }
+                R.id.nav_soil_moisture -> {
+                    // TODO: Implementar Soil Moisture
+                    Toast.makeText(this, "Soil Moisture - En desarrollo", Toast.LENGTH_SHORT).show()
+                    drawerLayout.closeDrawer(GravityCompat.START)
+                    true
+                }
+                R.id.nav_map_view -> {
+                    openMapActivity()
+                    drawerLayout.closeDrawer(GravityCompat.START)
+                    true
+                }
+                R.id.nav_station_overview -> {
+                    // TODO: Implementar Station Overview
+                    Toast.makeText(this, "Station Overview - En desarrollo", Toast.LENGTH_SHORT).show()
+                    drawerLayout.closeDrawer(GravityCompat.START)
+                    true
+                }
+                R.id.nav_device_management -> {
+                    // TODO: Implementar Device Management
+                    Toast.makeText(this, "Device Management - En desarrollo", Toast.LENGTH_SHORT).show()
+                    drawerLayout.closeDrawer(GravityCompat.START)
+                    true
+                }
+                R.id.nav_profile -> {
+                    val intent = Intent(this, UserProfileActivity::class.java)
+                    startActivity(intent)
+                    drawerLayout.closeDrawer(GravityCompat.START)
+                    true
+                }
+                R.id.nav_settings -> {
+                    // TODO: Implementar configuración
+                    Toast.makeText(this, "Configuración - En desarrollo", Toast.LENGTH_SHORT).show()
                     drawerLayout.closeDrawer(GravityCompat.START)
                     true
                 }
@@ -138,6 +178,11 @@ class MainActivity : AppCompatActivity() {
             }
             startActivity(intent)
         }
+    }
+
+    private fun openMapActivity() {
+        val intent = Intent(this, MapActivity::class.java)
+        startActivity(intent)
     }
 
     private fun setupObservers() {

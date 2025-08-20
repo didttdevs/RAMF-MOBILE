@@ -6,6 +6,7 @@ import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.rafapp.R
@@ -34,6 +35,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var etPassword: EditText
     private lateinit var btnLogin: Button
     private lateinit var btnGoogle: FrameLayout
+    private lateinit var tvRegisterLink: TextView
     private lateinit var googleSignInClient: com.google.android.gms.auth.api.signin.GoogleSignInClient
 
     // Para el código de resultado de la actividad de Google
@@ -51,6 +53,7 @@ class LoginActivity : AppCompatActivity() {
         etPassword = findViewById(R.id.etPassword)
         btnLogin = findViewById(R.id.btnLogin)
         btnGoogle = findViewById(R.id.btnGoogle)
+        tvRegisterLink = findViewById(R.id.tvRegisterLink)
 
         // Configura el cliente de Google Sign-In
         Log.d(TAG, "onCreate: Configuring Google Sign-In")
@@ -81,6 +84,11 @@ class LoginActivity : AppCompatActivity() {
             Toast.makeText(this, "Login exitoso con Google", Toast.LENGTH_SHORT).show()
             createMockGoogleUser()
             goToMainActivity()
+        }
+
+        // Agrega el evento para ir a la pantalla de registro
+        tvRegisterLink.setOnClickListener {
+            goToRegisterActivity()
         }
         
         Log.d(TAG, "onCreate: All components initialized")
@@ -229,5 +237,11 @@ class LoginActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.e(TAG, "goToMainActivity: Error navigating to MainActivity", e)
         }
+    }
+
+    private fun goToRegisterActivity() {
+        Log.d(TAG, "goToRegisterActivity: Navigating to RegisterActivity")
+        val intent = Intent(this, RegisterActivity::class.java)
+        startActivity(intent)
     }
 }

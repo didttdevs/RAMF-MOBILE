@@ -48,6 +48,15 @@
             android:name=".ui.activities.LoginActivity"
             android:exported="false" />
         <activity
+            android:name=".ui.activities.RegisterActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.activities.MapActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.activities.UserProfileActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.activities.MainActivity"
             android:exported="false" />
         <activity
