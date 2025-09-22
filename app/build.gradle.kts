@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.rafapp"
+    namespace = "com.cocido.ramfapp"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.rafapp"
+        applicationId = "com.cocido.ramfapp"
         minSdk = 27
         targetSdk = 34
         versionCode = 1
@@ -128,6 +128,8 @@ dependencies {
     
     // Google Services
     implementation(libs.google.signin)
+    implementation(libs.google.maps)
+    implementation(libs.google.location)
     
     // Testing
     testImplementation(libs.junit)

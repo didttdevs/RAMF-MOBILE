@@ -34,7 +34,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Map View"
+            android:text="Mapa"
             android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -70,7 +70,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Air temperature"
+            android:text="Temperatura del aire"
             android:textColor="@color/white"
             android:textSize="16sp" />
 
@@ -94,61 +94,12 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/filterContainer">
 
-        <!-- Placeholder content -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="32dp">
-
-            <ImageView
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:layout_marginBottom="16dp"
-                android:src="@drawable/ic_map"
-                app:tint="@color/white" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:gravity="center"
-                android:text="Mapa de Estaciones"
-                android:textColor="@color/white"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:alpha="0.7"
-                android:gravity="center"
-                android:text="Visualización de datos meteorológicos\nen tiempo real por ubicación"
-                android:textColor="@color/white"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:alpha="0.5"
-                android:gravity="center"
-                android:text="🚧 En desarrollo 🚧"
-                android:textColor="@color/white"
-                android:textSize="12sp"
-                android:textStyle="italic" />
-
-        </LinearLayout>
-
-        <!-- TODO: Aquí irá el Google Maps fragment cuando se configure -->
-        <!-- 
+        <!-- Google Maps Fragment -->
         <fragment
             android:id="@+id/mapFragment"
             android:name="com.google.android.gms.maps.SupportMapFragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
-        -->
 
     </FrameLayout>
 

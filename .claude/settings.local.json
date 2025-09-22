@@ -12,7 +12,9 @@
       "Bash(.gradlew assembleDebug)",
       "Bash(gradlew:*)",
       "Bash(adb install:*)",
-      "Bash(del \"app\\src\\main\\java\\com\\example\\rafapp\\ui\\fragments\\GraphFragment.kt.backup\")"
+      "Bash(del \"app\\src\\main\\java\\com\\example\\rafapp\\ui\\fragments\\GraphFragment.kt.backup\")",
+      "Bash(find:*)",
+      "Bash(sed:*)"
     ],
     "defaultMode": "acceptEdits"
   }
