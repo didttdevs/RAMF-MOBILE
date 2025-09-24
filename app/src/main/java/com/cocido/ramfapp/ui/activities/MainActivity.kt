@@ -1,81 +1,120 @@
 package com.cocido.ramfapp.ui.activities
 
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.widget.*
-import com.google.android.material.textfield.MaterialAutoCompleteTextView
-import com.google.android.material.button.MaterialButton
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.lifecycleScope
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.bumptech.glide.Glide
 import com.cocido.ramfapp.R
-import com.cocido.ramfapp.models.Sensors
-import com.cocido.ramfapp.models.User
-import com.cocido.ramfapp.models.WeatherData
-import com.cocido.ramfapp.models.WeatherStation
-import com.cocido.ramfapp.models.WidgetData
-import com.cocido.ramfapp.viewmodels.WeatherStationViewModel
+import com.cocido.ramfapp.common.Constants
+import com.cocido.ramfapp.models.*
 import com.cocido.ramfapp.ui.activities.FullScreenChartsActivity
+import com.cocido.ramfapp.utils.AuthManager
+import com.cocido.ramfapp.utils.SecurityLogger
+import com.cocido.ramfapp.viewmodels.WeatherStationViewModel
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.navigation.NavigationView
-import com.google.gson.Gson
-import java.util.Locale
-import java.util.TimeZone
-import java.util.Date
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import com.cocido.ramfapp.utils.AuthManager
+import java.util.*
 
+/**
+ * Professional MainActivity implementing Clean Architecture principles
+ * with proper state management, security logging, and error handling
+ */
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var stationSpinner: MaterialAutoCompleteTextView
-    private lateinit var sharedPref: SharedPreferences
-    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
+    private val TAG = "MainActivity"
+    private val securityLogger = SecurityLogger()
+    private val viewModel: WeatherStationViewModel by viewModels()
 
+    // UI Components
+    private lateinit var stationSpinner: MaterialAutoCompleteTextView
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var tempTextView: TextView
     private lateinit var lastComTextView: TextView
     private lateinit var tempMinTextView: TextView
     private lateinit var tempMaxTextView: TextView
-
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var navigationView: NavigationView
-
     private lateinit var navHeaderProfileImage: ImageView
     private lateinit var navHeaderName: TextView
     private lateinit var navHeaderRoleUser: TextView
 
-    private val viewModel: WeatherStationViewModel by viewModels()
-    private var weatherStations: List<WeatherStation> = listOf()
+    // State Management
+    private var weatherStations: List<WeatherStation> = emptyList()
     private var selectedStationPosition = 0
+    private var isInitialized = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        AuthManager.initialize(this)
-        sharedPref = getSharedPreferences("auth_prefs", MODE_PRIVATE)
+        // Security logging for app lifecycle
+        securityLogger.logAppSecurityEvent("start", this)
 
-        if (!AuthManager.isUserLoggedIn()) {
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish()
-            return
+        // Initialize authentication and validate user session
+        if (!initializeAuthentication()) {
+            return // Early exit if authentication fails
         }
 
+        // Setup UI and theme
+        setupUI()
+
+        // Initialize components
+        initializeComponents()
+
+        // Setup navigation
+        setupNavigation()
+
+        // Setup observers for reactive UI updates
+        setupObservers()
+
+        // Load initial data
+        loadInitialData()
+
+        isInitialized = true
+        Log.d(TAG, "MainActivity initialized successfully")
+    }
+
+    private fun initializeAuthentication(): Boolean {
+        AuthManager.initialize(this)
+
+        return if (!AuthManager.isUserLoggedIn()) {
+            Log.d(TAG, "User not authenticated, redirecting to login")
+            securityLogger.logAuthenticationEvent("session_expired", false)
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+            false
+        } else {
+            Log.d(TAG, "User authenticated successfully")
+            securityLogger.logAuthenticationEvent("session_valid", true)
+            true
+        }
+    }
+
+    private fun setupUI() {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         setContentView(R.layout.activity_main)
 
-        drawerLayout = findViewById(R.id.drawerLayout)
-        navigationView = findViewById(R.id.nav_view)
-
+        // Hide system bars for immersive experience
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
         actionBar?.hide()
+    }
 
+    private fun initializeComponents() {
+        // Initialize UI components
+        drawerLayout = findViewById(R.id.drawerLayout)
+        navigationView = findViewById(R.id.nav_view)
         stationSpinner = findViewById(R.id.stationSpinner)
         swipeRefreshLayout = findViewById(R.id.swiperefresh)
         tempTextView = findViewById(R.id.tempTextView)
@@ -83,88 +122,146 @@ class MainActivity : AppCompatActivity() {
         tempMinTextView = findViewById(R.id.tempMinTextView)
         tempMaxTextView = findViewById(R.id.tempMaxTextView)
 
-        // Configurar fragment de datos meteorológicos
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.weatherDataFragment, com.cocido.ramfapp.ui.fragments.WeatherInfoFragment())
-            .commit()
+        // Initialize UI with default values
+        initializeUIWithDefaults()
 
-        // Los gráficos ahora se abren desde el menú lateral
+        // Setup weather fragment
+        if (supportFragmentManager.findFragmentById(R.id.weatherDataFragment) == null) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.weatherDataFragment, com.cocido.ramfapp.ui.fragments.WeatherInfoFragment())
+                .commit()
+        }
 
+        // Setup navigation header
+        setupNavigationHeader()
+
+        // Setup refresh listener with debouncing
+        setupRefreshListener()
+    }
+
+    private fun setupNavigationHeader() {
         val headerView = navigationView.getHeaderView(0)
         navHeaderProfileImage = headerView.findViewById(R.id.navHeaderProfileImage)
         navHeaderName = headerView.findViewById(R.id.navHeaderUsername)
         navHeaderRoleUser = headerView.findViewById(R.id.navHeaderDetailsUser)
 
-        val user = getUserDataFromSharedPreferences()
-        user?.let {
-            navHeaderName.text = "${it.firstName} ${it.lastName}"
-            navHeaderRoleUser.text = it.role
-            Glide.with(this).load(it.avatar).circleCrop().into(navHeaderProfileImage)
-        }
+        // Load user data safely
+        AuthManager.getCurrentUser()?.let { user ->
+            navHeaderName.text = user.getFullName()
+            navHeaderRoleUser.text = user.role.replaceFirstChar { it.uppercase() }
 
+            // Load avatar with error handling
+            if (!user.avatar.isNullOrBlank()) {
+                try {
+                    Glide.with(this)
+                        .load(user.avatar)
+                        .circleCrop()
+                        .error(R.drawable.ic_weather_sunny) // Fallback image
+                        .into(navHeaderProfileImage)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Error loading user avatar", e)
+                }
+            }
+
+            securityLogger.logUserSecurityEvent("profile_loaded", "navigation_header")
+        }
+    }
+
+    private fun setupRefreshListener() {
+        var lastRefreshTime = 0L
+
+        swipeRefreshLayout.setOnRefreshListener {
+            val currentTime = System.currentTimeMillis()
+
+            // Debounce refresh requests (prevent spam)
+            if (currentTime - lastRefreshTime > Constants.UI.DEBOUNCE_DELAY) {
+                lastRefreshTime = currentTime
+                refreshData()
+                securityLogger.logUserSecurityEvent("refresh_requested", "main_screen")
+            } else {
+                swipeRefreshLayout.isRefreshing = false
+                Log.d(TAG, "Refresh request debounced")
+            }
+        }
+    }
+
+    private fun setupNavigation() {
         findViewById<ImageButton>(R.id.menuButton).setOnClickListener {
             drawerLayout.openDrawer(GravityCompat.START)
+            securityLogger.logUserSecurityEvent("menu_opened", "main_screen")
         }
 
         navigationView.setNavigationItemSelectedListener { item: MenuItem ->
-            when (item.itemId) {
-                R.id.nav_home -> {
-                    // Ya estamos en la pantalla principal, cerrar drawer
-                    drawerLayout.closeDrawer(GravityCompat.START)
-                    true
-                }
-                R.id.nav_charts -> {
-                    openChartsActivity()
-                    drawerLayout.closeDrawer(GravityCompat.START)
-                    true
-                }
-                R.id.nav_soil_moisture -> {
-                    // TODO: Implementar Soil Moisture
-                    Toast.makeText(this, "Soil Moisture - En desarrollo", Toast.LENGTH_SHORT).show()
-                    drawerLayout.closeDrawer(GravityCompat.START)
-                    true
-                }
-                R.id.nav_map_view -> {
-                    openMapActivity()
-                    drawerLayout.closeDrawer(GravityCompat.START)
-                    true
-                }
-                R.id.nav_station_overview -> {
-                    // TODO: Implementar Station Overview
-                    Toast.makeText(this, "Station Overview - En desarrollo", Toast.LENGTH_SHORT).show()
-                    drawerLayout.closeDrawer(GravityCompat.START)
-                    true
-                }
-                R.id.nav_device_management -> {
-                    // TODO: Implementar Device Management
-                    Toast.makeText(this, "Device Management - En desarrollo", Toast.LENGTH_SHORT).show()
-                    drawerLayout.closeDrawer(GravityCompat.START)
-                    true
-                }
-                R.id.nav_profile -> {
+            handleNavigationItemSelected(item)
+        }
+    }
+
+    private fun handleNavigationItemSelected(item: MenuItem): Boolean {
+        val itemName = resources.getResourceEntryName(item.itemId)
+        securityLogger.logUserSecurityEvent("navigation_item_selected", "navigation_drawer", additionalInfo = itemName)
+
+        return when (item.itemId) {
+            R.id.nav_home -> {
+                drawerLayout.closeDrawer(GravityCompat.START)
+                true
+            }
+            R.id.nav_charts -> {
+                openChartsActivity()
+                drawerLayout.closeDrawer(GravityCompat.START)
+                true
+            }
+            R.id.nav_soil_moisture -> {
+                showFeatureInDevelopment("Soil Moisture")
+                drawerLayout.closeDrawer(GravityCompat.START)
+                true
+            }
+            R.id.nav_map_view -> {
+                openMapActivity()
+                drawerLayout.closeDrawer(GravityCompat.START)
+                true
+            }
+            R.id.nav_station_overview -> {
+                showFeatureInDevelopment("Station Overview")
+                drawerLayout.closeDrawer(GravityCompat.START)
+                true
+            }
+            R.id.nav_device_management -> {
+                showFeatureInDevelopment("Device Management")
+                drawerLayout.closeDrawer(GravityCompat.START)
+                true
+            }
+            R.id.nav_profile -> {
+                try {
                     val intent = Intent(this, UserProfileActivity::class.java)
                     startActivity(intent)
-                    drawerLayout.closeDrawer(GravityCompat.START)
-                    true
+                } catch (e: Exception) {
+                    Log.w(TAG, "UserProfileActivity not found", e)
+                    showFeatureInDevelopment("Profile")
                 }
-                R.id.nav_settings -> {
-                    // TODO: Implementar configuración
-                    Toast.makeText(this, "Configuración - En desarrollo", Toast.LENGTH_SHORT).show()
-                    drawerLayout.closeDrawer(GravityCompat.START)
-                    true
-                }
-                R.id.nav_logout -> {
-                    logout()
-                    true
-                }
-                else -> false
+                drawerLayout.closeDrawer(GravityCompat.START)
+                true
             }
+            R.id.nav_settings -> {
+                showFeatureInDevelopment("Configuración")
+                drawerLayout.closeDrawer(GravityCompat.START)
+                true
+            }
+            R.id.nav_logout -> {
+                performLogout()
+                true
+            }
+            else -> false
         }
+    }
 
-        swipeRefreshLayout.setOnRefreshListener { fetchWeatherData() }
+    private fun showFeatureInDevelopment(featureName: String) {
+        Toast.makeText(this, "$featureName - En desarrollo", Toast.LENGTH_SHORT).show()
+        Log.d(TAG, "Feature in development accessed: $featureName")
+    }
 
-        setupObservers()
-        fetchWeatherData()
+    private fun loadInitialData() {
+        Log.d(TAG, "Loading initial data")
+        viewModel.fetchWeatherStations()
     }
     
     private fun openChartsActivity() {
@@ -186,112 +283,272 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupObservers() {
-        viewModel.weatherStations.observe(this) { stations ->
-            Log.d("MainActivity", "weatherStations observer called with ${stations.size} stations")
-            if (stations.isNotEmpty()) {
-                weatherStations = stations
-                setupStationSpinner(weatherStations)
-                
-                // Cargar datos de la primera estación por defecto
-                val firstStation = stations[0]
-                val stationName = firstStation.id // En la nueva API, id es el stationName
-                Log.d("MainActivity", "Loading data for first station: ${firstStation.name} (${stationName})")
-                // No llamar fetchStationData porque el ViewModel ya lo hace automáticamente
-                viewModel.fetchTemperatureMaxMin(stationName)
-                viewModel.fetchWeatherDataLastDay(stationName)
-                viewModel.fetchWidgetData(stationName)
-                stationSpinner.setText(firstStation.name ?: "Desconocida", false)
-            } else {
-                Log.e("MainActivity", "No weather stations received")
+        Log.d(TAG, "Setting up observers")
+
+        // Observe loading state
+        lifecycleScope.launch {
+            viewModel.uiState.collect { uiState ->
+                updateLoadingState(uiState.isLoading)
+                uiState.error?.let { error -> handleError(error) }
             }
         }
 
-        viewModel.selectedStationData.observe(this) { station ->
-            updateMainUI(station)
-            // El WeatherInfoFragment ya observa al ViewModel y se actualiza solo.
-        }
-
-        viewModel.temperatureMaxMin.observe(this) { tempMaxMin ->
-            tempMinTextView.text = "Min: ${tempMaxMin.min ?: "--"}°"
-            tempMaxTextView.text = "Max: ${tempMaxMin.max ?: "--"}°"
-        }
-
-        // Observamos los datos del widget para temperatura actual
-        viewModel.widgetData.observe(this) { widgetData ->
-            widgetData?.let { widget ->
-                // Temperatura actual desde el widget
-                tempTextView.text = String.format(Locale.getDefault(), "%.1f °C", widget.temperature)
-                
-                // Determinar condición del cielo con los datos del widget
-                val condition = determineSkyConditionFromWidget(widget, isDaytime = true)
-                updateBackgroundAndIcon(condition, isDaytime = true)
-            }
-        }
-
-        // Fallback: Usamos esta lista para refrescar temperatura actual y el ícono de estado del cielo
-        viewModel.weatherDataLastDay.observe(this) { weatherDataList ->
-            val latest = weatherDataList.firstOrNull()
-            latest?.let { wd ->
-                // Solo usar como fallback si no tenemos datos del widget
-                if (tempTextView.text.isNullOrBlank() || tempTextView.text == "-- °C") {
-                    wd.sensors.hcAirTemperature?.avg?.let { t ->
-                        tempTextView.text = String.format(Locale.getDefault(), "%.1f °C", t)
+        // Observe weather stations
+        lifecycleScope.launch {
+            viewModel.weatherStations.collect { stationsState ->
+                when {
+                    stationsState.isLoading -> {
+                        Log.d(TAG, "Loading weather stations...")
                     }
-                    // Determinar condición del cielo con sensores (si hay radiación/humedad)
-                    val condition = determineSkyConditionFromSensors(wd.sensors, isDaytime = true)
-                    updateBackgroundAndIcon(condition, isDaytime = true)
+                    stationsState.hasError -> {
+                        Log.e(TAG, "Error loading stations: ${stationsState.error}")
+                        handleStationLoadingError(stationsState.error!!)
+                    }
+                    stationsState.hasData -> {
+                        val stations = stationsState.data!!
+                        Log.d(TAG, "Stations loaded: ${stations.size} stations")
+                        handleStationsLoaded(stations)
+                    }
                 }
             }
         }
 
-        viewModel.error.observe(this) { errorMessage ->
-            Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
-            Log.e("MainActivity", "Error: $errorMessage")
+        // Observe selected station
+        lifecycleScope.launch {
+            viewModel.selectedStation.collect { station ->
+                station?.let { updateSelectedStationUI(it) }
+            }
+        }
+
+        // Observe widget data
+        lifecycleScope.launch {
+            viewModel.widgetData.collect { widgetState ->
+                when {
+                    widgetState.hasData -> {
+                        val widget = widgetState.data!!
+                        updateWeatherDisplay(widget)
+                        Log.d(TAG, "Widget data updated for temperature: ${widget.getFormattedTemperature()}")
+                    }
+                    widgetState.hasError -> {
+                        Log.e(TAG, "Widget data error: ${widgetState.error}")
+                        displayFallbackWeatherData()
+                    }
+                }
+            }
+        }
+
+        // Observe historical data for fallback display
+        lifecycleScope.launch {
+            viewModel.historicalData.collect { historicalState ->
+                if (historicalState.hasData && shouldUseFallbackData()) {
+                    val latestData = historicalState.data!!.firstOrNull()
+                    latestData?.let { updateFallbackDisplay(it) }
+                }
+            }
+        }
+
+        // Legacy LiveData support for existing components
+        setupLegacyObservers()
+    }
+
+    private fun setupLegacyObservers() {
+        // Support for existing temperature max/min display
+        viewModel.temperatureMaxMin.observe(this) { tempExtremes ->
+            tempExtremes?.let {
+                tempMinTextView.text = "Min: ${String.format("%.1f", it.min)}°"
+                tempMaxTextView.text = "Max: ${String.format("%.1f", it.max)}°"
+            }
+        }
+
+        // Support for loading state
+        viewModel.isLoading.observe(this) { isLoading ->
+            updateLoadingState(isLoading)
+        }
+
+        // Support for error display
+        viewModel.error.observe(this) { error ->
+            error?.let { handleError(it) }
         }
     }
 
-    private fun fetchWeatherData() {
-        Log.d("MainActivity", "fetchWeatherData called")
-        swipeRefreshLayout.isRefreshing = true
+    private fun handleStationsLoaded(stations: List<WeatherStation>) {
+        weatherStations = stations
+        setupStationSpinner(stations)
+
+        // Auto-select first station if none selected and stations available
+        if (selectedStationPosition == 0 && stations.isNotEmpty()) {
+            val firstStation = stations[0]
+            selectStation(firstStation, 0)
+            Log.d(TAG, "Auto-selected first station: ${firstStation.name}")
+        }
+    }
+
+    private fun selectStation(station: WeatherStation, position: Int) {
+        selectedStationPosition = position
+        stationSpinner.setText(station.name ?: "Desconocida", false)
+
+        // Update ViewModel with selected station
+        viewModel.selectStation(station.id)
+
+        // Show loading indicator
+        showLoadingIndicator("Cargando datos de ${station.name}...")
+
+        Log.d(TAG, "Station selected: ${station.name} (ID: ${station.id})")
+        securityLogger.logUserSecurityEvent("station_selected", "main_screen", additionalInfo = station.id)
+    }
+
+    private fun updateSelectedStationUI(station: WeatherStation) {
+        updateMainUI(station)
+    }
+
+    private fun updateWeatherDisplay(widget: WidgetData) {
+        // Update temperature display
+        tempTextView.text = widget.getFormattedTemperature()
+
+        // Update weather condition icon
+        val condition = determineSkyConditionFromWidget(widget, isDaytime = true)
+        updateBackgroundAndIcon(condition, isDaytime = true)
+
+        // Update timestamp
+        updateLastUpdateTime(widget.timestamp)
+
+        // Log detailed widget data for debugging
+        logWidgetDataDetails(widget)
+    }
+
+    private fun logWidgetDataDetails(widget: WidgetData) {
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, "Widget data details:")
+            Log.d(TAG, "  Temperature: ${widget.getFormattedTemperature()}")
+            Log.d(TAG, "  Humidity: ${widget.getFormattedHumidity()}")
+            Log.d(TAG, "  Wind: ${widget.getFormattedWindSpeed()} ${widget.getWindDirectionText()}")
+            Log.d(TAG, "  Pressure: ${widget.getFormattedPressure()}")
+        }
+    }
+
+    private fun shouldUseFallbackData(): Boolean {
+        return tempTextView.text.isNullOrBlank() || tempTextView.text == "--°C"
+    }
+
+    private fun updateFallbackDisplay(weatherData: WeatherData) {
+        weatherData.sensors.hcAirTemperature?.avg?.let { temperature ->
+            tempTextView.text = String.format(Locale.getDefault(), "%.1f°C", temperature)
+            Log.d(TAG, "Using fallback temperature data: $temperature°C")
+        }
+
+        val condition = determineSkyConditionFromSensors(weatherData.sensors, isDaytime = true)
+        updateBackgroundAndIcon(condition, isDaytime = true)
+    }
+
+    private fun displayFallbackWeatherData() {
+        tempTextView.text = "--°C"
+        tempMinTextView.text = "Min: --°"
+        tempMaxTextView.text = "Max: --°"
+        lastComTextView.text = "Datos no disponibles"
+    }
+
+    private fun updateLoadingState(isLoading: Boolean) {
+        swipeRefreshLayout.isRefreshing = isLoading
+    }
+
+    private fun handleError(error: String) {
+        if (error.isNotEmpty()) {
+            // Show user-friendly error message
+            Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+            Log.e(TAG, "UI Error: $error")
+
+            // Log security event for error tracking
+            securityLogger.logNetworkSecurityEvent("error", 500)
+        }
+    }
+
+    private fun handleStationLoadingError(error: String) {
+        displayFallbackWeatherData()
+        showLoadingIndicator("Error cargando estaciones")
+    }
+
+    private fun showLoadingIndicator(message: String) {
+        lastComTextView.text = message
+    }
+
+    private fun initializeUIWithDefaults() {
+        // Inicializar UI con valores por defecto claros
+        tempTextView.text = "--°C"
+        tempMinTextView.text = "Min: --°"
+        tempMaxTextView.text = "Max: --°"
+        lastComTextView.text = "Última actualización: Cargando..."
         
-        // Solo actualizar datos de la estación actual, no resetear a la primera
-        if (weatherStations.isNotEmpty() && selectedStationPosition >= 0) {
-            val currentStation = weatherStations[selectedStationPosition]
-            val stationName = currentStation.id
-            Log.d("MainActivity", "Refreshing data for current station: ${currentStation.name} (${stationName})")
+        Log.d("MainActivity", "UI initialized with default values")
+    }
+
+    private fun updateLastUpdateTime(timestamp: String) {
+        try {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+            val date = dateFormat.parse(timestamp)
+            val displayFormat = SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault())
+            val formattedTime = displayFormat.format(date ?: Date())
             
-            // Actualizar datos de la estación actual
-            viewModel.fetchTemperatureMaxMin(stationName)
-            viewModel.fetchWeatherDataLastDay(stationName)
-            viewModel.fetchWidgetData(stationName)
-        } else {
-            // Fallback: cargar estaciones solo si no tenemos ninguna
+            // Actualizar el TextView de última actualización si existe
+            findViewById<TextView>(R.id.lastComTextView)?.text = "Última actualización: $formattedTime"
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error parsing timestamp: $timestamp", e)
+        }
+    }
+
+    private fun refreshData() {
+        Log.d(TAG, "Refreshing data")
+
+        if (!isInitialized) {
+            Log.w(TAG, "MainActivity not fully initialized, skipping refresh")
+            swipeRefreshLayout.isRefreshing = false
+            return
+        }
+
+        // Use ViewModel's centralized refresh method
+        viewModel.refreshData()
+
+        // If no station selected or stations empty, reload stations
+        if (weatherStations.isEmpty()) {
+            Log.d(TAG, "No stations available, reloading stations")
             viewModel.fetchWeatherStations()
         }
-        
-        swipeRefreshLayout.isRefreshing = false
+    }
+
+    // Legacy method for backward compatibility
+    private fun fetchWeatherData() {
+        refreshData()
     }
 
     private fun setupStationSpinner(stations: List<WeatherStation>) {
-        val stationNames = stations.map { it.name ?: "Desconocida" }
+        Log.d(TAG, "Setting up station spinner with ${stations.size} stations")
+
+        val stationNames = stations.map { it.name ?: "Estación Desconocida" }
         val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, stationNames)
         stationSpinner.setAdapter(adapter)
 
         stationSpinner.setOnItemClickListener { _, _, position, _ ->
-            selectedStationPosition = position
-            val stationName = stations[position].id // En la nueva API, id contiene el stationName
-            Log.d("MainActivity", "Selected station: ${stations[position].name} (${stationName})")
-            viewModel.fetchStationData(stationName)
-            viewModel.fetchTemperatureMaxMin(stationName)
-            viewModel.fetchWeatherDataLastDay(stationName)
-            viewModel.fetchWidgetData(stationName)
+            if (position >= 0 && position < stations.size) {
+                val selectedStation = stations[position]
+                selectStation(selectedStation, position)
+            } else {
+                Log.w(TAG, "Invalid station position selected: $position")
+                securityLogger.logSecurityViolation("invalid_station_selection", details = "position=$position,total=${stations.size}")
+            }
         }
+
+        securityLogger.logUserSecurityEvent("station_spinner_setup", "main_screen", additionalInfo = "${stations.size}_stations")
     }
 
     private fun updateMainUI(station: WeatherStation) {
-        // La nueva API no trae 'meta' en la estación; usamos lastCommunication y dejamos temp hasta que lleguen datos
+        // Update last communication time
         lastComTextView.text = formatLastCommunication(station.lastCommunication)
-        if (tempTextView.text.isNullOrBlank()) tempTextView.text = "-- °C"
+
+        // Ensure temperature display has a default value
+        if (tempTextView.text.isNullOrBlank() || tempTextView.text == "null") {
+            tempTextView.text = "--°C"
+        }
+
+        Log.d(TAG, "Updated main UI for station: ${station.name}")
     }
 
     private fun formatLastCommunication(isoDate: String?): String {
@@ -313,14 +570,33 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun getUserDataFromSharedPreferences(): User? {
-        return AuthManager.getCurrentUser()
+    private fun performLogout() {
+        Log.d(TAG, "Performing logout")
+
+        val userId = AuthManager.getCurrentUser()?.id
+        securityLogger.logAuthenticationEvent("logout", true, additionalInfo = "user_initiated")
+
+        try {
+            AuthManager.logout()
+
+            val intent = Intent(this, LoginActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            startActivity(intent)
+            finish()
+
+            Log.d(TAG, "Logout completed successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during logout", e)
+            securityLogger.logSecurityViolation("logout_error", details = e.message)
+            // Force finish activity even if logout fails
+            finish()
+        }
     }
 
+    // Legacy method for backward compatibility
     private fun logout() {
-        AuthManager.logout()
-        startActivity(Intent(this, LoginActivity::class.java))
-        finish()
+        performLogout()
     }
 
     private fun determineSkyConditionFromSensors(sensors: Sensors, isDaytime: Boolean): String {
@@ -361,7 +637,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateBackgroundAndIcon(weatherCondition: String, isDaytime: Boolean) {
+    private fun updateBackgroundAndIcon(weatherCondition: String, @Suppress("UNUSED_PARAMETER") isDaytime: Boolean) {
+        @Suppress("UNUSED_VARIABLE")
         val cardView = findViewById<MaterialCardView>(R.id.card_temp)
         val weatherIcon = findViewById<ImageView>(R.id.weatherIcon)
         val iconRes = when (weatherCondition) {

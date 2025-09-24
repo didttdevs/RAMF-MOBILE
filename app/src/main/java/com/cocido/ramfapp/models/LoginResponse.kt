@@ -1,6 +1,21 @@
 package com.cocido.ramfapp.models
 
+import com.google.gson.annotations.SerializedName
+
 data class LoginResponse(
-    val token: String,
-    val user: User // Aquí almacenamos la información del usuario
-)
+    @SerializedName("accessToken") val accessToken: String,
+    @SerializedName("refreshToken") val refreshToken: String? = null,
+    val user: User
+) {
+    // Helper para obtener el token completo con el tipo
+    fun getFullToken(): String = "Bearer $accessToken"
+    
+    // Helper para verificar si el token está próximo a expirar (asumimos 20 minutos por defecto)
+    fun isTokenExpiringSoon(): Boolean {
+        // Como no tenemos expiresIn del backend, asumimos que expira en 20 minutos
+        return false // Por ahora siempre retornamos false, se puede mejorar con JWT parsing
+    }
+    
+    // Helper para obtener el tiempo de expiración (20 minutos por defecto)
+    fun getExpiresIn(): Long = 1200000 // 20 minutos en milisegundos
+}

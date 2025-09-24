@@ -1,0 +1,4 @@
+<resources>
+    <!-- Client ID de Google Cloud Console para DEBUG -->
+    <string name="default_web_client_id">965449421194-uc1au53v6av2h29gch406j3n9tmlehn3.apps.googleusercontent.com</string>
+</resources>

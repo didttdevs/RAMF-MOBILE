@@ -9,6 +9,8 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import com.cocido.ramfapp.R
 import com.cocido.ramfapp.models.LoginRequest
 import com.cocido.ramfapp.models.LoginResponse
@@ -58,7 +60,9 @@ class LoginActivity : AppCompatActivity() {
         // Configura el cliente de Google Sign-In
         Log.d(TAG, "onCreate: Configuring Google Sign-In")
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id))
             .requestEmail()
+            .requestProfile()
             .build()
         Log.d(TAG, "onCreate: GoogleSignInOptions created")
 
@@ -80,10 +84,7 @@ class LoginActivity : AppCompatActivity() {
         // Agrega el evento para el botón de Google
         btnGoogle.setOnClickListener {
             Log.d(TAG, "onCreate: Google button clicked")
-            // Temporal: ir directo a MainActivity sin validación de backend
-            Toast.makeText(this, "Login exitoso con Google", Toast.LENGTH_SHORT).show()
-            createMockGoogleUser()
-            goToMainActivity()
+            signInWithGoogle()
         }
 
         // Agrega el evento para ir a la pantalla de registro
@@ -95,30 +96,39 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun performLogin(email: String, password: String) {
-        val authService = RetrofitClient.authService
+        Log.d(TAG, "performLogin: Starting login process for email: $email")
+        
         val loginRequest = LoginRequest(email, password)
 
-        authService.login(loginRequest).enqueue(object : Callback<LoginResponse> {
-            override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
-                if (response.isSuccessful && response.body() != null) {
-                    val token = response.body()?.token
-                    val user = response.body()?.user
-
-                    if (!token.isNullOrEmpty() && user != null) {
-                        AuthManager.saveUserSession(user, token)
-                        goToMainActivity()
-                    } else {
-                        Toast.makeText(this@LoginActivity, "Error: Token vacío", Toast.LENGTH_SHORT).show()
+        // Usar corrutinas para el login
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.authService.login(loginRequest)
+                val result = RetrofitClient.handleApiResponse(response)
+                
+                result.onSuccess { loginResponse ->
+                    Log.d(TAG, "Login successful for user: ${loginResponse.user.email}")
+                    
+                    // Guardar sesión del usuario
+                    AuthManager.saveUserSession(loginResponse.user, loginResponse)
+                    
+                    Toast.makeText(this@LoginActivity, "Login exitoso", Toast.LENGTH_SHORT).show()
+                    goToMainActivity()
+                }.onFailure { exception ->
+                    Log.e(TAG, "Login failed", exception)
+                    val errorMessage = when {
+                        exception.message?.contains("401") == true -> "Credenciales incorrectas"
+                        exception.message?.contains("403") == true -> "Cuenta deshabilitada"
+                        exception.message?.contains("network") == true -> "Error de conexión. Verifica tu internet"
+                        else -> "Error en login: ${exception.message}"
                     }
-                } else {
-                    Toast.makeText(this@LoginActivity, "Error en login: ${response.message()}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@LoginActivity, errorMessage, Toast.LENGTH_LONG).show()
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "Login exception", e)
+                Toast.makeText(this@LoginActivity, "Error de conexión: ${e.message}", Toast.LENGTH_LONG).show()
             }
-
-            override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
-                Toast.makeText(this@LoginActivity, "Error en login: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
-            }
-        })
+        }
     }
 
     // Método para iniciar sesión con Google
@@ -165,7 +175,7 @@ class LoginActivity : AppCompatActivity() {
             Log.d(TAG, "handleSignInResult: Account email: ${account.email}")
             Log.d(TAG, "handleSignInResult: Account name: ${account.displayName}")
             Log.d(TAG, "handleSignInResult: Account ID: ${account.id}")
-            
+
             // El inicio de sesión con Google fue exitoso, ahora puedes manejar la cuenta
             val idToken = account.idToken // El token de Google para la autenticación
             Log.d(TAG, "handleSignInResult: ID Token: ${if (idToken != null) "Present" else "NULL"}")
@@ -179,15 +189,16 @@ class LoginActivity : AppCompatActivity() {
             Log.e(TAG, "handleSignInResult: ApiException occurred", e)
             Log.e(TAG, "handleSignInResult: Status code: ${e.statusCode}")
             Log.e(TAG, "handleSignInResult: Status message: ${e.status}")
-            
+
             val errorMessage = when (e.statusCode) {
                 12501 -> "Login cancelado por el usuario"
                 12502 -> "Error de red - Sin conexión"
                 12500 -> "Error interno de Google Sign-In"
                 7 -> "Error de red - Timeout"
+                10 -> "Error de configuración - Verifica las credenciales de Google"
                 else -> "Error de Google Sign-In (${e.statusCode}): ${e.message}"
             }
-            
+
             Log.e(TAG, "handleSignInResult: Showing error: $errorMessage")
             Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
         }
@@ -200,32 +211,73 @@ class LoginActivity : AppCompatActivity() {
         Log.d(TAG, "saveGoogleUserData: Family name: ${account.familyName}")
         Log.d(TAG, "saveGoogleUserData: Email: ${account.email}")
         Log.d(TAG, "saveGoogleUserData: Photo URL: ${account.photoUrl}")
+
+        // Enviar datos de Google al backend
+        performGoogleLogin(account)
+    }
+
+    private fun performGoogleLogin(account: GoogleSignInAccount) {
+        Log.d(TAG, "performGoogleLogin: Starting Google login for email: ${account.email}")
         
-        val user = User(
-            firstName = account.givenName ?: "",
-            lastName = account.familyName ?: "",
-            email = account.email ?: "",
-            avatar = account.photoUrl?.toString() ?: "",
-            role = "user"  // Valor por defecto para `role`
+        // Crear el body con los datos de Google que necesita el backend
+        // PROBAR AMBOS FORMATOS: google_id vs idToken
+        val googleToken = mapOf(
+            "email" to (account.email ?: ""),
+            "name" to (account.givenName ?: ""),
+            "lastName" to (account.familyName ?: ""),
+            "avatar" to (account.photoUrl?.toString() ?: ""),
+            // FORMATO 1: Usar google_id (como en los ejemplos de Postman)
+            "google_id" to (account.id ?: ""),
+            // FORMATO 2: Usar idToken (como está actualmente)
+            "idToken" to (account.idToken ?: "")
         )
-        val token = account.idToken ?: ""
-        Log.d(TAG, "saveGoogleUserData: Created User object with token: ${if (token.isNotEmpty()) "Present" else "Empty"}")
+        
+        // Log detallado para debug
+        Log.d(TAG, "performGoogleLogin: Sending data to backend:")
+        Log.d(TAG, "performGoogleLogin: Email: ${account.email}")
+        Log.d(TAG, "performGoogleLogin: Name: ${account.givenName}")
+        Log.d(TAG, "performGoogleLogin: LastName: ${account.familyName}")
+        Log.d(TAG, "performGoogleLogin: Google ID: ${account.id}")
+        Log.d(TAG, "performGoogleLogin: ID Token: ${if (account.idToken != null) "Present (${account.idToken?.length} chars)" else "NULL"}")
+        Log.d(TAG, "performGoogleLogin: Request body: $googleToken")
 
-        AuthManager.saveUserSession(user, token)
-        Log.d(TAG, "saveGoogleUserData: User data saved, navigating to MainActivity")
-        goToMainActivity()
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.authService.googleLogin(googleToken)
+                
+                if (response.isSuccessful) {
+                    val loginResponse = response.body()
+                    if (loginResponse != null) {
+                        Log.d(TAG, "Google login successful for user: ${loginResponse.user.email}")
+                        
+                        // Guardar sesión del usuario
+                        AuthManager.saveUserSession(loginResponse.user, loginResponse)
+                        
+                        Toast.makeText(this@LoginActivity, "Login exitoso con Google", Toast.LENGTH_SHORT).show()
+                        goToMainActivity()
+                    } else {
+                        Log.e(TAG, "Google login failed: Response body is null")
+                        Toast.makeText(this@LoginActivity, "Error: Respuesta vacía del servidor", Toast.LENGTH_LONG).show()
+                    }
+                } else {
+                    Log.e(TAG, "Google login failed: HTTP ${response.code()} - ${response.message()}")
+                    val errorMessage = when (response.code()) {
+                        401 -> "Error de autenticación con Google"
+                        403 -> "Cuenta Google no autorizada"
+                        404 -> "Usuario no encontrado"
+                        500 -> "Error interno del servidor"
+                        else -> "Error en login con Google: ${response.code()} - ${response.message()}"
+                    }
+                    Toast.makeText(this@LoginActivity, errorMessage, Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Google login exception", e)
+                Toast.makeText(this@LoginActivity, "Error de conexión: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
-    private fun createMockGoogleUser() {
-        val mockUser = User(
-            firstName = "Usuario",
-            lastName = "Google",
-            email = "usuario@gmail.com",
-            avatar = "",
-            role = "user"
-        )
-        AuthManager.saveUserSession(mockUser, "mock_google_token")
-    }
+
 
     private fun goToMainActivity() {
         Log.d(TAG, "goToMainActivity: Navigating to MainActivity")

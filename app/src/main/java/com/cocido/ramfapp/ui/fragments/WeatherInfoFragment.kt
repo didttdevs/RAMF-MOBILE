@@ -6,6 +6,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import com.cocido.ramfapp.databinding.FragmentWeatherInfoBinding
 import com.cocido.ramfapp.models.WeatherData
 import com.cocido.ramfapp.models.WidgetData
@@ -31,14 +33,22 @@ class WeatherInfoFragment : Fragment() {
         viewModel = ViewModelProvider(requireActivity())[WeatherStationViewModel::class.java]
 
         // Escuchamos los datos del widget para información principal
-        viewModel.widgetData.observe(viewLifecycleOwner) { widgetData ->
-            updateWeatherDataFromWidget(widgetData)
+        lifecycleScope.launch {
+            viewModel.widgetData.collect { widgetState ->
+                if (widgetState.hasData) {
+                    updateWeatherDataFromWidget(widgetState.data!!)
+                }
+            }
         }
 
         // Escuchamos también los datos del último día como fallback
-        viewModel.weatherDataLast.observe(viewLifecycleOwner) { weatherDataList ->
-            val latest = weatherDataList.firstOrNull()
-            updateWeatherDataFromSensors(latest)
+        lifecycleScope.launch {
+            viewModel.historicalData.collect { historicalState ->
+                if (historicalState.hasData) {
+                    val latest = historicalState.data!!.firstOrNull()
+                    updateWeatherDataFromSensors(latest)
+                }
+            }
         }
     }
 
@@ -71,12 +81,12 @@ class WeatherInfoFragment : Fragment() {
 
     private fun updateWeatherDataFromWidget(widgetData: WidgetData?) {
         widgetData?.let { widget ->
-            // Actualizar datos principales desde el widget
-            binding.humidityTextView.text = "${widget.relativeHumidity} %"
-            binding.dewPointTextView.text = "${widget.dewPoint} °C"
-            binding.airPressureTextView.text = "${widget.airPressure} hPa"
-            binding.solarRadiationTextView.text = "${widget.solarRadiation} W/m²"
-            binding.windSpeedTextView.text = "${widget.windSpeed} m/s"
+            // Actualizar datos principales desde el widget usando helpers formateados
+            binding.humidityTextView.text = widget.getFormattedHumidity()
+            binding.dewPointTextView.text = widget.getFormattedDewPoint()
+            binding.airPressureTextView.text = widget.getFormattedPressure()
+            binding.solarRadiationTextView.text = widget.getFormattedSolarRadiation()
+            binding.windSpeedTextView.text = widget.getFormattedWindSpeed()
             
             // Datos de lluvia que antes faltaban
             binding.rainLast1hTextView.text = "${widget.rainLastHour} mm"
@@ -84,8 +94,8 @@ class WeatherInfoFragment : Fragment() {
             binding.rainLast48hTextView.text = "${widget.rain48h} mm"
             binding.rainLast7dTextView.text = "${widget.rain7d} mm"
             
-            // Dirección del viento en texto
-            binding.windDirectionTextView.text = widget.windDirection
+            // Dirección del viento en texto formateado
+            binding.windDirectionTextView.text = widget.getWindDirectionText()
         }
     }
 }

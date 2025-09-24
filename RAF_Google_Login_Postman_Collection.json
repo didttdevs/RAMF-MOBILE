@@ -1,0 +1,166 @@
+{
+	"info": {
+		"_postman_id": "12345678-1234-1234-1234-123456789012",
+		"name": "RAF Google Login API",
+		"description": "Colección para probar el endpoint de Google Login de RAF",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Google Login - Usuario Válido",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"test.user@gmail.com\",\n    \"name\": \"Test\",\n    \"lastName\": \"User\",\n    \"avatar\": \"https://lh3.googleusercontent.com/a/test123\",\n    \"google_id\": \"1234567890123456789\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}{{auth_endpoint}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"{{auth_endpoint}}"
+					]
+				},
+				"description": "Prueba de login con Google usando datos válidos"
+			},
+			"response": []
+		},
+		{
+			"name": "Google Login - Email Faltante",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"Juan\",\n    \"lastName\": \"Pérez\",\n    \"google_id\": \"1234567890123456789\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}{{auth_endpoint}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"{{auth_endpoint}}"
+					]
+				},
+				"description": "Prueba de validación - email faltante"
+			},
+			"response": []
+		},
+		{
+			"name": "Google Login - Datos Mínimos",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"minimal.test@gmail.com\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}{{auth_endpoint}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"{{auth_endpoint}}"
+					]
+				},
+				"description": "Prueba con datos mínimos - solo email"
+			},
+			"response": []
+		},
+		{
+			"name": "Google Login - Con ID Token",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"token.test@gmail.com\",\n    \"name\": \"Token\",\n    \"lastName\": \"Test\",\n    \"avatar\": \"https://lh3.googleusercontent.com/a/token123\",\n    \"id_token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXVkIjoiOTY1NDQ5NDIxMTk0LXVjMWF1NTN2NmF2Mmg0OWdjaDQwNmozbjl0bWxlaG4zLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTIzNDU2Nzg5MDEyMzQ1Njc4OTAiLCJlbWFpbCI6InRva2VuLnRlc3RAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsIm5hbWUiOiJUb2tlbiBUZXN0IiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL3Rva2VuMTIzIiwiaWF0IjoxNzM3NzI0NDAwLCJleHAiOjE3Mzc3MjgwMH0.example_signature_here\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}{{auth_endpoint}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"{{auth_endpoint}}"
+					]
+				},
+				"description": "Prueba con id_token (si el backend lo soporta)"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://ramf.formosa.gob.ar/api/http/",
+			"type": "string"
+		},
+		{
+			"key": "auth_endpoint",
+			"value": "auth/login/google",
+			"type": "string"
+		}
+	]
+}

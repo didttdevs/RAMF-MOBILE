@@ -4,13 +4,20 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.cocido.ramfapp.R
 import com.cocido.ramfapp.utils.AuthManager
+import kotlinx.coroutines.launch
 
+/**
+ * SplashActivity con mejores prácticas de seguridad y UX
+ */
 class SplashActivity : AppCompatActivity() {
     
     companion object {
+        private const val TAG = "SplashActivity"
         private const val SPLASH_DELAY = 2000L // 2 seconds
     }
     
@@ -18,25 +25,63 @@ class SplashActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
         
+        Log.d(TAG, "SplashActivity started")
+        
         // Initialize AuthManager
         AuthManager.initialize(this)
         
-        // Navigate after delay
-        Handler(Looper.getMainLooper()).postDelayed({
-            navigateToNextScreen()
-        }, SPLASH_DELAY)
+        // Verificar si el token necesita ser refrescado
+        checkTokenAndNavigate()
+    }
+    
+    private fun checkTokenAndNavigate() {
+        lifecycleScope.launch {
+            try {
+                // Verificar si el usuario está logueado y si el token necesita refrescarse
+                if (AuthManager.isUserLoggedIn()) {
+                    Log.d(TAG, "User is logged in, checking token status")
+                    
+                    if (AuthManager.isTokenExpiringSoon()) {
+                        Log.d(TAG, "Token is expiring soon, attempting refresh")
+                        val refreshSuccess = AuthManager.refreshTokenIfNeeded()
+                        
+                        if (!refreshSuccess) {
+                            Log.w(TAG, "Token refresh failed, user will need to login again")
+                        }
+                    }
+                } else {
+                    Log.d(TAG, "User is not logged in")
+                }
+                
+                // Navegar después del delay
+                Handler(Looper.getMainLooper()).postDelayed({
+                    navigateToNextScreen()
+                }, SPLASH_DELAY)
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "Error during token check", e)
+                
+                // En caso de error, navegar de todas formas
+                Handler(Looper.getMainLooper()).postDelayed({
+                    navigateToNextScreen()
+                }, SPLASH_DELAY)
+            }
+        }
     }
     
     private fun navigateToNextScreen() {
         val intent = if (AuthManager.isUserLoggedIn()) {
+            Log.d(TAG, "Navigating to MainActivity (user logged in)")
             Intent(this, MainActivity::class.java)
         } else {
-            Intent(this, LoginActivity::class.java)
+            Log.d(TAG, "Navigating to MainActivity (guest access)")
+            // Permitir acceso como invitado para ver datos meteorológicos básicos
+            Intent(this, MainActivity::class.java)
         }
-        
+
         startActivity(intent)
         finish()
-        
+
         // Add smooth transition
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }

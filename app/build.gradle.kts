@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.google.services)
     id("kotlin-parcelize")
 }
 
@@ -30,7 +31,7 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             buildConfigField("boolean", "DEBUG_MODE", "true")
-            buildConfigField("String", "API_BASE_URL", "\"http://192.168.0.2:3100/api/\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://ramf.formosa.gob.ar/api/http/\"")
         }
         
         release {
@@ -38,7 +39,7 @@ android {
             isDebuggable = false
             isShrinkResources = true
             buildConfigField("boolean", "DEBUG_MODE", "false")
-            buildConfigField("String", "API_BASE_URL", "\"https://api.ramf.com.ar/api/\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://ramf.formosa.gob.ar/api/http/\"")
             
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

@@ -2,4 +2,6 @@
     <string name="app_name">Redes Agrometeorológicas Formosa</string>
     <string name="title_app">Redes Agrometeorológicas</string>
     <string name="sub_title_app">Formosa</string>
+    <!-- Client ID de Google Cloud Console para RAMF -->
+    <string name="default_web_client_id">@string/google_oauth_web_client_id</string>
 </resources>

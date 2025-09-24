@@ -14,7 +14,16 @@
       "Bash(adb install:*)",
       "Bash(del \"app\\src\\main\\java\\com\\example\\rafapp\\ui\\fragments\\GraphFragment.kt.backup\")",
       "Bash(find:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "WebFetch(domain:secytdi.formosa.gob.ar)",
+      "Read(//c/Users/Matias/Downloads/**)",
+      "Bash(adb:*)",
+      "Bash(where adb)",
+      "WebFetch(domain:ramf.formosa.gob.ar)",
+      "Bash(keytool:*)",
+      "Bash(.gradlew:*)",
+      "Bash(./gradlew.bat clean:*)",
+      "Bash(./gradlew.bat:*)"
     ],
     "defaultMode": "acceptEdits"
   }

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Configuración de Google OAuth 2.0 -->
+    <string name="google_oauth_client_id">965449421194-uc1au53v6av2h29gch406j3n9tmlehn3.apps.googleusercontent.com</string>
+    <!-- Web Client ID para requestIdToken() - NECESARIO para Android -->
+    <string name="google_oauth_web_client_id">965449421194-9c4p2k2bk6eb419p1o1airrdq1edasm5.apps.googleusercontent.com</string>
+    <string name="google_project_id">ramf-442512</string>
+    <string name="google_auth_uri">https://accounts.google.com/o/oauth2/auth</string>
+    <string name="google_token_uri">https://oauth2.googleapis.com/token</string>
+    <string name="google_auth_provider_x509_cert_url">https://www.googleapis.com/oauth2/v1/certs</string>
+    
+    <!-- SHA-1 Fingerprint del certificado de debug -->
+    <string name="debug_sha1_fingerprint">2E:3A:5D:70:26:2E:D2:56:AC:39:8B:F8:89:22:F4:81:EB:99:3B:DD</string>
+</resources>

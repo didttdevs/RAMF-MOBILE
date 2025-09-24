@@ -1,0 +1,4 @@
+<resources>
+    <!-- Client ID de Google Cloud Console para RELEASE -->
+    <string name="default_web_client_id">965449421194-31rl089crkgs2vrrc4ir726r72vfahvq.apps.googleusercontent.com</string>
+</resources>

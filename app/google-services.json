@@ -1,0 +1,84 @@
+{
+  "project_info": {
+    "project_number": "965449421194",
+    "project_id": "ramf-442512",
+    "storage_bucket": "ramf-442512.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:965449421194:android:debug123456789",
+        "android_client_info": {
+          "package_name": "com.cocido.ramfapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "965449421194-uc1au53v6av2h29gch406j3n9tmlehn3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cocido.ramfapp",
+            "certificate_hash": "2e3a5d70262ed256ac398bf88922f481eb993bdd"
+          }
+        },
+        {
+          "client_id": "965449421194-9c4p2k2bk6eb419p1o1airrdq1edasm5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDummyKeyForTesting123456789"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "965449421194-9c4p2k2bk6eb419p1o1airrdq1edasm5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:965449421194:android:debug123456789",
+        "android_client_info": {
+          "package_name": "com.cocido.ramfapp.debug"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "965449421194-uc1au53v6av2h29gch406j3n9tmlehn3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cocido.ramfapp.debug",
+            "certificate_hash": "2e3a5d70262ed256ac398bf88922f481eb993bdd"
+          }
+        },
+        {
+          "client_id": "965449421194-9c4p2k2bk6eb419p1o1airrdq1edasm5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDummyKeyForTesting123456789"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "965449421194-9c4p2k2bk6eb419p1o1airrdq1edasm5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

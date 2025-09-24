@@ -29,6 +29,7 @@ fragment = "1.6.2"
 preference = "1.2.1"
 maps = "18.1.0"
 location = "21.0.1"
+google-services = "4.4.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -88,3 +89,4 @@ google-location = { group = "com.google.android.gms", name = "play-services-loca
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+google-services = { id = "com.google.gms.google-services", version.ref = "google-services" }

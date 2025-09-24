@@ -18,7 +18,7 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.animation.Easing
 import com.cocido.ramfapp.R
 import com.cocido.ramfapp.databinding.FragmentSingleChartBinding
-import com.cocido.ramfapp.models.WrapperResponse
+import com.cocido.ramfapp.models.WeatherData
 import com.cocido.ramfapp.viewmodels.GraphViewModel
 import com.cocido.ramfapp.utils.ChartUtils
 import kotlinx.coroutines.launch
@@ -163,13 +163,13 @@ class SingleChartFragment : Fragment() {
             showError(state.errorMessage)
         } else {
             binding.errorMessage.visibility = View.GONE
-            state.weatherData?.let { data ->
-                updateChart(data)
+            if (state.weatherData.isNotEmpty()) {
+                updateChart(state.weatherData)
             }
         }
     }
     
-    private fun updateChart(data: WrapperResponse) {
+    private fun updateChart(data: List<WeatherData>) {
         val entries = mapDataToEntries(data, parameter)
         
         if (entries.isNotEmpty()) {
@@ -219,8 +219,8 @@ class SingleChartFragment : Fragment() {
         }
     }
     
-    private fun mapDataToEntries(data: WrapperResponse, parameter: String): List<Entry> {
-        return data.data.mapNotNull { weatherData ->
+    private fun mapDataToEntries(data: List<WeatherData>, parameter: String): List<Entry> {
+        return data.mapNotNull { weatherData ->
             val timestamp = parseTimestamp(weatherData.date)
             val value = when (parameter) {
                 "temperatura" -> weatherData.sensors.hcAirTemperature?.avg

@@ -8,6 +8,8 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import com.cocido.ramfapp.R
 import com.cocido.ramfapp.models.LoginResponse
 import com.cocido.ramfapp.models.RegisterRequest
@@ -95,36 +97,30 @@ class RegisterActivity : AppCompatActivity() {
     }
 
     private fun performRegister(firstName: String, lastName: String, email: String, password: String) {
-        val authService = RetrofitClient.authService
         val registerRequest = RegisterRequest(firstName, lastName, email, password)
 
-        authService.register(registerRequest).enqueue(object : Callback<LoginResponse> {
-            override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
-                if (response.isSuccessful && response.body() != null) {
-                    val token = response.body()?.token
-                    val user = response.body()?.user
-
-                    if (!token.isNullOrEmpty() && user != null) {
-                        Toast.makeText(this@RegisterActivity, "Cuenta creada exitosamente", Toast.LENGTH_SHORT).show()
-                        AuthManager.saveUserSession(user, token)
-                        goToMainActivity()
-                    } else {
-                        Toast.makeText(this@RegisterActivity, "Error: Token vacío", Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.authService.register(registerRequest)
+                val result = RetrofitClient.handleApiResponse(response)
+                
+                result.onSuccess { loginResponse ->
+                    Toast.makeText(this@RegisterActivity, "Cuenta creada exitosamente", Toast.LENGTH_SHORT).show()
+                    AuthManager.saveUserSession(loginResponse.user, loginResponse)
+                    goToMainActivity()
+                }.onFailure { exception ->
+                    val errorMessage = when {
+                        exception.message?.contains("400") == true -> "Datos inválidos. Verifica la información ingresada"
+                        exception.message?.contains("409") == true -> "El email ya está registrado"
+                        exception.message?.contains("network") == true -> "Error de conexión. Verifica tu internet"
+                        else -> "Error en registro: ${exception.message}"
                     }
-                } else {
-                    val errorMessage = when (response.code()) {
-                        400 -> "Datos inválidos. Verifique la información ingresada."
-                        409 -> "El email ya está registrado. Use otro email."
-                        else -> "Error en registro: ${response.message()}"
-                    }
-                    Toast.makeText(this@RegisterActivity, errorMessage, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@RegisterActivity, errorMessage, Toast.LENGTH_LONG).show()
                 }
+            } catch (e: Exception) {
+                Toast.makeText(this@RegisterActivity, "Error de conexión: ${e.message}", Toast.LENGTH_LONG).show()
             }
-
-            override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
-                Toast.makeText(this@RegisterActivity, "Error en registro: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
-            }
-        })
+        }
     }
 
     private fun goToLoginActivity() {

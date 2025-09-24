@@ -1,119 +1,348 @@
 package com.cocido.ramfapp.repository
 
-import com.cocido.ramfapp.models.WrapperResponse
-import com.cocido.ramfapp.models.WeatherStation
-import com.cocido.ramfapp.models.WeatherStationsResponse
-import com.cocido.ramfapp.models.WidgetData
+import android.util.Log
+import com.cocido.ramfapp.common.Constants
+import com.cocido.ramfapp.common.Resource
+import com.cocido.ramfapp.models.*
 import com.cocido.ramfapp.network.RetrofitClient
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import com.cocido.ramfapp.utils.AuthHelper
+import com.cocido.ramfapp.utils.SecurityLogger
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.minutes
 
-sealed class Result<out T> {
-    data class Success<out T>(val data: T) : Result<T>()
-    data class Error(val exception: Throwable) : Result<Nothing>()
-    object Loading : Result<Nothing>()
-}
-
+/**
+ * Professional Weather Repository implementing Clean Architecture principles
+ * with intelligent caching, request deduplication, and robust error handling
+ */
 class WeatherRepository {
-    
-    private val weatherService = RetrofitClient.weatherStationService
-    
-    suspend fun getWeatherStations(): Result<List<WeatherStation>> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response = weatherService.getWeatherStations()
-                if (response.isSuccessful && response.body() != null) {
-                    Result.Success(response.body()!!.data)
-                } else {
-                    Result.Error(Exception("Error ${response.code()}: ${response.message()}"))
-                }
-            } catch (e: Exception) {
-                Result.Error(e)
-            }
+
+    private val TAG = "WeatherRepository"
+    private val weatherStationService = RetrofitClient.weatherStationService
+    private val securityLogger = SecurityLogger()
+
+    // Thread-safe cache with TTL
+    private val cacheStore = ConcurrentHashMap<String, CacheEntry<*>>()
+    private val ongoingRequests = ConcurrentHashMap<String, Deferred<*>>()
+    private val cacheMutex = Mutex()
+
+    data class CacheEntry<T>(
+        val data: T,
+        val timestamp: Long = System.currentTimeMillis()
+    ) {
+        fun isExpired(ttlMillis: Long = Constants.Network.CACHE_MAX_AGE * 1000L): Boolean {
+            return System.currentTimeMillis() - timestamp > ttlMillis
         }
     }
     
-    suspend fun getWeatherData(
+    /**
+     * Get weather stations with intelligent caching and request deduplication
+     */
+    fun getWeatherStations(): Flow<Resource<List<WeatherStation>>> = flow {
+        val cacheKey = "weather_stations"
+
+        // Check cache first
+        getCachedData<List<WeatherStation>>(cacheKey)?.let { cached ->
+            Log.d(TAG, "Returning cached weather stations")
+            emit(Resource.Success(cached))
+            return@flow
+        }
+
+        emit(Resource.Loading)
+
+        try {
+            val result = executeWithDeduplication(cacheKey) {
+                weatherStationService.getWeatherStations()
+            }
+
+            result.fold(
+                onSuccess = { response ->
+                    if (response.isSuccessful) {
+                        response.body()?.let { stationsResponse ->
+                            val stations = stationsResponse.data
+                            cacheData(cacheKey, stations)
+                            securityLogger.logDataAccess("weather_stations", stations.size)
+                            emit(Resource.Success(stations))
+                        } ?: emit(Resource.Error(Exception("Empty response"), "Respuesta vacía del servidor"))
+                    } else {
+                        val error = mapHttpError(response.code(), response.message())
+                        securityLogger.logNetworkSecurityEvent("stations", response.code())
+                        emit(Resource.Error(Exception("HTTP ${response.code()}"), error))
+                    }
+                },
+                onFailure = { exception ->
+                    Log.e(TAG, "Error getting weather stations", exception)
+                    securityLogger.logNetworkSecurityEvent("stations", 0)
+                    emit(Resource.Error(exception, "Error de conexión: ${exception.message}"))
+                }
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error getting weather stations", e)
+            emit(Resource.Error(e, "Error inesperado: ${e.message}"))
+        }
+    }
+    
+    /**
+     * Get historical weather data with authentication and validation
+     */
+    fun getWeatherDataTimeRange(
         stationName: String,
         from: String,
         to: String
-    ): Result<WrapperResponse> {
-        return withContext(Dispatchers.IO) {
-            try {
-                // Nueva API local: usa stationName en lugar de stationId
-                val response = weatherService.getWeatherDataTimeRange(
+    ): Flow<Resource<List<WeatherData>>> = flow {
+        // Security validation
+        if (!isValidStationName(stationName)) {
+            emit(Resource.Error(Exception("Invalid station"), "Nombre de estación inválido"))
+            return@flow
+        }
+
+        if (!isValidDateRange(from, to)) {
+            emit(Resource.Error(Exception("Invalid date range"), "Rango de fechas inválido"))
+            return@flow
+        }
+
+        if (!AuthHelper.isAuthenticated()) {
+            securityLogger.logAuthenticationEvent("unauthorized_access", false)
+            emit(Resource.Error(Exception("Unauthorized"), "Autenticación requerida"))
+            return@flow
+        }
+
+        val cacheKey = "historical_${stationName}_${from}_${to}"
+
+        // Check cache for historical data (longer TTL acceptable)
+        getCachedData<List<WeatherData>>(cacheKey, ttlMinutes = 10)?.let { cached ->
+            Log.d(TAG, "Returning cached historical data for $stationName")
+            emit(Resource.Success(cached))
+            return@flow
+        }
+
+        emit(Resource.Loading)
+
+        try {
+            val result = executeWithDeduplication(cacheKey) {
+                weatherStationService.getWeatherDataTimeRange(
                     stationName = stationName,
                     from = from,
                     to = to
                 )
-                
-                if (response.isSuccessful && response.body() != null) {
-                    Result.Success(response.body()!!)
-                } else {
-                    Result.Error(Exception("Error ${response.code()}: ${response.message()}"))
-                }
-            } catch (e: Exception) {
-                Result.Error(e)
             }
+
+            result.fold(
+                onSuccess = { response ->
+                    when (response.code()) {
+                        200 -> {
+                            response.body()?.let { weatherDataResponse ->
+                                val weatherData = weatherDataResponse.data
+                                cacheData(cacheKey, weatherData, ttlMinutes = 10)
+                                securityLogger.logDataAccess("historical_data", weatherData.size, stationName)
+                                emit(Resource.Success(weatherData))
+                            } ?: emit(Resource.Error(Exception("Empty response"), "Respuesta vacía del servidor"))
+                        }
+                        401 -> {
+                            securityLogger.logAuthenticationEvent("token_expired", false)
+                            emit(Resource.Error(Exception("Token expired"), "Sesión expirada. Inicia sesión nuevamente."))
+                        }
+                        403 -> {
+                            securityLogger.logAuthenticationEvent("access_denied", false)
+                            emit(Resource.Error(Exception("Access denied"), "No tienes permisos para estos datos."))
+                        }
+                        else -> {
+                            val error = mapHttpError(response.code(), response.message())
+                            securityLogger.logNetworkSecurityEvent("historical_data_$stationName", response.code())
+                            emit(Resource.Error(Exception("HTTP ${response.code()}"), error))
+                        }
+                    }
+                },
+                onFailure = { exception ->
+                    Log.e(TAG, "Error getting historical data for $stationName", exception)
+                    securityLogger.logNetworkSecurityEvent("historical_data_$stationName", 0)
+                    emit(Resource.Error(exception, "Error de conexión: ${exception.message}"))
+                }
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error getting historical data", e)
+            emit(Resource.Error(e, "Error inesperado: ${e.message}"))
         }
     }
     
-    suspend fun getWeatherDataWithRetry(
-        stationName: String,
-        from: String,
-        to: String,
-        maxRetries: Int = 3
-    ): Result<WrapperResponse> {
-        repeat(maxRetries) { attempt ->
-            when (val result = getWeatherData(stationName, from, to)) {
-                is Result.Success -> return result
-                is Result.Error -> {
-                    if (attempt == maxRetries - 1) return result
-                    kotlinx.coroutines.delay((1000 * (attempt + 1)).toLong()) // Backoff exponencial
-                }
-                else -> {}
-            }
+    /**
+     * Get widget data with validation and caching
+     */
+    fun getWidgetData(stationName: String): Flow<Resource<WidgetData>> = flow {
+        if (!isValidStationName(stationName)) {
+            emit(Resource.Error(Exception("Invalid station"), "Nombre de estación inválido"))
+            return@flow
         }
-        return Result.Error(Exception("Máximo número de reintentos alcanzado"))
+
+        val cacheKey = "widget_$stationName"
+
+        // Check cache with shorter TTL for widget data (real-time importance)
+        getCachedData<WidgetData>(cacheKey, ttlMinutes = 2)?.let { cached ->
+            Log.d(TAG, "Returning cached widget data for $stationName")
+            emit(Resource.Success(cached))
+            return@flow
+        }
+
+        emit(Resource.Loading)
+
+        try {
+            val result = executeWithDeduplication(cacheKey) {
+                weatherStationService.getWidgetData(stationName)
+            }
+
+            result.fold(
+                onSuccess = { response ->
+                    if (response.isSuccessful) {
+                        response.body()?.let { widgetData ->
+                            if (isValidWidgetData(widgetData)) {
+                                cacheData(cacheKey, widgetData, ttlMinutes = 2)
+                                securityLogger.logDataAccess("widget_data", 1, stationName)
+                                emit(Resource.Success(widgetData))
+                            } else {
+                                Log.w(TAG, "Invalid widget data received for $stationName")
+                                emit(Resource.Error(Exception("Invalid data"), "Datos inválidos recibidos"))
+                            }
+                        } ?: emit(Resource.Error(Exception("Empty response"), "Respuesta vacía del servidor"))
+                    } else {
+                        val error = mapHttpError(response.code(), response.message())
+                        securityLogger.logNetworkSecurityEvent("widget_$stationName", response.code())
+                        emit(Resource.Error(Exception("HTTP ${response.code()}"), error))
+                    }
+                },
+                onFailure = { exception ->
+                    Log.e(TAG, "Error getting widget data for $stationName", exception)
+                    securityLogger.logNetworkSecurityEvent("widget_$stationName", 0)
+                    emit(Resource.Error(exception, "Error de conexión: ${exception.message}"))
+                }
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error getting widget data", e)
+            emit(Resource.Error(e, "Error inesperado: ${e.message}"))
+        }
     }
     
-    suspend fun getWeatherDataForCharts(
+    /**
+     * Get charts data with the same authentication and caching logic
+     */
+    fun getChartsData(
         stationName: String,
         from: String,
         to: String
-    ): Result<WrapperResponse> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response = weatherService.getWeatherDataForCharts(
-                    stationName = stationName,
-                    from = from,
-                    to = to
-                )
-                
-                if (response.isSuccessful && response.body() != null) {
-                    // La API devuelve List<WeatherData> directamente, lo envolvemos en WrapperResponse
-                    val wrappedResponse = WrapperResponse(data = response.body()!!)
-                    Result.Success(wrappedResponse)
-                } else {
-                    Result.Error(Exception("Error ${response.code()}: ${response.message()}"))
+    ): Flow<Resource<List<WeatherData>>> = flow {
+        // Reuse the same validation and security logic
+        getWeatherDataTimeRange(stationName, from, to).collect { resource ->
+            when (resource) {
+                is Resource.Success -> {
+                    // Charts data is essentially the same as historical data
+                    // but we could apply specific filtering or transformation here
+                    emit(Resource.Success(resource.data))
                 }
-            } catch (e: Exception) {
-                Result.Error(e)
+                is Resource.Error -> emit(resource)
+                is Resource.Loading -> emit(Resource.Loading)
             }
         }
     }
     
-    suspend fun getWidgetData(stationName: String): Result<WidgetData> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response = weatherService.getWidgetData(stationName)
-                if (response.isSuccessful && response.body() != null) {
-                    Result.Success(response.body()!!)
-                } else {
-                    Result.Error(Exception("Error ${response.code()}: ${response.message()}"))
+    // MARK: - Private Helper Methods
+
+    @Suppress("UNCHECKED_CAST")
+    private suspend fun <T> getCachedData(key: String, ttlMinutes: Long = Constants.Network.CACHE_MAX_AGE.toLong() / 60): T? {
+        return cacheMutex.withLock {
+            val entry = cacheStore[key] as? CacheEntry<T>
+            if (entry != null && !entry.isExpired(ttlMinutes * 60 * 1000L)) {
+                entry.data
+            } else {
+                if (entry != null) {
+                    cacheStore.remove(key) // Remove expired entry
                 }
-            } catch (e: Exception) {
-                Result.Error(e)
+                null
+            }
+        }
+    }
+
+    private suspend fun <T> cacheData(key: String, data: T, ttlMinutes: Long = Constants.Network.CACHE_MAX_AGE.toLong() / 60) {
+        cacheMutex.withLock {
+            cacheStore[key] = CacheEntry(data)
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private suspend fun <T> executeWithDeduplication(
+        key: String,
+        operation: suspend () -> T
+    ): Result<T> {
+        return cacheMutex.withLock {
+            // Check if there's an ongoing request
+            val ongoingRequest = ongoingRequests[key] as? Deferred<Result<T>>
+            if (ongoingRequest != null && ongoingRequest.isActive) {
+                Log.d(TAG, "Deduplicating request for key: $key")
+                return@withLock ongoingRequest.await()
+            }
+
+            // Create new request
+            val deferred = CoroutineScope(Dispatchers.IO).async {
+                try {
+                    Result.success(operation())
+                } catch (e: Exception) {
+                    Result.failure(e)
+                } finally {
+                    ongoingRequests.remove(key)
+                }
+            }
+
+            ongoingRequests[key] = deferred
+            deferred.await()
+        }
+    }
+
+    private fun isValidStationName(stationName: String): Boolean {
+        return stationName.isNotBlank() &&
+               stationName.length <= 50 &&
+               stationName.matches(Regex("^[a-zA-Z0-9_-]+$"))
+    }
+
+    private fun isValidWidgetData(data: WidgetData): Boolean {
+        return data.temperature >= Constants.Validation.MIN_TEMPERATURE &&
+               data.temperature <= Constants.Validation.MAX_TEMPERATURE &&
+               data.relativeHumidity >= Constants.Validation.MIN_HUMIDITY &&
+               data.relativeHumidity <= Constants.Validation.MAX_HUMIDITY
+    }
+
+    private fun isValidDateRange(from: String, to: String): Boolean {
+        return try {
+            // Basic validation - could be enhanced with proper date parsing
+            from.isNotBlank() && to.isNotBlank() && from.length >= 10 && to.length >= 10
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun mapHttpError(code: Int, message: String): String {
+        return when (code) {
+            400 -> "Solicitud inválida"
+            401 -> "Sesión expirada. Inicia sesión nuevamente."
+            403 -> "No tienes permisos para acceder a estos datos"
+            404 -> "Recurso no encontrado"
+            429 -> "Demasiadas solicitudes. Intenta más tarde."
+            500, 502, 503 -> "Error del servidor. Intenta más tarde."
+            else -> "Error de red: $code - $message"
+        }
+    }
+
+    /**
+     * Clear cache for specific keys or all cache
+     */
+    suspend fun clearCache(key: String? = null) {
+        cacheMutex.withLock {
+            if (key != null) {
+                cacheStore.remove(key)
+                Log.d(TAG, "Cache cleared for key: $key")
+            } else {
+                cacheStore.clear()
+                Log.d(TAG, "All cache cleared")
             }
         }
     }

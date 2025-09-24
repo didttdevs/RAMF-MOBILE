@@ -12,6 +12,8 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import com.cocido.ramfapp.R
 import com.cocido.ramfapp.models.WeatherStation
 import com.cocido.ramfapp.models.WidgetData
@@ -88,17 +90,23 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
     }
     
     private fun setupObservers() {
-        viewModel.weatherStations.observe(this) { stations ->
-            if (stations.isNotEmpty()) {
-                weatherStations = stations
-                addMarkersToMap()
-                loadWidgetDataForStations()
+        lifecycleScope.launch {
+            viewModel.weatherStations.collect { stationsState ->
+                if (stationsState.hasData) {
+                    weatherStations = stationsState.data!!
+                    addMarkersToMap()
+                    loadWidgetDataForStations()
+                }
             }
         }
-        
-        viewModel.error.observe(this) { errorMessage ->
-            Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
-            Log.e(TAG, "Error: $errorMessage")
+
+        lifecycleScope.launch {
+            viewModel.uiState.collect { uiState ->
+                uiState.error?.let { errorMessage ->
+                    Toast.makeText(this@MapActivity, errorMessage, Toast.LENGTH_LONG).show()
+                    Log.e(TAG, "Error: $errorMessage")
+                }
+            }
         }
     }
 
@@ -172,13 +180,16 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         }
         
         // Observar los datos del widget para cada estación
-        viewModel.widgetData.observe(this) { widgetData ->
-            widgetData?.let { data ->
-                // Encontrar a qué estación pertenecen estos datos
-                val stationId = findStationIdForWidgetData(data)
-                if (stationId != null) {
-                    stationWidgetData[stationId] = data
-                    updateMarkerForStation(stationId)
+        lifecycleScope.launch {
+            viewModel.widgetData.collect { widgetState ->
+                if (widgetState.hasData) {
+                    val data = widgetState.data!!
+                    // Encontrar a qué estación pertenecen estos datos
+                    val stationId = findStationIdForWidgetData(data)
+                    if (stationId != null) {
+                        stationWidgetData[stationId] = data
+                        updateMarkerForStation(stationId)
+                    }
                 }
             }
         }

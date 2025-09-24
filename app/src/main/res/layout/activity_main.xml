@@ -96,7 +96,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="22.64°C"
+                            android:text="--°C"
                             android:textColor="@color/formosa_blue_primary"
                             android:textSize="48sp"
                             android:textStyle="bold"
@@ -128,7 +128,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="4dp"
-                                    android:text="Min: 15.31°"
+                                    android:text="Min: --°"
                                     android:textColor="@color/text_secondary_gray"
                                     android:textSize="14sp"
                                     android:fontFamily="sans-serif-medium" />
@@ -151,7 +151,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="4dp"
-                                    android:text="Max: 22.7°"
+                                    android:text="Max: --°"
                                     android:textColor="@color/text_secondary_gray"
                                     android:textSize="14sp"
                                     android:fontFamily="sans-serif-medium" />
