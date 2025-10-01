@@ -37,16 +37,14 @@ class WeatherInfoFragment : Fragment() {
             viewModel.widgetData.collect { widgetState ->
                 if (widgetState.hasData) {
                     updateWeatherDataFromWidget(widgetState.data!!)
-                }
-            }
-        }
-
-        // Escuchamos también los datos del último día como fallback
-        lifecycleScope.launch {
-            viewModel.historicalData.collect { historicalState ->
-                if (historicalState.hasData) {
-                    val latest = historicalState.data!!.firstOrNull()
-                    updateWeatherDataFromSensors(latest)
+                } else {
+                    // Solo usar datos históricos como fallback cuando NO hay datos del widget
+                    viewModel.historicalData.value.let { historicalState ->
+                        if (historicalState.hasData) {
+                            val latest = historicalState.data!!.firstOrNull()
+                            updateWeatherDataFromSensors(latest)
+                        }
+                    }
                 }
             }
         }
@@ -88,11 +86,11 @@ class WeatherInfoFragment : Fragment() {
             binding.solarRadiationTextView.text = widget.getFormattedSolarRadiation()
             binding.windSpeedTextView.text = widget.getFormattedWindSpeed()
             
-            // Datos de lluvia que antes faltaban
-            binding.rainLast1hTextView.text = "${widget.rainLastHour} mm"
-            binding.rainLast24hTextView.text = "${widget.rain24h} mm"
-            binding.rainLast48hTextView.text = "${widget.rain48h} mm"
-            binding.rainLast7dTextView.text = "${widget.rain7d} mm"
+            // Datos de lluvia formateados correctamente
+            binding.rainLast1hTextView.text = widget.getFormattedRainLastHour()
+            binding.rainLast24hTextView.text = widget.getFormattedRain24h()
+            binding.rainLast48hTextView.text = widget.getFormattedRain48h()
+            binding.rainLast7dTextView.text = widget.getFormattedRain7d()
             
             // Dirección del viento en texto formateado
             binding.windDirectionTextView.text = widget.getWindDirectionText()

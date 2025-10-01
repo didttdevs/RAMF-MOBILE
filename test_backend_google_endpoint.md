@@ -72,3 +72,4 @@ Una vez que identifiquemos el formato correcto, actualizaremos el código de la 
 
 ## 📱 **Próximo Paso**
 Ejecutar estas pruebas y ajustar el código de `LoginActivity.kt` según el formato que funcione.
+

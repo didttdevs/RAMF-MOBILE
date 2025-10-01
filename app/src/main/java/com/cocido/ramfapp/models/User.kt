@@ -8,7 +8,7 @@ data class User(
     @SerializedName("last_name") val lastName: String,
     @SerializedName("email") val email: String,
     @SerializedName("avatar") val avatar: String? = null,
-    @SerializedName("role") val role: String,
+    @SerializedName("role") val role: String? = null,
     @SerializedName("is_active") val isActive: Boolean = true,
     @SerializedName("created_at") val createdAt: String? = null,
     @SerializedName("updated_at") val updatedAt: String? = null,
@@ -23,6 +23,6 @@ data class User(
     }
     
     // Helper para verificar si es admin
-    fun isAdmin(): Boolean = role.lowercase() == "admin" || hasPermission("admin")
+    fun isAdmin(): Boolean = role?.lowercase() == "admin" || hasPermission("admin")
 }
 

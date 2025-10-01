@@ -163,3 +163,4 @@ data class ConnectionInfo(
     val isMetered: Boolean,
     val isRoaming: Boolean
 )
+

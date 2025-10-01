@@ -69,3 +69,4 @@ La aplicación incluye logging detallado en `LoginActivity` para facilitar el de
 
 ## 📄 Archivo JSON Original
 El archivo `client_secret_965449421194-uc1au53v6av2h29gch406j3n9tmlehn3.apps.googleusercontent.com.json` contiene la configuración completa y puede ser usado para referencia o configuración adicional.
+

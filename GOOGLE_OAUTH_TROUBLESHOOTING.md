@@ -115,3 +115,4 @@ keytool -list -v -keystore "%USERPROFILE%\.android\debug.keystore" -alias androi
 4. **Verificar** funcionamiento en backend
 
 ¡La aplicación debería funcionar correctamente ahora! 🎉
+

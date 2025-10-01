@@ -16,6 +16,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.bumptech.glide.Glide
 import com.cocido.ramfapp.R
 import com.cocido.ramfapp.common.Constants
+import com.cocido.ramfapp.utils.Constants as UtilConstants
 import com.cocido.ramfapp.models.*
 import com.cocido.ramfapp.ui.activities.FullScreenChartsActivity
 import com.cocido.ramfapp.utils.AuthManager
@@ -148,7 +149,7 @@ class MainActivity : AppCompatActivity() {
         // Load user data safely
         AuthManager.getCurrentUser()?.let { user ->
             navHeaderName.text = user.getFullName()
-            navHeaderRoleUser.text = user.role.replaceFirstChar { it.uppercase() }
+            navHeaderRoleUser.text = user.role?.takeIf { it.isNotBlank() }?.replaceFirstChar { it.uppercase() } ?: "Usuario"
 
             // Load avatar with error handling
             if (!user.avatar.isNullOrBlank()) {
@@ -255,7 +256,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showFeatureInDevelopment(featureName: String) {
-        Toast.makeText(this, "$featureName - En desarrollo", Toast.LENGTH_SHORT).show()
+        val message = when (featureName) {
+            "Soil Moisture" -> "Humedad del Suelo - Funcionalidad en desarrollo"
+            "Station Overview" -> "Vista General - Los endpoints de la API no están disponibles aún"
+            "Device Management" -> "Gestión de Dispositivos - Requiere permisos administrativos"
+            "Configuración" -> "Configuración - En desarrollo"
+            else -> "$featureName - Funcionalidad limitada por la API"
+        }
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
         Log.d(TAG, "Feature in development accessed: $featureName")
     }
 
@@ -375,11 +383,18 @@ class MainActivity : AppCompatActivity() {
         weatherStations = stations
         setupStationSpinner(stations)
 
-        // Auto-select first station if none selected and stations available
+        // Auto-select Formosa station as default, or first station if Formosa not found
         if (selectedStationPosition == 0 && stations.isNotEmpty()) {
-            val firstStation = stations[0]
-            selectStation(firstStation, 0)
-            Log.d(TAG, "Auto-selected first station: ${firstStation.name}")
+            val formosaStation = stations.find { it.id == UtilConstants.DEFAULT_STATION_ID }
+            if (formosaStation != null) {
+                val formosaPosition = stations.indexOf(formosaStation)
+                selectStation(formosaStation, formosaPosition)
+                Log.d(TAG, "Auto-selected default Formosa station: ${formosaStation.name} (ID: ${formosaStation.id})")
+            } else {
+                val firstStation = stations[0]
+                selectStation(firstStation, 0)
+                Log.d(TAG, "Formosa station not found, auto-selected first station: ${firstStation.name}")
+            }
         }
     }
 

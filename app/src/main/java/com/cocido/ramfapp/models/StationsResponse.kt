@@ -28,3 +28,4 @@ data class StationsMeta(
 data class StationsLinks(
     @SerializedName("current") val current: String
 )
+

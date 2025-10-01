@@ -7,22 +7,22 @@ import java.util.*
 data class WidgetData(
     @SerializedName("timestamp") val timestamp: String,
     @SerializedName("temperature") val temperature: Double,
-    @SerializedName("maxTemperature") val maxTemperature: Double,  // ← Corregido
-    @SerializedName("minTemperature") val minTemperature: Double,  // ← Corregido
-    @SerializedName("relativeHumidity") val relativeHumidity: Double,  // ← Corregido
-    @SerializedName("dewPoint") val dewPoint: Double,  // ← Corregido
-    @SerializedName("airPressure") val airPressure: Double,  // ← Corregido
-    @SerializedName("solarRadiation") val solarRadiation: Double,  // ← Corregido
-    @SerializedName("windSpeed") val windSpeed: Double,  // ← Corregido
-    @SerializedName("windDirection") val windDirection: String,  // ← Corregido
-    @SerializedName("rainLastHour") val rainLastHour: Double,  // ← Corregido
-    @SerializedName("rainDay") val rainDay: Double,  // ← Corregido
-    @SerializedName("rain24h") val rain24h: Double,  // ← Corregido
-    @SerializedName("rain48h") val rain48h: Double,  // ← Corregido
-    @SerializedName("rain7d") val rain7d: Double,  // ← Corregido
-    @SerializedName("stationName") val stationName: String? = null,  // ← Corregido
-    @SerializedName("dataQuality") val dataQuality: String? = null,  // ← Corregido
-    @SerializedName("lastUpdate") val lastUpdate: String? = null  // ← Corregido
+    @SerializedName("maxTemperature") val maxTemperature: Double,
+    @SerializedName("minTemperature") val minTemperature: Double,
+    @SerializedName("relativeHumidity") val relativeHumidity: Double,
+    @SerializedName("dewPoint") val dewPoint: Double,
+    @SerializedName("airPressure") val airPressure: Double,
+    @SerializedName("solarRadiation") val solarRadiation: Double,
+    @SerializedName("windSpeed") val windSpeed: Double,
+    @SerializedName("windDirection") val windDirection: String,
+    @SerializedName("rainLastHour") val rainLastHour: Double,
+    @SerializedName("rainDay") val rainDay: Double,
+    @SerializedName("rain24h") val rain24h: Double,
+    @SerializedName("rain48h") val rain48h: Double,
+    @SerializedName("rain7d") val rain7d: Double,
+    @SerializedName("station_name") val stationName: String? = null,
+    @SerializedName("data_quality") val dataQuality: String? = null,
+    @SerializedName("last_update") val lastUpdate: String? = null
 ) {
     // Helper para verificar si un valor es válido (no nulo, no NaN)
     private fun isValidValue(value: Double): Boolean {
@@ -51,17 +51,17 @@ data class WidgetData(
 
     // Helper para formatear la humedad relativa
     fun getFormattedHumidity(): String {
-        return if (isValidValue(relativeHumidity)) "${String.format("%.1f", relativeHumidity)}%" else "N/A"
+        return if (isValidValue(relativeHumidity)) "${String.format("%.2f", relativeHumidity)}%" else "N/A"
     }
 
     // Helper para formatear la velocidad del viento
     fun getFormattedWindSpeed(): String {
-        return if (isValidNonZeroValue(windSpeed)) "${String.format("%.1f", windSpeed)} km/h" else "N/A"
+        return if (isValidNonZeroValue(windSpeed)) "${String.format("%.2f", windSpeed)} km/h" else "N/A"
     }
 
-    // Helper para formatear la presión atmosférica (redondeada a 2 decimales)
+    // Helper para formatear la presión atmosférica (1 decimal en kPa)
     fun getFormattedPressure(): String {
-        return if (isValidValue(airPressure)) "${String.format("%.2f", airPressure)} hPa" else "N/A"
+        return if (isValidValue(airPressure)) "${String.format("%.1f", airPressure)} kPa" else "N/A"
     }
 
     // Helper para formatear el punto de rocío
@@ -71,9 +71,26 @@ data class WidgetData(
 
     // Helper para formatear la radiación solar
     fun getFormattedSolarRadiation(): String {
-        return if (isValidNonZeroValue(solarRadiation)) "${String.format("%.1f", solarRadiation)} W/m²" else "N/A"
+        return if (isValidNonZeroValue(solarRadiation)) "${String.format("%.2f", solarRadiation)} W/m²" else "N/A"
     }
-    
+
+    // Helpers para formatear las precipitaciones (1 decimal)
+    fun getFormattedRainLastHour(): String {
+        return "${String.format("%.1f", rainLastHour)} mm"
+    }
+
+    fun getFormattedRain24h(): String {
+        return "${String.format("%.1f", rain24h)} mm"
+    }
+
+    fun getFormattedRain48h(): String {
+        return "${String.format("%.1f", rain48h)} mm"
+    }
+
+    fun getFormattedRain7d(): String {
+        return "${String.format("%.1f", rain7d)} mm"
+    }
+
     // Helper para obtener la dirección del viento en formato legible
     fun getWindDirectionText(): String {
         // Verificar si windDirection es null o vacío

@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.cocido.ramfapp.debug" />
+                  <option name="mobileSdkAppId" value="1:965449421194:android:debug123456789" />
+                  <option name="projectId" value="ramf-442512" />
+                  <option name="projectNumber" value="965449421194" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

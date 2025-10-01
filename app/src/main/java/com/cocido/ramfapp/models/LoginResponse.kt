@@ -16,6 +16,6 @@ data class LoginResponse(
         return false // Por ahora siempre retornamos false, se puede mejorar con JWT parsing
     }
     
-    // Helper para obtener el tiempo de expiración (20 minutos por defecto)
-    fun getExpiresIn(): Long = 1200000 // 20 minutos en milisegundos
+    // Helper para obtener el tiempo de expiración (24 horas por defecto)
+    fun getExpiresIn(): Long = 86400000 // 24 horas en milisegundos
 }

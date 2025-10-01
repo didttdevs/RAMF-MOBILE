@@ -23,7 +23,19 @@
       "Bash(keytool:*)",
       "Bash(.gradlew:*)",
       "Bash(./gradlew.bat clean:*)",
-      "Bash(./gradlew.bat:*)"
+      "Bash(./gradlew.bat:*)",
+      "Read(//c/Users/Matias/AppData/Local/Android/Sdk/platform-tools/**)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" install app/build/outputs/apk/debug/app-debug.apk)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" shell am start -n com.cocido.ramfapp.debug/com.cocido.ramfapp.ui.activities.SplashActivity)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s com.cocido.ramfapp.debug)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -d)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -c)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" shell am start -n com.cocido.ramfapp.debug/com.cocido.ramfapp.ui.activities.MainActivity)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" shell monkey -p com.cocido.ramfapp.debug -c android.intent.category.LAUNCHER 1)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s com.cocido.ramfapp.debug -d)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s WidgetData -d)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s WidgetDataDEBUG -d)"
     ],
     "defaultMode": "acceptEdits"
   }

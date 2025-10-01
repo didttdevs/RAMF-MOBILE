@@ -100,6 +100,10 @@ class FullScreenChartsActivity : AppCompatActivity() {
                     
                     if (state.errorMessage != null) {
                         showError(state.errorMessage)
+                        // Si hay error con datos históricos, mostrar sugerencia para usuarios no autenticados
+                        if (state.errorMessage.contains("autenticación") || state.errorMessage.contains("401")) {
+                            showError("💡 Sugerencia: Inicia sesión para acceder a gráficos detallados con datos históricos")
+                        }
                     }
                     
                     // Los fragmentos individuales se encargarán de mostrar sus datos
@@ -232,11 +236,16 @@ class FullScreenChartsActivity : AppCompatActivity() {
     
     private fun loadInitialData() {
         val stationId = intent.getStringExtra(EXTRA_STATION_ID)
+        val stationName = intent.getStringExtra(EXTRA_STATION_NAME)
         if (stationId != null) {
             viewModel.selectStation(stationId)
-            // Cargar datos para las últimas 24 horas por defecto
+
+            // Intentar cargar datos históricos, con fallback a datos básicos si falla
             val (from, to) = generateLast24HoursRange()
+            Log.d("FullScreenCharts", "Loading data for station: $stationName (ID: $stationId)")
             viewModel.loadWeatherData(from, to)
+        } else {
+            showError("Error: No se especificó la estación para mostrar")
         }
     }
     

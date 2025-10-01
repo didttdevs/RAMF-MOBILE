@@ -7,6 +7,7 @@ import com.cocido.ramfapp.models.*
 import com.cocido.ramfapp.network.RetrofitClient
 import com.cocido.ramfapp.utils.AuthHelper
 import com.cocido.ramfapp.utils.SecurityLogger
+import com.cocido.ramfapp.utils.ApiErrorHandler
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
@@ -68,7 +69,7 @@ class WeatherRepository {
                             emit(Resource.Success(stations))
                         } ?: emit(Resource.Error(Exception("Empty response"), "Respuesta vacía del servidor"))
                     } else {
-                        val error = mapHttpError(response.code(), response.message())
+                        val error = ApiErrorHandler.getErrorMessage(response.code(), "stations")
                         securityLogger.logNetworkSecurityEvent("stations", response.code())
                         emit(Resource.Error(Exception("HTTP ${response.code()}"), error))
                     }
@@ -203,7 +204,7 @@ class WeatherRepository {
                                 emit(Resource.Success(widgetData))
                             } else {
                                 Log.w(TAG, "Invalid widget data received for $stationName")
-                                emit(Resource.Error(Exception("Invalid data"), "Datos inválidos recibidos"))
+                                emit(Resource.Error(Exception("Invalid data"), "La estación $stationName no tiene datos válidos disponibles"))
                             }
                         } ?: emit(Resource.Error(Exception("Empty response"), "Respuesta vacía del servidor"))
                     } else {
@@ -225,22 +226,67 @@ class WeatherRepository {
     }
     
     /**
-     * Get charts data with the same authentication and caching logic
+     * Get charts data - FALLBACK: usa widget data si no hay autenticación
      */
     fun getChartsData(
         stationName: String,
         from: String,
         to: String
     ): Flow<Resource<List<WeatherData>>> = flow {
-        // Reuse the same validation and security logic
-        getWeatherDataTimeRange(stationName, from, to).collect { resource ->
-            when (resource) {
-                is Resource.Success -> {
-                    // Charts data is essentially the same as historical data
-                    // but we could apply specific filtering or transformation here
-                    emit(Resource.Success(resource.data))
+
+        // Si el usuario está autenticado, intentar obtener datos históricos
+        if (AuthHelper.isAuthenticated()) {
+            getWeatherDataTimeRange(stationName, from, to).collect { resource ->
+                when (resource) {
+                    is Resource.Success -> emit(Resource.Success(resource.data))
+                    is Resource.Error -> {
+                        Log.w(TAG, "Historical data failed, falling back to widget data: ${resource.message}")
+                        // Fallback: crear datos básicos desde widget
+                        createBasicDataFromWidget(stationName).collect { fallbackResource ->
+                            emit(fallbackResource)
+                        }
+                    }
+                    is Resource.Loading -> emit(Resource.Loading)
                 }
-                is Resource.Error -> emit(resource)
+            }
+        } else {
+            Log.d(TAG, "No authentication, using widget data for basic charts")
+            // Usuario no autenticado: usar solo widget data
+            createBasicDataFromWidget(stationName).collect { resource ->
+                emit(resource)
+            }
+        }
+    }
+
+    /**
+     * Crear datos básicos desde widget data para mostrar algo cuando no hay auth
+     */
+    private fun createBasicDataFromWidget(stationName: String): Flow<Resource<List<WeatherData>>> = flow {
+        getWidgetData(stationName).collect { widgetResource ->
+            when (widgetResource) {
+                is Resource.Success -> {
+                    val widget = widgetResource.data
+                    // Convertir widget data a formato WeatherData básico
+                    val basicWeatherData = WeatherData(
+                        date = widget.timestamp,
+                        sensors = Sensors(
+                            hcAirTemperature = SensorWithAvgMaxMin(
+                                avg = widget.temperature,
+                                max = widget.maxTemperature,
+                                min = widget.minTemperature
+                            ),
+                            hcRelativeHumidity = SensorWithAvgMaxMin(
+                                avg = widget.relativeHumidity
+                            ),
+                            solarRadiation = SensorAvg(avg = widget.solarRadiation),
+                            usonicWindSpeed = SensorAvg(avg = widget.windSpeed),
+                            dewPoint = SensorAvg(avg = widget.dewPoint),
+                            airPressure = SensorAvg(avg = widget.airPressure)
+                        )
+                    )
+                    emit(Resource.Success(listOf(basicWeatherData)))
+                }
+                is Resource.Error -> emit(Resource.Error(widgetResource.exception, "No se pudieron obtener datos básicos: ${widgetResource.message}"))
                 is Resource.Loading -> emit(Resource.Loading)
             }
         }
@@ -305,10 +351,22 @@ class WeatherRepository {
     }
 
     private fun isValidWidgetData(data: WidgetData): Boolean {
-        return data.temperature >= Constants.Validation.MIN_TEMPERATURE &&
-               data.temperature <= Constants.Validation.MAX_TEMPERATURE &&
-               data.relativeHumidity >= Constants.Validation.MIN_HUMIDITY &&
-               data.relativeHumidity <= Constants.Validation.MAX_HUMIDITY
+        val temperatureValid = data.temperature >= Constants.Validation.MIN_TEMPERATURE &&
+                data.temperature <= Constants.Validation.MAX_TEMPERATURE &&
+                data.temperature != 0.0 // 0.0°C indica datos faltantes/inválidos en el contexto de Formosa
+
+        val humidityValid = data.relativeHumidity >= Constants.Validation.MIN_HUMIDITY &&
+                data.relativeHumidity <= Constants.Validation.MAX_HUMIDITY
+                // Removida validación de != 0.0 para humedad ya que puede ser válida
+
+        val isValidData = temperatureValid && humidityValid
+
+        if (!isValidData) {
+            Log.w(TAG, "Invalid widget data detected for station ${data.stationName}: " +
+                "temp=${data.temperature}°C, humidity=${data.relativeHumidity}%")
+        }
+
+        return isValidData
     }
 
     private fun isValidDateRange(from: String, to: String): Boolean {

@@ -217,3 +217,4 @@ Para cualquier consulta sobre la implementación o problemas encontrados, revisa
 ---
 
 **Nota**: Esta implementación sigue las mejores prácticas de Android Development, DevSecOps, y UX/UI design, proporcionando una base sólida y segura para el crecimiento futuro de la aplicación.
+

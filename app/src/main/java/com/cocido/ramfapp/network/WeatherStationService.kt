@@ -47,6 +47,7 @@ interface WeatherStationService {
 
     /**
      * Widget con datos meteorológicos actuales (público)
+     * NOTA: Este endpoint devuelve directamente WidgetData, no ApiResponse<WidgetData>
      */
     @GET("stations-measurement/widget/{stationName}")
     suspend fun getWidgetData(

@@ -92,3 +92,4 @@ val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
 - **Ambos** deben estar en el mismo proyecto de Google Cloud
 
 ¡Una vez configurado el Web Client ID, Google Sign-In debería funcionar perfectamente! 🎉
+

@@ -168,7 +168,7 @@ object RetrofitClient {
         Log.d(TAG, filteredMessage)
     }.apply {
         level = if (BuildConfig.DEBUG_MODE) {
-            HttpLoggingInterceptor.Level.HEADERS // Solo headers, no body
+            HttpLoggingInterceptor.Level.HEADERS
         } else {
             HttpLoggingInterceptor.Level.NONE
         }

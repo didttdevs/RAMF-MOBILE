@@ -60,3 +60,4 @@ val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
 4. **Probar** la aplicación
 
 ¡El código está correcto! El problema está en la configuración de Google Cloud Console.
+

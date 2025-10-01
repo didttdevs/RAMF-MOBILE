@@ -24,7 +24,7 @@ object AuthManager {
     private const val USER_KEY = "user_data"
     private const val LOGIN_TIMESTAMP_KEY = "login_timestamp"
     private const val TOKEN_EXPIRY_KEY = "token_expiry"
-    private const val TOKEN_EXPIRY_BUFFER_MINUTES = 5L // Refrescar 5 minutos antes
+    private const val TOKEN_EXPIRY_BUFFER_MINUTES = 30L // Refrescar 30 minutos antes
     
     private var encryptedSharedPref: SharedPreferences? = null
     private var masterKeyAlias: String? = null
