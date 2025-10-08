@@ -2,201 +2,331 @@ package com.cocido.ramfapp.utils
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Environment
+import android.util.Log
+import android.widget.Toast
 import androidx.core.content.FileProvider
-import com.github.mikephil.charting.charts.LineChart
+import com.cocido.ramfapp.BuildConfig
+import com.cocido.ramfapp.models.WeatherData
+import com.cocido.ramfapp.models.WeatherStation
+import com.cocido.ramfapp.models.WidgetData
 import java.io.File
-import java.io.FileOutputStream
+import java.io.FileWriter
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Utilidades profesionales para exportación de datos
+ * Soporta CSV, compartir y gestión de archivos
+ */
 object ExportUtils {
+
+    private const val TAG = "ExportUtils"
+    private const val EXPORT_DIRECTORY = "RAF_Exports"
     
-    fun exportChartAsPNG(
-        context: Context,
-        chart: LineChart,
-        fileName: String? = null,
-        onSuccess: (Uri) -> Unit,
-        onError: (String) -> Unit
-    ) {
-        try {
-            val bitmap = chart.chartBitmap
-            if (bitmap == null) {
-                onError("No se pudo generar la imagen del gráfico")
-                return
-            }
-            
-            val finalFileName = fileName ?: generateFileName("chart", "png")
-            val file = saveToInternalStorage(context, bitmap, finalFileName)
-            
-            if (file != null) {
-                val uri = FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    file
-                )
-                onSuccess(uri)
-            } else {
-                onError("Error al guardar el archivo")
-            }
-        } catch (e: Exception) {
-            onError("Error al exportar: ${e.localizedMessage}")
-        }
+    /**
+     * Formatos de exportación soportados
+     */
+    enum class ExportFormat(val extension: String, val mimeType: String) {
+        CSV("csv", "text/csv"),
+        JSON("json", "application/json"),
+        TXT("txt", "text/plain")
     }
-    
-    fun exportChartAsJPG(
-        context: Context,
-        chart: LineChart,
-        fileName: String? = null,
-        onSuccess: (Uri) -> Unit,
-        onError: (String) -> Unit
-    ) {
-        try {
-            val bitmap = chart.chartBitmap
-            if (bitmap == null) {
-                onError("No se pudo generar la imagen del gráfico")
-                return
-            }
-            
-            val finalFileName = fileName ?: generateFileName("chart", "jpg")
-            val file = saveToInternalStorage(context, bitmap, finalFileName, Bitmap.CompressFormat.JPEG)
-            
-            if (file != null) {
-                val uri = FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    file
-                )
-                onSuccess(uri)
-            } else {
-                onError("Error al guardar el archivo")
-            }
-        } catch (e: Exception) {
-            onError("Error al exportar: ${e.localizedMessage}")
-        }
+
+    /**
+     * Resultado de exportación
+     */
+    sealed class ExportResult {
+        data class Success(val file: File, val uri: Uri) : ExportResult()
+        data class Error(val message: String, val exception: Exception? = null) : ExportResult()
     }
-    
-    private fun saveToInternalStorage(
+
+    /**
+     * Exporta datos meteorológicos a CSV
+     */
+    fun exportWeatherDataToCsv(
         context: Context,
-        bitmap: Bitmap,
-        fileName: String,
-        format: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG
-    ): File? {
+        weatherData: List<WeatherData>,
+        stationName: String,
+        dateRange: String? = null
+    ): ExportResult {
         return try {
-            val directory = File(context.filesDir, "exports")
-            if (!directory.exists()) {
-                directory.mkdirs()
+            val fileName = generateFileName(stationName, "weather_data", ExportFormat.CSV, dateRange)
+            val file = createExportFile(context, fileName)
+
+            FileWriter(file).use { writer ->
+                // Header
+                writer.append("Fecha,Temperatura (°C),Humedad (%),Presión (hPa),Viento (m/s),Dirección Viento,Radiación (W/m²),Precipitación (mm)\n")
+
+                // Data rows
+                weatherData.forEach { data ->
+                    writer.append(
+                        "${data.date}," +
+                        "${data.sensors.hcAirTemperature?.avg ?: ""}," +
+                        "${data.sensors?.hcRelativeHumidity?.avg ?: ""}," +
+                        "${data.sensors?.airPressure?.avg ?: ""}," +
+                        "${data.sensors?.usonicWindSpeed?.avg ?: ""}," +
+                        "${data.sensors?.usonicWindDir?.last ?: ""}," +
+                        "${data.sensors?.solarRadiation?.avg ?: ""}," +
+                        "${data.sensors?.precipitation?.sum ?: ""}\n"
+                    )
+                }
             }
-            
-            val file = File(directory, fileName)
-            val outputStream = FileOutputStream(file)
-            
-            bitmap.compress(format, Constants.EXPORT_QUALITY, outputStream)
-            outputStream.flush()
-            outputStream.close()
-            
-            file
+
+            val uri = getFileUri(context, file)
+            Log.d(TAG, "CSV exported successfully: ${file.absolutePath}")
+            ExportResult.Success(file, uri)
+
         } catch (e: IOException) {
-            null
+            Log.e(TAG, "Error exporting to CSV", e)
+            ExportResult.Error("Error al exportar datos: ${e.message}", e)
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error during export", e)
+            ExportResult.Error("Error inesperado: ${e.message}", e)
         }
     }
-    
-    private fun generateFileName(prefix: String, extension: String): String {
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-            .format(Date())
-        return "${prefix}_${timestamp}.$extension"
+
+    /**
+     * Exporta datos de widget a CSV simple
+     */
+    fun exportWidgetDataToCsv(
+        context: Context,
+        widgetData: WidgetData,
+        stationName: String
+    ): ExportResult {
+        return try {
+            val fileName = generateFileName(stationName, "current_data", ExportFormat.CSV)
+            val file = createExportFile(context, fileName)
+
+            FileWriter(file).use { writer ->
+                writer.append("Parámetro,Valor,Unidad\n")
+                writer.append("Estación,$stationName,\n")
+                writer.append("Fecha,${widgetData.timestamp},\n")
+                writer.append("Temperatura,${widgetData.temperature},°C\n")
+                writer.append("Temperatura Máxima,${widgetData.maxTemperature},°C\n")
+                writer.append("Temperatura Mínima,${widgetData.minTemperature},°C\n")
+                writer.append("Humedad Relativa,${widgetData.relativeHumidity},%\n")
+                writer.append("Punto de Rocío,${widgetData.dewPoint},°C\n")
+                writer.append("Presión Atmosférica,${widgetData.airPressure},hPa\n")
+                writer.append("Radiación Solar,${widgetData.solarRadiation},W/m²\n")
+                writer.append("Velocidad del Viento,${widgetData.windSpeed},m/s\n")
+                writer.append("Dirección del Viento,${widgetData.windDirection},°\n")
+                writer.append("Precipitación Última Hora,${widgetData.rainLastHour},mm\n")
+                writer.append("Precipitación Día,${widgetData.rainDay},mm\n")
+                writer.append("Precipitación 24h,${widgetData.rain24h},mm\n")
+                writer.append("Precipitación 48h,${widgetData.rain48h},mm\n")
+                writer.append("Precipitación 7 días,${widgetData.rain7d},mm\n")
+            }
+
+            val uri = getFileUri(context, file)
+            Log.d(TAG, "Widget data exported successfully: ${file.absolutePath}")
+            ExportResult.Success(file, uri)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error exporting widget data", e)
+            ExportResult.Error("Error al exportar datos: ${e.message}", e)
+        }
     }
-    
-    fun shareFile(context: Context, uri: Uri, title: String = "Compartir gráfico") {
+
+    /**
+     * Exporta lista de estaciones a CSV
+     */
+    fun exportStationsToCsv(
+        context: Context,
+        stations: List<WeatherStation>
+    ): ExportResult {
+        return try {
+            val fileName = generateFileName("estaciones", "list", ExportFormat.CSV)
+            val file = createExportFile(context, fileName)
+
+            FileWriter(file).use { writer ->
+                writer.append("ID,Nombre,Ubicación,Latitud,Longitud,Altitud,Estado,Última Comunicación\n")
+
+                stations.forEach { station ->
+                    writer.append(
+                        "${station.id}," +
+                        "\"${station.name}\"," +
+                        "\"${station.name}\"," +
+                        "${station.position?.coordinates?.get(1) ?: ""}," +
+                        "${station.position?.coordinates?.get(0) ?: ""}," +
+                        "," + // altitude
+                        "," + // status
+                        "\"${station.lastCommunication ?: ""}\"\n"
+                    )
+                }
+            }
+
+            val uri = getFileUri(context, file)
+            Log.d(TAG, "Stations exported successfully: ${file.absolutePath}")
+            ExportResult.Success(file, uri)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error exporting stations", e)
+            ExportResult.Error("Error al exportar estaciones: ${e.message}", e)
+        }
+    }
+
+    /**
+     * Comparte un archivo mediante Intent
+     */
+    fun shareFile(
+        context: Context,
+        file: File,
+        title: String = "Compartir datos meteorológicos"
+    ) {
         try {
-            val shareIntent = Intent().apply {
-                action = Intent.ACTION_SEND
+            val uri = getFileUri(context, file)
+
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = ExportFormat.CSV.mimeType
                 putExtra(Intent.EXTRA_STREAM, uri)
-                type = "image/*"
+                putExtra(Intent.EXTRA_SUBJECT, "Datos Meteorológicos RAF")
+                putExtra(Intent.EXTRA_TEXT, "Datos exportados desde RAF App")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            
+
             context.startActivity(Intent.createChooser(shareIntent, title))
+            Log.d(TAG, "Share intent created for file: ${file.name}")
+
         } catch (e: Exception) {
-            // Handle error
+            Log.e(TAG, "Error sharing file", e)
+            Toast.makeText(context, "Error al compartir archivo: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
-    
-    fun exportChartData(
-        context: Context,
-        data: List<Pair<String, List<Pair<Long, Float>>>>,
-        fileName: String? = null,
-        onSuccess: (Uri) -> Unit,
-        onError: (String) -> Unit
-    ) {
+
+    /**
+     * Abre un archivo con la aplicación apropiada
+     */
+    fun openFile(context: Context, file: File) {
         try {
-            val finalFileName = fileName ?: generateFileName("data", "csv")
-            val csv = generateCSV(data)
-            val file = saveTextToInternalStorage(context, csv, finalFileName)
-            
-            if (file != null) {
-                val uri = FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    file
-                )
-                onSuccess(uri)
-            } else {
-                onError("Error al guardar el archivo CSV")
+            val uri = getFileUri(context, file)
+
+            val openIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, ExportFormat.CSV.mimeType)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
+
+            context.startActivity(Intent.createChooser(openIntent, "Abrir con"))
+            Log.d(TAG, "Open intent created for file: ${file.name}")
+
         } catch (e: Exception) {
-            onError("Error al exportar datos: ${e.localizedMessage}")
+            Log.e(TAG, "Error opening file", e)
+            Toast.makeText(context, "No se encontró aplicación para abrir el archivo", Toast.LENGTH_LONG).show()
         }
     }
-    
-    private fun generateCSV(data: List<Pair<String, List<Pair<Long, Float>>>>): String {
-        if (data.isEmpty()) return ""
-        
-        val StringBuilder = StringBuilder()
-        val dateFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-        
-        // Header
-        StringBuilder.append("Fecha")
-        data.forEach { (parameter, _) ->
-            StringBuilder.append(",$parameter")
+
+    /**
+     * Crea un archivo de exportación en el directorio de la app
+     */
+    private fun createExportFile(context: Context, fileName: String): File {
+        // Usar directorio público de Documentos (Android 10+)
+        val exportDir = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), EXPORT_DIRECTORY)
+        } else {
+            @Suppress("DEPRECATION")
+            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), EXPORT_DIRECTORY)
         }
-        StringBuilder.append("\n")
-        
-        // Find all unique timestamps
-        val allTimestamps = data.flatMap { it.second.map { pair -> pair.first } }.toSet().sorted()
-        
-        // Data rows
-        allTimestamps.forEach { timestamp ->
-            StringBuilder.append(dateFormatter.format(Date(timestamp)))
-            
-            data.forEach { (_, values) ->
-                val value = values.find { it.first == timestamp }?.second
-                StringBuilder.append(",${value ?: ""}")
-            }
-            StringBuilder.append("\n")
+
+        // Crear directorio si no existe
+        if (!exportDir.exists()) {
+            exportDir.mkdirs()
         }
-        
-        return StringBuilder.toString()
+
+        return File(exportDir, fileName)
     }
-    
-    private fun saveTextToInternalStorage(
-        context: Context,
-        text: String,
-        fileName: String
-    ): File? {
-        return try {
-            val directory = File(context.filesDir, "exports")
-            if (!directory.exists()) {
-                directory.mkdirs()
-            }
-            
-            val file = File(directory, fileName)
-            file.writeText(text)
+
+    /**
+     * Obtiene Uri del archivo usando FileProvider
+     */
+    private fun getFileUri(context: Context, file: File): Uri {
+        return FileProvider.getUriForFile(
+            context,
+            "${BuildConfig.APPLICATION_ID}.fileprovider",
             file
-        } catch (e: IOException) {
-            null
+        )
+    }
+
+    /**
+     * Genera un nombre de archivo único y descriptivo
+     */
+    private fun generateFileName(
+        stationName: String,
+        dataType: String,
+        format: ExportFormat,
+        dateRange: String? = null
+    ): String {
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val sanitizedStationName = stationName.replace(Regex("[^a-zA-Z0-9]"), "_")
+        
+        val rangePrefix = if (dateRange != null) {
+            "_${dateRange.replace(Regex("[^a-zA-Z0-9]"), "_")}"
+        } else {
+            ""
+        }
+
+        return "RAF_${sanitizedStationName}_${dataType}${rangePrefix}_${timestamp}.${format.extension}"
+    }
+
+    /**
+     * Obtiene el tamaño formateado de un archivo
+     */
+    fun getFormattedFileSize(file: File): String {
+        val bytes = file.length()
+        return when {
+            bytes < 1024 -> "$bytes B"
+            bytes < 1024 * 1024 -> String.format("%.2f KB", bytes / 1024.0)
+            else -> String.format("%.2f MB", bytes / (1024.0 * 1024.0))
+        }
+    }
+
+    /**
+     * Elimina archivos de exportación antiguos (más de 7 días)
+     */
+    fun cleanOldExports(context: Context, daysOld: Int = 7) {
+        try {
+            val exportDir = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), EXPORT_DIRECTORY)
+            if (!exportDir.exists()) return
+
+            val cutoffTime = System.currentTimeMillis() - (daysOld * 24 * 60 * 60 * 1000L)
+
+            exportDir.listFiles()?.forEach { file ->
+                if (file.lastModified() < cutoffTime) {
+                    val deleted = file.delete()
+                    if (deleted) {
+                        Log.d(TAG, "Deleted old export: ${file.name}")
+                    }
+                }
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error cleaning old exports", e)
+        }
+    }
+
+    /**
+     * Obtiene la lista de archivos exportados
+     */
+    fun getExportedFiles(context: Context): List<File> {
+        val exportDir = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), EXPORT_DIRECTORY)
+        if (!exportDir.exists()) return emptyList()
+
+        return exportDir.listFiles()?.toList()?.sortedByDescending { it.lastModified() } ?: emptyList()
+    }
+
+    /**
+     * Verifica si hay espacio suficiente para exportar
+     */
+    fun hasEnoughSpace(context: Context, requiredBytes: Long = 10 * 1024 * 1024): Boolean {
+        return try {
+            val exportDir = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+            val usableSpace = exportDir?.usableSpace ?: 0
+            usableSpace > requiredBytes
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking available space", e)
+            false
         }
     }
 }

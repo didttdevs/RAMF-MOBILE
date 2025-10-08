@@ -49,7 +49,13 @@ interface AuthService {
      * Solicitar reset de contraseña
      */
     @POST("auth/forgot-password")
-    suspend fun forgotPassword(@Body email: Map<String, String>): Response<ApiResponse<Void>>
+    suspend fun requestPasswordReset(@Body request: ForgotPasswordRequest): Response<ApiResponse<Void>>
+    
+    /**
+     * Cambiar contraseña
+     */
+    @POST("auth/change-password")
+    suspend fun changePassword(@Body request: ChangePasswordRequest): Response<ApiResponse<Void>>
     
     /**
      * Resetear contraseña con token

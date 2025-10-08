@@ -11,17 +11,31 @@ android {
 
     defaultConfig {
         applicationId = "com.cocido.ramfapp"
-        minSdk = 27
+        minSdk = 24  // Bajado a 24 para mayor compatibilidad (Android 7.0+)
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2  // Incrementado para nueva versión
+        versionName = "1.5.0"  // Versión actual del análisis
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
-        // Configuraciones para producción
-        buildConfigField("String", "BASE_URL_DEV", "\"http://192.168.0.2:3100/api/\"")
-        buildConfigField("String", "BASE_URL_PROD", "\"https://api.ramf.com.ar/api/\"")
-        buildConfigField("boolean", "DEBUG_MODE", "true")
+        // Vector drawables para compatibilidad
+        vectorDrawables.useSupportLibrary = true
+        
+        // Recursos configurables
+        resourceConfigurations.addAll(listOf("es", "en"))  // Solo español e inglés
+    }
+
+    // Configuración de firmado (signing)
+    signingConfigs {
+        create("release") {
+            // IMPORTANTE: En producción, estas claves deben estar en gradle.properties
+            // y el archivo debe estar en .gitignore
+            // Para desarrollo, usa valores de entorno o archivos locales
+            storeFile = file(System.getenv("RAMF_KEYSTORE_PATH") ?: "release-keystore.jks")
+            storePassword = System.getenv("RAMF_KEYSTORE_PASSWORD") ?: ""
+            keyAlias = System.getenv("RAMF_KEY_ALIAS") ?: "ramf-app"
+            keyPassword = System.getenv("RAMF_KEY_PASSWORD") ?: ""
+        }
     }
 
     buildTypes {
@@ -30,14 +44,19 @@ android {
             isDebuggable = true
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            
             buildConfigField("boolean", "DEBUG_MODE", "true")
             buildConfigField("String", "API_BASE_URL", "\"https://ramf.formosa.gob.ar/api/http/\"")
+            
+            // Permitir backups en debug
+            manifestPlaceholders["allowBackup"] = true
         }
         
         release {
             isMinifyEnabled = true
             isDebuggable = false
             isShrinkResources = true
+            
             buildConfigField("boolean", "DEBUG_MODE", "false")
             buildConfigField("String", "API_BASE_URL", "\"https://ramf.formosa.gob.ar/api/http/\"")
             
@@ -46,7 +65,28 @@ android {
                 "proguard-rules.pro"
             )
             
-            signingConfig = signingConfigs.getByName("debug") // Cambiar en producción
+            // Usar signing config de release si está configurado
+            try {
+                signingConfig = signingConfigs.getByName("release")
+            } catch (e: Exception) {
+                logger.warn("Release signing config not found. Using debug signing.")
+                signingConfig = signingConfigs.getByName("debug")
+            }
+            
+            // No permitir backups en release por seguridad
+            manifestPlaceholders["allowBackup"] = false
+        }
+        
+        // Build type staging para pruebas pre-producción
+        create("staging") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".staging"
+            versionNameSuffix = "-staging"
+            
+            buildConfigField("boolean", "DEBUG_MODE", "true")
+            
+            // Staging usa el mismo backend que producción
+            buildConfigField("String", "API_BASE_URL", "\"https://ramf.formosa.gob.ar/api/http/\"")
         }
     }
     compileOptions {

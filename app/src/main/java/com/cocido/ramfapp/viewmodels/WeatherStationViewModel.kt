@@ -10,6 +10,8 @@ import com.cocido.ramfapp.common.UiState
 import com.cocido.ramfapp.models.*
 import com.cocido.ramfapp.repository.WeatherRepository
 import com.cocido.ramfapp.utils.SecurityLogger
+import com.cocido.ramfapp.utils.DateRangeUtils
+import com.cocido.ramfapp.utils.DateRangeUtils.DateRange
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -46,6 +48,10 @@ class WeatherStationViewModel : ViewModel() {
 
     private val _chartsData = MutableStateFlow<UiState<List<WeatherData>>>(UiState())
     val chartsData: StateFlow<UiState<List<WeatherData>>> = _chartsData.asStateFlow()
+
+    // Date Range Management
+    private val _selectedDateRange = MutableStateFlow(DateRange.getDefault())
+    val selectedDateRange: StateFlow<DateRange> = _selectedDateRange.asStateFlow()
 
     // Legacy LiveData support for existing MainActivity
     val weatherDataLastDay = _historicalData.asStateFlow().map { it.data ?: emptyList() }.asLiveData()
@@ -334,5 +340,91 @@ class WeatherStationViewModel : ViewModel() {
 
     fun fetchPublicChartsData(stationName: String) {
         fetchChartsData(stationName)
+    }
+
+    // ============ DATE RANGE METHODS ============
+
+    /**
+     * Update the selected date range and reload data
+     */
+    fun updateDateRange(dateRange: DateRange) {
+        Log.d(TAG, "Updating date range: ${dateRange.toDisplayString()}")
+        _selectedDateRange.value = dateRange
+
+        // Reload data with new range
+        _selectedStation.value?.id?.let { stationId ->
+            loadDataWithDateRange(stationId, dateRange)
+        }
+    }
+
+    /**
+     * Load data for a specific date range
+     */
+    fun loadDataWithDateRange(stationId: String, dateRange: DateRange = _selectedDateRange.value) {
+        Log.d(TAG, "Loading data for station $stationId with range: ${dateRange.toDisplayString()}")
+
+        viewModelScope.launch {
+            val (from, to) = dateRange.toApiStringWithTime()
+
+            // Load historical data
+            repository.getWeatherDataTimeRange(stationId, from, to).collect { resource ->
+                when (resource) {
+                    is Resource.Loading -> {
+                        _historicalData.value = UiState(isLoading = true)
+                    }
+                    is Resource.Success -> {
+                        _historicalData.value = UiState(data = resource.data, isLoading = false)
+                        Log.d(TAG, "Historical data loaded with custom range: ${resource.data.size} records")
+                    }
+                    is Resource.Error -> {
+                        _historicalData.value = UiState(error = resource.message, isLoading = false)
+                        Log.e(TAG, "Error loading data with custom range: ${resource.message}")
+                    }
+                }
+            }
+
+            // Load charts data
+            repository.getChartsData(stationId, from, to).collect { resource ->
+                when (resource) {
+                    is Resource.Loading -> {
+                        _chartsData.value = UiState(isLoading = true)
+                    }
+                    is Resource.Success -> {
+                        _chartsData.value = UiState(data = resource.data, isLoading = false)
+                        Log.d(TAG, "Charts data loaded with custom range: ${resource.data.size} records")
+                    }
+                    is Resource.Error -> {
+                        _chartsData.value = UiState(error = resource.message, isLoading = false)
+                        Log.e(TAG, "Error loading charts with custom range: ${resource.message}")
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Quick preset methods for common ranges
+     */
+    fun selectLast24Hours() {
+        updateDateRange(DateRange.fromPreset(DateRangeUtils.DateRangePreset.LAST_24_HOURS))
+    }
+
+    fun selectLast7Days() {
+        updateDateRange(DateRange.fromPreset(DateRangeUtils.DateRangePreset.LAST_7_DAYS))
+    }
+
+    fun selectLast30Days() {
+        updateDateRange(DateRange.fromPreset(DateRangeUtils.DateRangePreset.LAST_30_DAYS))
+    }
+
+    fun selectCurrentMonth() {
+        updateDateRange(DateRange.fromPreset(DateRangeUtils.DateRangePreset.CURRENT_MONTH))
+    }
+
+    /**
+     * Get current date range as display string
+     */
+    fun getCurrentDateRangeDisplay(): String {
+        return _selectedDateRange.value.toDisplayString()
     }
 }

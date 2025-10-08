@@ -101,3 +101,14 @@ lint/tmp/
 *.draft.md
 *_TEMP.md
 *_OLD.md
+
+# Release keystore (NUNCA subir a Git)
+*.jks
+*.keystore
+release-keystore.*
+
+# Configuración local sensible
+local.gradle.properties
+
+# Credenciales y claves API locales
+secrets.properties

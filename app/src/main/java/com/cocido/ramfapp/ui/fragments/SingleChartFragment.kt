@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
 import java.text.SimpleDateFormat
 import java.util.*
+import android.util.Log
 
 class SingleChartFragment : Fragment() {
     
@@ -175,7 +176,15 @@ class SingleChartFragment : Fragment() {
     }
     
     private fun updateChart(data: List<WeatherData>) {
+        Log.d("SingleChartFragment", "updateChart called with ${data.size} data points for parameter: $parameter")
+        
+        // Log first few data points for debugging
+        data.take(3).forEachIndexed { index, weatherData ->
+            Log.d("SingleChartFragment", "Data point $index: date=${weatherData.date}, sensors=${weatherData.sensors}")
+        }
+        
         val entries = mapDataToEntries(data, parameter)
+        Log.d("SingleChartFragment", "Mapped to ${entries.size} entries for parameter: $parameter")
         
         if (entries.isNotEmpty()) {
             // Calcular rango de tiempo para ajustar granularidad
@@ -237,7 +246,22 @@ class SingleChartFragment : Fragment() {
                 "dewPoint" -> weatherData.sensors.dewPoint?.avg
                 "airPressure" -> weatherData.sensors.airPressure?.avg
                 "windGust" -> weatherData.sensors.windGust?.max
-                else -> null
+                else -> {
+                    // Fallback: intentar encontrar cualquier valor no nulo
+                    Log.w("SingleChartFragment", "Unknown parameter: $parameter, trying fallback")
+                    weatherData.sensors.hcAirTemperature?.avg ?: 
+                    weatherData.sensors.hcRelativeHumidity?.avg ?:
+                    weatherData.sensors.solarRadiation?.avg ?:
+                    weatherData.sensors.airPressure?.avg
+                }
+            }
+            
+            // Debug logging
+            if (timestamp == null) {
+                Log.w("SingleChartFragment", "Failed to parse timestamp: ${weatherData.date}")
+            }
+            if (value == null) {
+                Log.w("SingleChartFragment", "No value found for parameter '$parameter' in data: ${weatherData.sensors}")
             }
             
             if (timestamp != null && value != null) {
@@ -248,10 +272,27 @@ class SingleChartFragment : Fragment() {
     
     private fun parseTimestamp(dateString: String): Long? {
         return try {
-            val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
-            format.timeZone = TimeZone.getTimeZone("UTC")
-            format.parse(dateString)?.time
+            // Intentar formato del backend: dd-MM-yyyy HH:mm:ss
+            val backendFormat = SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.US)
+            backendFormat.timeZone = TimeZone.getTimeZone("UTC")
+            val result = backendFormat.parse(dateString)
+            if (result != null) {
+                Log.d("SingleChartFragment", "Successfully parsed timestamp: $dateString -> $result")
+                return result.time
+            }
+            
+            // Fallback: formato ISO original
+            val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+            isoFormat.timeZone = TimeZone.getTimeZone("UTC")
+            val fallbackResult = isoFormat.parse(dateString)
+            if (fallbackResult != null) {
+                Log.d("SingleChartFragment", "Successfully parsed timestamp (ISO): $dateString -> $fallbackResult")
+                return fallbackResult.time
+            }
+            
+            null
         } catch (e: Exception) {
+            Log.w("SingleChartFragment", "Failed to parse timestamp: $dateString, error: ${e.message}")
             null
         }
     }

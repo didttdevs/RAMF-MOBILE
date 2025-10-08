@@ -1,7 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">10.0.2.2</domain>
+    <!-- Configuración base: Solo HTTPS en producción -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <!-- Trust system certificates -->
+            <certificates src="system" />
+            <!-- Trust user added certificates (para desarrollo) -->
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Configuración para dominio de producción -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">ramf.formosa.gob.ar</domain>
+        <pin-set expiration="2026-12-31">
+            <!-- Certificate pinning (opcional pero recomendado) -->
+            <!-- Obtener SHA-256 con: openssl x509 -in cert.pem -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64 -->
+            <!-- <pin digest="SHA-256">HASH_DEL_CERTIFICADO_AQUI</pin> -->
+        </pin-set>
     </domain-config>
-    <base-config cleartextTrafficPermitted="true"/>
+    
+    <!-- Solo para desarrollo local (debug builds) -->
+    <!-- Esto se deshabilita en release builds -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
 </network-security-config>

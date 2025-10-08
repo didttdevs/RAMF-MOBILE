@@ -1,6 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <files-path name="exports" path="exports/" />
-    <cache-path name="cache" path="." />
-    <external-files-path name="external_files" path="." />
+    <!-- Directorio de exportaciones -->
+    <external-files-path 
+        name="exports" 
+        path="Documents/RAF_Exports/" />
+    
+    <!-- Directorio general de archivos externos -->
+    <external-files-path 
+        name="external_files" 
+        path="." />
+    
+    <!-- Directorio de caché -->
+    <cache-path 
+        name="cache" 
+        path="." />
+    
+    <!-- Directorio de archivos internos -->
+    <files-path 
+        name="internal_files" 
+        path="." />
+    
+    <!-- Directorio de documentos -->
+    <external-files-path 
+        name="documents" 
+        path="Documents/" />
 </paths>
