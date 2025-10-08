@@ -35,7 +35,23 @@
       "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s com.cocido.ramfapp.debug -d)",
       "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat)",
       "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s WidgetData -d)",
-      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s WidgetDataDEBUG -d)"
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s WidgetDataDEBUG -d)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" devices)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" install -r app/build/outputs/apk/debug/app-debug.apk)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s MainActivity AuthManager -d)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s MainActivity:D -d)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s SecurityLogger:D -d)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" shell pm clear com.cocido.ramfapp.debug)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s AuthManager:D -d)",
+      "Read(//c/Users/Matias/Pictures/Screenshots/asdsa/**)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s MainActivity:D AuthManager:D -d)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s FullScreenCharts GraphViewModel WeatherRepository SingleChartFragment -d)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s LoginActivity:D AuthManager:D MainActivity:D -d)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s LoginActivity:D -d)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s LoginActivity:D MainActivity:D -d)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s LoginActivity:D MainActivity:D AuthManager:D -d)",
+      "Bash(\"C:\\Users\\Matias\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s GraphViewModel WeatherRepository SingleChartFragment FullScreenCharts -d)",
+      "Bash(tree:*)"
     ],
     "defaultMode": "acceptEdits"
   }

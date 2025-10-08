@@ -61,7 +61,7 @@ object AuthManager {
     fun saveUserSession(user: User, loginResponse: LoginResponse) {
         try {
             val userJson = Gson().toJson(user)
-            
+
             encryptedSharedPref?.edit()?.apply {
                 putString(ACCESS_TOKEN_KEY, loginResponse.accessToken)
                 putString(REFRESH_TOKEN_KEY, loginResponse.refreshToken)
@@ -70,15 +70,15 @@ object AuthManager {
                 putLong(TOKEN_EXPIRY_KEY, System.currentTimeMillis() + loginResponse.getExpiresIn())
                 apply()
             }
-            
+
             // Configurar tokens en RetrofitClient
             RetrofitClient.setAuthTokens(
                 loginResponse.accessToken,
                 loginResponse.refreshToken,
                 loginResponse.getExpiresIn()
             )
-            
-            Log.d(TAG, "User session saved for: ${user.email}")
+
+            Log.d(TAG, "User session saved for: ${user.email} (${user.getFullName()})")
         } catch (e: Exception) {
             Log.e(TAG, "Error saving user session", e)
         }
@@ -272,5 +272,47 @@ object AuthManager {
     fun isAdmin(): Boolean {
         val user = getCurrentUser()
         return user?.isAdmin() ?: false
+    }
+
+    /**
+     * Obtener información actualizada del usuario desde el servidor
+     * Llama al endpoint /api/auth/me para obtener datos frescos
+     */
+    suspend fun fetchAndUpdateCurrentUser(): User? {
+        return try {
+            val accessToken = getAccessToken()
+            if (accessToken.isNullOrEmpty()) {
+                Log.w(TAG, "No access token available to fetch user")
+                return null
+            }
+
+            val response = RetrofitClient.authService.getCurrentUser("Bearer $accessToken")
+
+            if (response.isSuccessful) {
+                response.body()?.data?.let { freshUser ->
+                    Log.d(TAG, "Fresh user data fetched from /api/auth/me")
+                    Log.d(TAG, "  User: ${freshUser.email}")
+                    Log.d(TAG, "  Name: ${freshUser.getFullName()}")
+
+                    // Actualizar usuario en SharedPreferences
+                    val userJson = Gson().toJson(freshUser)
+                    encryptedSharedPref?.edit()?.apply {
+                        putString(USER_KEY, userJson)
+                        apply()
+                    }
+
+                    return freshUser
+                } ?: run {
+                    Log.w(TAG, "Empty response body from /api/auth/me")
+                    null
+                }
+            } else {
+                Log.e(TAG, "Failed to fetch user from /api/auth/me: ${response.code()}")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching current user from server", e)
+            null
+        }
     }
 }

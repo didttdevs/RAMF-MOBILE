@@ -11,3 +11,5 @@ data class WeatherDataResponse(
     @SerializedName("status") val status: String? = null
 )
 
+
+

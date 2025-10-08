@@ -226,7 +226,7 @@ class WeatherRepository {
     }
     
     /**
-     * Get charts data - FALLBACK: usa widget data si no hay autenticación
+     * Get charts data - Requiere autenticación para datos históricos
      */
     fun getChartsData(
         stationName: String,
@@ -234,63 +234,40 @@ class WeatherRepository {
         to: String
     ): Flow<Resource<List<WeatherData>>> = flow {
 
-        // Si el usuario está autenticado, intentar obtener datos históricos
-        if (AuthHelper.isAuthenticated()) {
-            getWeatherDataTimeRange(stationName, from, to).collect { resource ->
-                when (resource) {
-                    is Resource.Success -> emit(Resource.Success(resource.data))
-                    is Resource.Error -> {
-                        Log.w(TAG, "Historical data failed, falling back to widget data: ${resource.message}")
-                        // Fallback: crear datos básicos desde widget
-                        createBasicDataFromWidget(stationName).collect { fallbackResource ->
-                            emit(fallbackResource)
-                        }
-                    }
-                    is Resource.Loading -> emit(Resource.Loading)
-                }
-            }
-        } else {
-            Log.d(TAG, "No authentication, using widget data for basic charts")
-            // Usuario no autenticado: usar solo widget data
-            createBasicDataFromWidget(stationName).collect { resource ->
-                emit(resource)
-            }
+        // Verificar autenticación primero
+        if (!AuthHelper.isAuthenticated()) {
+            Log.w(TAG, "User not authenticated, charts require login for historical data")
+            emit(Resource.Error(
+                Exception("Authentication required"),
+                "Inicia sesión para ver gráficos históricos con datos detallados"
+            ))
+            return@flow
         }
-    }
 
-    /**
-     * Crear datos básicos desde widget data para mostrar algo cuando no hay auth
-     */
-    private fun createBasicDataFromWidget(stationName: String): Flow<Resource<List<WeatherData>>> = flow {
-        getWidgetData(stationName).collect { widgetResource ->
-            when (widgetResource) {
+        // Usuario autenticado: obtener datos históricos
+        getWeatherDataTimeRange(stationName, from, to).collect { resource ->
+            when (resource) {
                 is Resource.Success -> {
-                    val widget = widgetResource.data
-                    // Convertir widget data a formato WeatherData básico
-                    val basicWeatherData = WeatherData(
-                        date = widget.timestamp,
-                        sensors = Sensors(
-                            hcAirTemperature = SensorWithAvgMaxMin(
-                                avg = widget.temperature,
-                                max = widget.maxTemperature,
-                                min = widget.minTemperature
-                            ),
-                            hcRelativeHumidity = SensorWithAvgMaxMin(
-                                avg = widget.relativeHumidity
-                            ),
-                            solarRadiation = SensorAvg(avg = widget.solarRadiation),
-                            usonicWindSpeed = SensorAvg(avg = widget.windSpeed),
-                            dewPoint = SensorAvg(avg = widget.dewPoint),
-                            airPressure = SensorAvg(avg = widget.airPressure)
-                        )
-                    )
-                    emit(Resource.Success(listOf(basicWeatherData)))
+                    if (resource.data.isNotEmpty()) {
+                        Log.d(TAG, "Historical data loaded: ${resource.data.size} data points")
+                        emit(Resource.Success(resource.data))
+                    } else {
+                        Log.w(TAG, "No historical data available for period")
+                        emit(Resource.Error(
+                            Exception("No data"),
+                            "No hay datos disponibles para el período seleccionado"
+                        ))
+                    }
                 }
-                is Resource.Error -> emit(Resource.Error(widgetResource.exception, "No se pudieron obtener datos básicos: ${widgetResource.message}"))
+                is Resource.Error -> {
+                    Log.e(TAG, "Failed to load historical data: ${resource.message}")
+                    emit(resource)
+                }
                 is Resource.Loading -> emit(Resource.Loading)
             }
         }
     }
+
     
     // MARK: - Private Helper Methods
 

@@ -29,3 +29,5 @@ data class StationsLinks(
     @SerializedName("current") val current: String
 )
 
+
+

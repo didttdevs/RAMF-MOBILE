@@ -8,3 +8,5 @@ data class TemperatureExtremes(
     val min: Double
 )
 
+
+

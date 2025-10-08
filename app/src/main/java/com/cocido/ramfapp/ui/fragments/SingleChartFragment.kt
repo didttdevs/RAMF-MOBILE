@@ -49,7 +49,12 @@ class SingleChartFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         parameter = arguments?.getString(ARG_PARAMETER) ?: "temperatura"
-        viewModel = ViewModelProvider(requireActivity())[GraphViewModel::class.java]
+
+        // Usar Factory para inicializar el ViewModel con repositorio
+        val factory = com.cocido.ramfapp.viewmodels.GraphViewModelFactory(
+            com.cocido.ramfapp.repository.WeatherRepository()
+        )
+        viewModel = ViewModelProvider(requireActivity(), factory)[GraphViewModel::class.java]
     }
     
     override fun onCreateView(

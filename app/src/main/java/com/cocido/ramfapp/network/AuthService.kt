@@ -67,11 +67,17 @@ interface AuthService {
     ): Response<ApiResponse<Void>>
     
     /**
-     * Obtener perfil del usuario actual
+     * Obtener información del usuario autenticado actual
+     */
+    @GET("auth/me")
+    suspend fun getCurrentUser(@Header("Authorization") token: String): Response<ApiResponse<User>>
+
+    /**
+     * Obtener perfil del usuario actual (alternativo)
      */
     @GET("auth/profile")
     suspend fun getProfile(@Header("Authorization") token: String): Response<ApiResponse<User>>
-    
+
     /**
      * Actualizar perfil del usuario
      */

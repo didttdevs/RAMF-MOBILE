@@ -146,26 +146,47 @@ class MainActivity : AppCompatActivity() {
         navHeaderName = headerView.findViewById(R.id.navHeaderUsername)
         navHeaderRoleUser = headerView.findViewById(R.id.navHeaderDetailsUser)
 
-        // Load user data safely
-        AuthManager.getCurrentUser()?.let { user ->
-            navHeaderName.text = user.getFullName()
-            navHeaderRoleUser.text = user.role?.takeIf { it.isNotBlank() }?.replaceFirstChar { it.uppercase() } ?: "Usuario"
-
-            // Load avatar with error handling
-            if (!user.avatar.isNullOrBlank()) {
-                try {
-                    Glide.with(this)
-                        .load(user.avatar)
-                        .circleCrop()
-                        .error(R.drawable.ic_weather_sunny) // Fallback image
-                        .into(navHeaderProfileImage)
-                } catch (e: Exception) {
-                    Log.w(TAG, "Error loading user avatar", e)
+        // Intentar actualizar usuario desde el servidor primero
+        lifecycleScope.launch {
+            val freshUser = AuthManager.fetchAndUpdateCurrentUser()
+            if (freshUser != null) {
+                Log.d(TAG, "Fresh user data loaded from /api/auth/me")
+                updateNavigationHeaderUI(freshUser)
+            } else {
+                // Fallback a datos en caché
+                Log.d(TAG, "Using cached user data")
+                AuthManager.getCurrentUser()?.let { cachedUser ->
+                    updateNavigationHeaderUI(cachedUser)
+                } ?: run {
+                    Log.w(TAG, "No user found in AuthManager")
+                    navHeaderName.text = "Usuario"
+                    navHeaderRoleUser.text = "Invitado"
                 }
             }
-
-            securityLogger.logUserSecurityEvent("profile_loaded", "navigation_header")
         }
+    }
+
+    private fun updateNavigationHeaderUI(user: User) {
+        val fullName = user.getFullName()
+        navHeaderName.text = fullName
+        navHeaderRoleUser.text = user.role?.takeIf { it.isNotBlank() }?.replaceFirstChar { it.uppercase() } ?: "Usuario"
+
+        Log.d(TAG, "Navigation header set for: $fullName (${user.email})")
+
+        // Load avatar with error handling
+        if (!user.avatar.isNullOrBlank()) {
+            try {
+                Glide.with(this)
+                    .load(user.avatar)
+                    .circleCrop()
+                    .error(R.drawable.ic_weather_sunny) // Fallback image
+                    .into(navHeaderProfileImage)
+            } catch (e: Exception) {
+                Log.w(TAG, "Error loading user avatar", e)
+            }
+        }
+
+        securityLogger.logUserSecurityEvent("profile_loaded", "navigation_header")
     }
 
     private fun setupRefreshListener() {

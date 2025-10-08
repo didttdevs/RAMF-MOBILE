@@ -108,10 +108,20 @@ class LoginActivity : AppCompatActivity() {
                 
                 result.onSuccess { loginResponse ->
                     Log.d(TAG, "Login successful for user: ${loginResponse.user.email}")
-                    
+
                     // Guardar sesión del usuario
                     AuthManager.saveUserSession(loginResponse.user, loginResponse)
-                    
+
+                    // Obtener datos completos del usuario desde /api/auth/me
+                    lifecycleScope.launch {
+                        val freshUser = AuthManager.fetchAndUpdateCurrentUser()
+                        if (freshUser != null) {
+                            Log.d(TAG, "User data updated from /api/auth/me: ${freshUser.getFullName()}")
+                        } else {
+                            Log.w(TAG, "Could not fetch fresh user data, using login response data")
+                        }
+                    }
+
                     Toast.makeText(this@LoginActivity, "Login exitoso", Toast.LENGTH_SHORT).show()
                     goToMainActivity()
                 }.onFailure { exception ->
@@ -219,11 +229,20 @@ class LoginActivity : AppCompatActivity() {
     private fun performGoogleLogin(account: GoogleSignInAccount) {
         Log.d(TAG, "performGoogleLogin: Starting Google login for email: ${account.email}")
         
+        // Crear el nombre completo combinando firstName y lastName
+        val fullName = buildString {
+            account.givenName?.let { append(it) }
+            if (!account.givenName.isNullOrEmpty() && !account.familyName.isNullOrEmpty()) {
+                append(" ")
+            }
+            account.familyName?.let { append(it) }
+        }.ifEmpty { account.displayName ?: "" }
+
         // Crear el body con los datos de Google que necesita el backend
-        // PROBAR AMBOS FORMATOS: google_id vs idToken
         val googleToken = mapOf(
             "email" to (account.email ?: ""),
-            "name" to (account.givenName ?: ""),
+            "name" to fullName,  // Enviar nombre completo aquí
+            "firstName" to (account.givenName ?: ""),
             "lastName" to (account.familyName ?: ""),
             "avatar" to (account.photoUrl?.toString() ?: ""),
             // FORMATO 1: Usar google_id (como en los ejemplos de Postman)
@@ -235,8 +254,9 @@ class LoginActivity : AppCompatActivity() {
         // Log detallado para debug
         Log.d(TAG, "performGoogleLogin: Sending data to backend:")
         Log.d(TAG, "performGoogleLogin: Email: ${account.email}")
-        Log.d(TAG, "performGoogleLogin: Name: ${account.givenName}")
-        Log.d(TAG, "performGoogleLogin: LastName: ${account.familyName}")
+        Log.d(TAG, "performGoogleLogin: Full Name: $fullName")
+        Log.d(TAG, "performGoogleLogin: First Name: ${account.givenName}")
+        Log.d(TAG, "performGoogleLogin: Last Name: ${account.familyName}")
         Log.d(TAG, "performGoogleLogin: Google ID: ${account.id}")
         Log.d(TAG, "performGoogleLogin: ID Token: ${if (account.idToken != null) "Present (${account.idToken?.length} chars)" else "NULL"}")
         Log.d(TAG, "performGoogleLogin: Request body: $googleToken")
@@ -249,10 +269,37 @@ class LoginActivity : AppCompatActivity() {
                     val loginResponse = response.body()
                     if (loginResponse != null) {
                         Log.d(TAG, "Google login successful for user: ${loginResponse.user.email}")
-                        
-                        // Guardar sesión del usuario
-                        AuthManager.saveUserSession(loginResponse.user, loginResponse)
-                        
+                        Log.d(TAG, "Backend returned user:")
+                        Log.d(TAG, "  id: ${loginResponse.user.id}")
+                        Log.d(TAG, "  email: ${loginResponse.user.email}")
+                        Log.d(TAG, "  name: ${loginResponse.user.name}")
+                        Log.d(TAG, "  firstName: ${loginResponse.user.firstName}")
+                        Log.d(TAG, "  lastName: ${loginResponse.user.lastName}")
+                        Log.d(TAG, "  avatar: ${loginResponse.user.avatar}")
+
+                        // Sobrescribir el nombre con el nombre completo de Google
+                        // ya que el backend no lo guarda correctamente
+                        val correctedUser = loginResponse.user.copy(
+                            name = fullName,
+                            firstName = account.givenName,
+                            lastName = account.familyName
+                        )
+
+                        Log.d(TAG, "Corrected user with Google data: name='$fullName'")
+
+                        // Guardar sesión del usuario con datos corregidos
+                        AuthManager.saveUserSession(correctedUser, loginResponse)
+
+                        // Obtener datos completos del usuario desde /api/auth/me
+                        lifecycleScope.launch {
+                            val freshUser = AuthManager.fetchAndUpdateCurrentUser()
+                            if (freshUser != null) {
+                                Log.d(TAG, "User data updated from /api/auth/me: ${freshUser.getFullName()}")
+                            } else {
+                                Log.w(TAG, "Could not fetch fresh user data, using login response data")
+                            }
+                        }
+
                         Toast.makeText(this@LoginActivity, "Login exitoso con Google", Toast.LENGTH_SHORT).show()
                         goToMainActivity()
                     } else {
