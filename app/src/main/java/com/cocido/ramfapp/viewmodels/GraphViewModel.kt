@@ -1,5 +1,6 @@
 package com.cocido.ramfapp.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -58,6 +59,11 @@ class GraphViewModel(private val repository: WeatherRepository) : ViewModel() {
 
     fun loadWeatherData(from: String, to: String) {
         val currentState = _uiState.value
+        Log.d("GraphViewModel", "🔄 Loading weather data:")
+        Log.d("GraphViewModel", "   Station: ${currentState.currentStationId}")
+        Log.d("GraphViewModel", "   From: $from")
+        Log.d("GraphViewModel", "   To: $to")
+        
         viewModelScope.launch {
             repository.getChartsData(
                 stationName = currentState.currentStationId,
@@ -69,6 +75,7 @@ class GraphViewModel(private val repository: WeatherRepository) : ViewModel() {
                         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
                     }
                     is Resource.Success -> {
+                        Log.d("GraphViewModel", "✅ Data loaded successfully: ${resource.data.size} points")
                         _uiState.value = _uiState.value.copy(
                             weatherData = resource.data,
                             isLoading = false,
