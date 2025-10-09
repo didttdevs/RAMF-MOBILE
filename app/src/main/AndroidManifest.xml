@@ -68,6 +68,14 @@
             android:name=".ui.activities.UserProfileActivity"
             android:exported="false" />
         <activity
+            android:name=".ui.activities.ProfileEditActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.activities.UserProfileActivity" />
+        <activity
+            android:name=".ui.activities.ImageCropActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.activities.ProfileEditActivity" />
+        <activity
             android:name=".ui.activities.MainActivity"
             android:exported="false" />
         <activity

@@ -113,6 +113,19 @@ object AuthManager {
         } else null
     }
     
+    /**
+     * Actualizar información del usuario actual
+     */
+    fun updateCurrentUser(updatedUser: User) {
+        try {
+            val userJson = Gson().toJson(updatedUser)
+            encryptedSharedPref?.edit()?.putString(USER_KEY, userJson)?.apply()
+            Log.d(TAG, "Current user updated")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating current user", e)
+        }
+    }
+    
         /**
          * Verificar si el usuario está logueado y el token es válido
          */

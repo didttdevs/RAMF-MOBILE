@@ -1,6 +1,7 @@
 package com.cocido.ramfapp.network
 
 import com.cocido.ramfapp.models.*
+import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -64,15 +65,6 @@ interface AuthService {
     suspend fun resetPassword(@Body resetData: Map<String, String>): Response<ApiResponse<Void>>
     
     /**
-     * Cambiar contraseña (requiere autenticación)
-     */
-    @PUT("auth/change-password")
-    suspend fun changePassword(
-        @Header("Authorization") token: String,
-        @Body passwordData: Map<String, String>
-    ): Response<ApiResponse<Void>>
-    
-    /**
      * Obtener información del usuario autenticado actual
      */
     @GET("auth/me")
@@ -83,13 +75,47 @@ interface AuthService {
      */
     @GET("auth/profile")
     suspend fun getProfile(@Header("Authorization") token: String): Response<ApiResponse<User>>
-
+    
     /**
-     * Actualizar perfil del usuario
+     * Actualizar información del perfil del usuario
      */
     @PUT("auth/profile")
     suspend fun updateProfile(
         @Header("Authorization") token: String,
-        @Body userData: Map<String, Any>
-    ): Response<ApiResponse<User>>
+        @Body profileData: Map<String, String>
+    ): Response<ApiResponse<Void>>
+    
+    /**
+     * Actualizar avatar del usuario
+     */
+    @Multipart
+    @PUT("auth/avatar")
+    suspend fun updateAvatar(
+        @Header("Authorization") token: String,
+        @Part avatar: MultipartBody.Part
+    ): Response<ApiResponse<Map<String, String>>>
+    
+    /**
+     * Cambiar contraseña del usuario (requiere autenticación)
+     */
+    @PUT("auth/password")
+    suspend fun changePassword(
+        @Header("Authorization") token: String,
+        @Body passwordData: Map<String, String>
+    ): Response<ApiResponse<Void>>
+    
+    /**
+     * Eliminar cuenta del usuario
+     */
+    @DELETE("auth/account")
+    suspend fun deleteAccount(@Header("Authorization") token: String): Response<ApiResponse<Void>>
+    
+    /**
+     * Verificar disponibilidad de email
+     */
+    @GET("auth/check-email")
+    suspend fun checkEmailAvailability(
+        @Header("Authorization") token: String,
+        @Query("email") email: String
+    ): Response<ApiResponse<Void>>
 }

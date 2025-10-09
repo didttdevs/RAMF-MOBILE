@@ -1,298 +1,399 @@
 package com.cocido.ramfapp.ui.activities
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
-import android.util.Log
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.cocido.ramfapp.R
 import com.cocido.ramfapp.databinding.ActivityProfileEditBinding
 import com.cocido.ramfapp.models.User
-import com.cocido.ramfapp.ui.dialogs.ChangePasswordDialog
 import com.cocido.ramfapp.utils.AuthManager
-import com.cocido.ramfapp.viewmodels.WeatherStationViewModel
-import com.cocido.ramfapp.repository.WeatherRepository
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.cocido.ramfapp.utils.ImageUtils
+import com.cocido.ramfapp.viewmodels.ProfileViewModel
+// import com.yalantis.ucrop.UCrop // TODO: Agregar dependencia UCrop
 import kotlinx.coroutines.launch
 import java.io.File
 
 /**
- * Activity profesional para edición de perfil de usuario
- * Material Design 3 con todas las funcionalidades:
- * - Editar información personal
- * - Cambiar avatar (con selector de imagen)
- * - Cambiar contraseña
+ * Activity para editar el perfil del usuario
+ * Incluye funcionalidades completas de edición de datos personales,
+ * cambio de avatar, y gestión de contraseñas
  */
 class ProfileEditActivity : AppCompatActivity() {
-
-    private lateinit var binding: ActivityProfileEditBinding
     
-    // ViewModel temporal - en producción usar un UserProfileViewModel dedicado
-    private val viewModel: WeatherStationViewModel by viewModels()
-
-    private var selectedAvatarUri: Uri? = null
-    private var currentUser: User? = null
-
-    private val TAG = "ProfileEditActivity"
-
-    // Activity Result Launchers
+    private lateinit var binding: ActivityProfileEditBinding
+    private lateinit var viewModel: ProfileViewModel
+    private lateinit var currentUser: User
+    
+    // Image picker launchers
     private val imagePickerLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.data?.let { uri ->
-                handleImageSelected(uri)
-            }
-        }
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { startImageCrop(it) }
     }
-
+    
     private val cameraLauncher = registerForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
-        if (success && selectedAvatarUri != null) {
-            val uri = selectedAvatarUri
-            if (uri != null) {
-                loadAvatarImage(uri)
+        if (success) {
+            currentPhotoUri?.let { uri ->
+                startImageCrop(uri)
             }
         }
     }
-
+    
+    // TODO: Implementar UCrop cuando se agregue la dependencia
+    // private val cropLauncher = registerForActivityResult(
+    //     ActivityResultContracts.StartActivityForResult()
+    // ) { result ->
+    //     if (result.resultCode == Activity.RESULT_OK) {
+    //         val resultUri = UCrop.getOutput(result.data!!)
+    //         resultUri?.let { 
+    //             updateAvatar(it)
+    //         }
+    //     } else if (result.resultCode == UCrop.RESULT_ERROR) {
+    //         val cropError = UCrop.getError(result.data!!)
+    //         showError("Error al recortar imagen: ${cropError?.message}")
+    //     }
+    // }
+    
+    private var currentPhotoUri: Uri? = null
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityProfileEditBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        setupToolbar()
-        setupClickListeners()
-        observeViewModel()
+        
+        setupViewModel()
+        setupUI()
+        setupListeners()
         loadUserData()
+        observeViewModel()
     }
-
-    private fun setupToolbar() {
+    
+    private fun setupViewModel() {
+        viewModel = ViewModelProvider(this)[ProfileViewModel::class.java]
+    }
+    
+    private fun setupUI() {
+        // Configurar toolbar
         setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        
-        binding.toolbar.setNavigationOnClickListener {
-            onBackPressed()
+        supportActionBar?.apply {
+            setDisplayHomeAsUpEnabled(true)
+            setDisplayShowHomeEnabled(true)
+            title = "Editar Perfil"
         }
         
-        binding.collapsingToolbar.title = "Editar Perfil"
+        // Configurar validaciones en tiempo real
+        setupTextWatchers()
     }
-
-    private fun setupClickListeners() {
-        binding.btnChangeAvatar.setOnClickListener {
-            showAvatarOptions()
-        }
-
-        binding.btnChangePassword.setOnClickListener {
-            showChangePasswordDialog()
-        }
-
-        binding.btnSave.setOnClickListener {
-            saveProfileChanges()
-        }
-
-        binding.btnCancel.setOnClickListener {
-            onBackPressed()
-        }
-    }
-
-    private fun observeViewModel() {
-        // Observar estado del ViewModel
-        lifecycleScope.launch {
-            viewModel.uiState.collect { state ->
-                updateLoadingState(state.isLoading)
-
-                state.error?.let { error ->
-                    showError(error)
-                }
+    
+    private fun setupListeners() {
+        binding.apply {
+            // Avatar click
+            btnChangeAvatar.setOnClickListener {
+                showImageSourceDialog()
             }
+            
+            // Save button
+            btnSave.setOnClickListener {
+                saveProfile()
+            }
+            
+            // Change password button
+            btnChangePassword.setOnClickListener {
+                showChangePasswordDialog()
+            }
+            
+            // Delete account button removed
         }
     }
-
+    
     private fun loadUserData() {
-        AuthManager.initialize(this)
         val user = AuthManager.getCurrentUser()
-        
         if (user != null) {
             currentUser = user
-            displayUserData(user)
+            populateFields()
         } else {
-            showError("No se pudo cargar el perfil de usuario")
+            showError("No se pudo cargar la información del usuario")
             finish()
         }
     }
-
-    private fun displayUserData(user: User) {
-        binding.etFirstName.setText(user.firstName)
-        binding.etLastName.setText(user.lastName)
-        binding.etEmail.setText(user.email)
-
-        // Cargar avatar si existe
-        if (!user.avatar.isNullOrEmpty()) {
-            loadAvatarFromUrl(user.avatar)
+    
+    private fun populateFields() {
+        binding.apply {
+            // Información personal
+            etFirstName.setText(currentUser.firstName ?: "")
+            etLastName.setText(currentUser.lastName ?: "")
+            etEmail.setText(currentUser.email)
+            
+            // Avatar
+            if (!currentUser.avatar.isNullOrBlank()) {
+                Glide.with(this@ProfileEditActivity)
+                    .load(currentUser.avatar)
+                    .circleCrop()
+                    .placeholder(R.drawable.ic_default_profile)
+                    .error(R.drawable.ic_default_profile)
+                    .into(ivAvatar)
+            }
+            
+            // Información adicional
+            tvUserRole.text = currentUser.role ?: "Usuario"
+            tvCreatedAt.text = "Miembro desde: ${formatDate(currentUser.createdAt)}"
         }
     }
-
-    private fun showAvatarOptions() {
-        val options = arrayOf("Tomar foto", "Elegir de galería", "Cancelar")
-        
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Cambiar foto de perfil")
-            .setItems(options) { dialog, which ->
+    
+    private fun setupTextWatchers() {
+        binding.apply {
+            etFirstName.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    validateFirstName()
+                }
+            })
+            
+            etLastName.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    validateLastName()
+                }
+            })
+        }
+    }
+    
+    private fun validateFirstName(): Boolean {
+        val firstName = binding.etFirstName.text.toString().trim()
+        return when {
+            firstName.isEmpty() -> {
+                binding.tilFirstName.error = "El nombre es requerido"
+                false
+            }
+            firstName.length < 2 -> {
+                binding.tilFirstName.error = "El nombre debe tener al menos 2 caracteres"
+                false
+            }
+            else -> {
+                binding.tilFirstName.error = null
+                true
+            }
+        }
+    }
+    
+    private fun validateLastName(): Boolean {
+        val lastName = binding.etLastName.text.toString().trim()
+        return when {
+            lastName.isEmpty() -> {
+                binding.tilLastName.error = "El apellido es requerido"
+                false
+            }
+            lastName.length < 2 -> {
+                binding.tilLastName.error = "El apellido debe tener al menos 2 caracteres"
+                false
+            }
+            else -> {
+                binding.tilLastName.error = null
+                true
+            }
+        }
+    }
+    
+    private fun showImageSourceDialog() {
+        val options = arrayOf("Cámara", "Galería")
+        AlertDialog.Builder(this)
+            .setTitle("Seleccionar imagen")
+            .setItems(options) { _, which ->
                 when (which) {
-                    0 -> takePhoto()
-                    1 -> pickImageFromGallery()
-                    2 -> dialog.dismiss()
+                    0 -> openCamera()
+                    1 -> openGallery()
                 }
             }
+            .setNegativeButton("Cancelar", null)
             .show()
     }
-
-    private fun takePhoto() {
-        try {
-            val photoFile = createTempImageFile()
-            selectedAvatarUri = androidx.core.content.FileProvider.getUriForFile(
-                this,
-                "${packageName}.fileprovider",
-                photoFile
-            )
-            val uri = selectedAvatarUri
-            if (uri != null) {
-                cameraLauncher.launch(uri)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error taking photo", e)
-            Toast.makeText(this, "Error al abrir la cámara", Toast.LENGTH_SHORT).show()
+    
+    private fun openCamera() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) 
+            != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), CAMERA_PERMISSION_REQUEST)
+        } else {
+            startCamera()
         }
     }
-
-    private fun pickImageFromGallery() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        imagePickerLauncher.launch(intent)
+    
+    private fun openGallery() {
+        imagePickerLauncher.launch("image/*")
     }
-
-    private fun handleImageSelected(uri: Uri) {
-        selectedAvatarUri = uri
-        loadAvatarImage(uri)
+    
+    private fun startCamera() {
+        val photoFile = File(cacheDir, "temp_photo.jpg")
+        val uri = Uri.fromFile(photoFile)
+        currentPhotoUri = uri
+        cameraLauncher.launch(uri)
     }
-
-    private fun loadAvatarImage(uri: Uri) {
-        Glide.with(this)
-            .load(uri)
-            .transform(CircleCrop())
-            .placeholder(R.drawable.ic_user_placeholder)
-            .error(R.drawable.ic_user_placeholder)
-            .into(binding.ivAvatar)
+    
+    private fun startImageCrop(sourceUri: Uri) {
+        com.cocido.ramfapp.ui.activities.ImageCropActivity.startForResult(this, sourceUri, CROP_IMAGE_REQUEST)
     }
-
-    private fun loadAvatarFromUrl(url: String) {
-        Glide.with(this)
-            .load(url)
-            .transform(CircleCrop())
-            .placeholder(R.drawable.ic_user_placeholder)
-            .error(R.drawable.ic_user_placeholder)
-            .into(binding.ivAvatar)
-    }
-
-    private fun createTempImageFile(): File {
-        val timestamp = System.currentTimeMillis()
-        val imageFileName = "AVATAR_$timestamp"
-        val storageDir = getExternalFilesDir(null)
-        return File.createTempFile(imageFileName, ".jpg", storageDir)
-    }
-
-    private fun showChangePasswordDialog() {
-        ChangePasswordDialog.newInstance { oldPassword, newPassword ->
-            changePassword(oldPassword, newPassword)
-        }.show(supportFragmentManager, "change_password")
-    }
-
-    private fun changePassword(oldPassword: String, newPassword: String) {
-        // TODO: Implementar llamada al backend para cambiar contraseña
-        updateLoadingState(true)
-        
+    
+    private fun updateAvatar(uri: Uri) {
         lifecycleScope.launch {
+            binding.progressBar.visibility = View.VISIBLE
+            
             try {
-                // Aquí iría la llamada al servicio de autenticación
-                // Por ahora mostramos un mensaje de éxito simulado
-                updateLoadingState(false)
-                Toast.makeText(this@ProfileEditActivity, "Contraseña actualizada correctamente", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                updateLoadingState(false)
-                showError("Error al cambiar la contraseña: ${e.message}")
-            }
-        }
-    }
-
-    private fun saveProfileChanges() {
-        val firstName = binding.etFirstName.text.toString().trim()
-        val lastName = binding.etLastName.text.toString().trim()
-
-        // Validaciones
-        if (firstName.isEmpty()) {
-            binding.tilFirstName.error = "El nombre es obligatorio"
-            return
-        }
-
-        if (lastName.isEmpty()) {
-            binding.tilLastName.error = "El apellido es obligatorio"
-            return
-        }
-
-        binding.tilFirstName.error = null
-        binding.tilLastName.error = null
-
-        // TODO: Implementar actualización de perfil en el backend
-        updateLoadingState(true)
-        
-        lifecycleScope.launch {
-            try {
-                // Aquí iría la llamada al servicio para actualizar el perfil
-                // Por ahora simulamos la actualización
-                
-                // Actualizar el usuario en AuthManager
-                currentUser?.let { user ->
-                    val updatedUser = user.copy(
-                        firstName = firstName,
-                        lastName = lastName
-                    )
-                    // AuthManager.updateCurrentUser(updatedUser)
+                val result = viewModel.updateAvatar(uri)
+                if (result.isSuccess) {
+                    // Actualizar UI
+                    Glide.with(this@ProfileEditActivity)
+                        .load(uri)
+                        .circleCrop()
+                        .into(binding.ivAvatar)
+                    
+                    Toast.makeText(this@ProfileEditActivity, "Avatar actualizado", Toast.LENGTH_SHORT).show()
+                } else {
+                    showError("Error al actualizar avatar: ${result.exceptionOrNull()?.message}")
                 }
-                
-                updateLoadingState(false)
-                Toast.makeText(this@ProfileEditActivity, "Perfil actualizado correctamente", Toast.LENGTH_SHORT).show()
-                setResult(RESULT_OK)
-                finish()
             } catch (e: Exception) {
-                updateLoadingState(false)
-                showError("Error al actualizar perfil: ${e.message}")
+                showError("Error al actualizar avatar: ${e.message}")
+            } finally {
+                binding.progressBar.visibility = View.GONE
             }
         }
     }
-
-    private fun updateLoadingState(isLoading: Boolean) {
-        binding.loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
-        binding.btnSave.isEnabled = !isLoading
-        binding.btnChangeAvatar.isEnabled = !isLoading
-        binding.btnChangePassword.isEnabled = !isLoading
+    
+    private fun saveProfile() {
+        if (!validateForm()) {
+            return
+        }
+        
+        lifecycleScope.launch {
+            binding.progressBar.visibility = View.VISIBLE
+            binding.btnSave.isEnabled = false
+            
+            try {
+                val updatedUser = currentUser.copy(
+                    firstName = binding.etFirstName.text.toString().trim(),
+                    lastName = binding.etLastName.text.toString().trim()
+                )
+                
+                val result = viewModel.updateProfile(updatedUser)
+                if (result.isSuccess) {
+                    Toast.makeText(this@ProfileEditActivity, "Perfil actualizado exitosamente", Toast.LENGTH_SHORT).show()
+                    setResult(RESULT_OK)
+                    finish()
+                } else {
+                    showError("Error al actualizar perfil: ${result.exceptionOrNull()?.message}")
+                }
+            } catch (e: Exception) {
+                showError("Error al actualizar perfil: ${e.message}")
+            } finally {
+                binding.progressBar.visibility = View.GONE
+                binding.btnSave.isEnabled = true
+            }
+        }
     }
-
+    
+    private fun validateForm(): Boolean {
+        var isValid = true
+        
+        if (!validateFirstName()) isValid = false
+        if (!validateLastName()) isValid = false
+        
+        return isValid
+    }
+    
+    private fun showChangePasswordDialog() {
+        val dialog = com.cocido.ramfapp.ui.dialogs.ChangePasswordDialogFragment()
+        dialog.setOnPasswordChangedListener {
+            Toast.makeText(this, "Contraseña cambiada exitosamente", Toast.LENGTH_SHORT).show()
+        }
+        dialog.show(supportFragmentManager, "ChangePasswordDialog")
+    }
+    
+    // Delete account functionality removed
+    
+    private fun observeViewModel() {
+        viewModel.isLoading.observe(this) { isLoading ->
+            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        }
+        
+        viewModel.errorMessage.observe(this) { error ->
+            if (error != null) {
+                showError(error)
+                viewModel.clearError()
+            }
+        }
+    }
+    
+    private fun formatDate(dateString: String?): String {
+        if (dateString.isNullOrBlank()) return "Fecha no disponible"
+        
+        return try {
+            val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault())
+            val outputFormat = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+            val date = inputFormat.parse(dateString)
+            outputFormat.format(date ?: java.util.Date())
+        } catch (e: Exception) {
+            "Fecha no disponible"
+        }
+    }
+    
     private fun showError(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
-
+    
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        
+        if (requestCode == CAMERA_PERMISSION_REQUEST) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startCamera()
+            } else {
+                Toast.makeText(this, "Permiso de cámara denegado", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    
+    override fun onSupportNavigateUp(): Boolean {
+        onBackPressed()
+        return true
+    }
+    
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        
+        if (requestCode == CROP_IMAGE_REQUEST) {
+            if (resultCode == RESULT_OK) {
+                val croppedUri = data?.getParcelableExtra<Uri>(com.cocido.ramfapp.ui.activities.ImageCropActivity.EXTRA_CROPPED_URI)
+                if (croppedUri != null) {
+                    updateAvatar(croppedUri)
+                }
+            }
+        }
+    }
+    
     companion object {
-        const val RESULT_PROFILE_UPDATED = 100
+        private const val CAMERA_PERMISSION_REQUEST = 100
+        private const val CROP_IMAGE_REQUEST = 101
     }
 }
-
