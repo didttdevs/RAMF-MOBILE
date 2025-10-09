@@ -33,123 +33,48 @@
             android:background="@color/formosa_blue_light"
             android:padding="12dp">
 
-            <!-- Dropdown de selección de gráficos -->
+            <!-- Dropdown de selección de gráficos - Material Components -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/chartSelectorLayout"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Gráficos a mostrar"
+                android:hint="Seleccionar tipo de gráfico"
                 app:boxBackgroundColor="@android:color/white"
-                android:layout_marginBottom="12dp">
+                app:boxCornerRadiusBottomEnd="16dp"
+                app:boxCornerRadiusBottomStart="16dp"
+                app:boxCornerRadiusTopEnd="16dp"
+                app:boxCornerRadiusTopStart="16dp"
+                app:boxStrokeColor="@color/formosa_blue_primary"
+                app:boxStrokeWidth="2dp"
+                app:endIconMode="dropdown_menu"
+                app:startIconDrawable="@drawable/ic_chart_line"
+                app:startIconTint="@color/formosa_blue_primary"
+                app:hintTextColor="@color/formosa_blue_primary"
+                app:endIconTint="@color/formosa_blue_primary"
+                app:helperText="Elige qué gráficos mostrar"
+                app:helperTextTextColor="@color/text_secondary_gray"
+                android:layout_marginBottom="16dp">
 
                 <AutoCompleteTextView
                     android:id="@+id/chartSelectorDropdown"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="none"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:minHeight="56dp"
+                    android:gravity="center_vertical"
                     android:text="Todos los gráficos"
-                    android:textColor="@color/text_primary_dark" />
+                    android:textColor="@color/text_primary_dark"
+                    android:textSize="16sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:singleLine="true"
+                    android:ellipsize="end" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Chips para filtrar por categoría -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Filtrar por categoría:"
-                android:textSize="12sp"
-                android:textColor="@color/text_white_primary"
-                android:layout_marginBottom="8dp" />
 
-            <HorizontalScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:scrollbars="none">
-
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/chipGroupCategories"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:chipSpacingHorizontal="8dp"
-                    app:singleLine="true"
-                    app:singleSelection="true"
-                    app:selectionRequired="true">
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipAllCategories"
-                        style="@style/Widget.MaterialComponents.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Todos"
-                        android:checked="true"
-                        app:chipBackgroundColor="@color/chip_background_selector"
-                        app:chipStrokeColor="@android:color/white"
-                        app:chipStrokeWidth="1dp" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipTemperature"
-                        style="@style/Widget.MaterialComponents.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Temperatura"
-                        app:chipBackgroundColor="@color/chip_background_selector"
-                        app:chipStrokeColor="@android:color/white"
-                        app:chipStrokeWidth="1dp" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipHumidity"
-                        style="@style/Widget.MaterialComponents.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Humedad"
-                        app:chipBackgroundColor="@color/chip_background_selector"
-                        app:chipStrokeColor="@android:color/white"
-                        app:chipStrokeWidth="1dp" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipWind"
-                        style="@style/Widget.MaterialComponents.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Viento"
-                        app:chipBackgroundColor="@color/chip_background_selector"
-                        app:chipStrokeColor="@android:color/white"
-                        app:chipStrokeWidth="1dp" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipPrecipitation"
-                        style="@style/Widget.MaterialComponents.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Precipitación"
-                        app:chipBackgroundColor="@color/chip_background_selector"
-                        app:chipStrokeColor="@android:color/white"
-                        app:chipStrokeWidth="1dp" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipPressure"
-                        style="@style/Widget.MaterialComponents.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Presión"
-                        app:chipBackgroundColor="@color/chip_background_selector"
-                        app:chipStrokeColor="@android:color/white"
-                        app:chipStrokeWidth="1dp" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipRadiation"
-                        style="@style/Widget.MaterialComponents.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Radiación"
-                        app:chipBackgroundColor="@color/chip_background_selector"
-                        app:chipStrokeColor="@android:color/white"
-                        app:chipStrokeWidth="1dp" />
-
-                </com.google.android.material.chip.ChipGroup>
-
-            </HorizontalScrollView>
 
         </LinearLayout>
 
@@ -167,196 +92,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Panel de filtros de tiempo (colapsable) -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/filtersCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="16dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp"
-                app:cardBackgroundColor="@android:color/white">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <!-- Header clickeable para expandir/colapsar -->
-                    <LinearLayout
-                        android:id="@+id/filtersHeader"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:background="?android:attr/selectableItemBackground"
-                        android:layout_marginBottom="12dp">
-
-                        <!-- Título del panel -->
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Filtros de tiempo"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/formosa_blue_primary" />
-
-                        <!-- Icono de expand/collapse -->
-                        <ImageView
-                            android:id="@+id/expandIcon"
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:src="@android:drawable/arrow_down_float"
-                            android:tint="@color/formosa_blue_primary"
-                            android:contentDescription="Expandir/Colapsar filtros" />
-
-                    </LinearLayout>
-
-                    <!-- Contenido expandible -->
-                    <LinearLayout
-                        android:id="@+id/filtersContent"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:visibility="gone">
-
-                        <!-- Botones de filtros rápidos -->
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Rango rápido:"
-                            android:textSize="14sp"
-                            android:textColor="@color/text_secondary_gray"
-                            android:layout_marginBottom="8dp" />
-
-                        <com.google.android.material.chip.ChipGroup
-                            android:id="@+id/chipGroupTimeRange"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            app:chipSpacingHorizontal="8dp"
-                            app:chipSpacingVertical="4dp"
-                            app:singleSelection="true"
-                            android:layout_marginBottom="16dp">
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chip1Hour"
-                                style="@style/Widget.MaterialComponents.Chip.Choice"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="1 Hora"
-                                android:checked="true" />
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chip6Hours"
-                                style="@style/Widget.MaterialComponents.Chip.Choice"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="6 Horas" />
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chip1Day"
-                                style="@style/Widget.MaterialComponents.Chip.Choice"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="1 Día" />
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chip1Week"
-                                style="@style/Widget.MaterialComponents.Chip.Choice"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="1 Semana" />
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chip1Month"
-                                style="@style/Widget.MaterialComponents.Chip.Choice"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="1 Mes" />
-
-                        </com.google.android.material.chip.ChipGroup>
-
-                        <!-- Selector de fechas personalizado -->
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Rango personalizado:"
-                            android:textSize="14sp"
-                            android:textColor="@color/text_secondary_gray"
-                            android:layout_marginBottom="8dp" />
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:layout_marginBottom="16dp">
-
-                            <!-- Fecha Desde -->
-                            <com.google.android.material.textfield.TextInputLayout
-                                android:id="@+id/fromDateLayout"
-                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:layout_marginEnd="8dp"
-                                android:hint="Desde">
-
-                                <com.google.android.material.textfield.TextInputEditText
-                                    android:id="@+id/fromDateEditText"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:focusable="false"
-                                    android:clickable="true"
-                                    android:inputType="none"
-                                    android:drawableEnd="@android:drawable/ic_menu_my_calendar"
-                                    android:drawableTint="@color/formosa_blue_primary" />
-
-                            </com.google.android.material.textfield.TextInputLayout>
-
-                            <!-- Fecha Hasta -->
-                            <com.google.android.material.textfield.TextInputLayout
-                                android:id="@+id/toDateLayout"
-                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:layout_marginStart="8dp"
-                                android:hint="Hasta">
-
-                                <com.google.android.material.textfield.TextInputEditText
-                                    android:id="@+id/toDateEditText"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:focusable="false"
-                                    android:clickable="true"
-                                    android:inputType="none"
-                                    android:drawableEnd="@android:drawable/ic_menu_my_calendar"
-                                    android:drawableTint="@color/formosa_blue_primary" />
-
-                            </com.google.android.material.textfield.TextInputLayout>
-
-                        </LinearLayout>
-
-                        <!-- Botón Buscar -->
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/searchButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Filtrar"
-                            android:textColor="@android:color/white"
-                            app:backgroundTint="@color/formosa_blue_primary"
-                            app:cornerRadius="8dp"
-                            app:icon="@android:drawable/ic_menu_search"
-                            app:iconTint="@android:color/white" />
-
-                    </LinearLayout>
-
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
             <!-- RecyclerView para mostrar múltiples gráficos -->
             <androidx.recyclerview.widget.RecyclerView

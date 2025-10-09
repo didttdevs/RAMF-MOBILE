@@ -232,23 +232,8 @@ class MainActivity : AppCompatActivity() {
                 drawerLayout.closeDrawer(GravityCompat.START)
                 true
             }
-            R.id.nav_soil_moisture -> {
-                showFeatureInDevelopment("Soil Moisture")
-                drawerLayout.closeDrawer(GravityCompat.START)
-                true
-            }
             R.id.nav_map_view -> {
                 openMapActivity()
-                drawerLayout.closeDrawer(GravityCompat.START)
-                true
-            }
-            R.id.nav_station_overview -> {
-                showFeatureInDevelopment("Station Overview")
-                drawerLayout.closeDrawer(GravityCompat.START)
-                true
-            }
-            R.id.nav_device_management -> {
-                showFeatureInDevelopment("Device Management")
                 drawerLayout.closeDrawer(GravityCompat.START)
                 true
             }

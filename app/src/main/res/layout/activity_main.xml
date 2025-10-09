@@ -8,7 +8,8 @@
     <!-- Contenido principal -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@drawable/splash_background">
 
         <!-- ScrollView principal para todo el contenido -->
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -40,14 +41,29 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <!-- Selector de estación con diseño Material -->
+                <!-- Selector de estación con diseño Material profesional -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/stationSpinnerLayout"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="68dp"
-                    app:boxBackgroundColor="#FFFFFF"
+                    android:layout_marginTop="8dp"
+                    android:hint="Seleccionar estación"
+                    app:boxBackgroundColor="@android:color/white"
+                    app:boxCornerRadiusBottomEnd="16dp"
+                    app:boxCornerRadiusBottomStart="16dp"
+                    app:boxCornerRadiusTopEnd="16dp"
+                    app:boxCornerRadiusTopStart="16dp"
+                    app:boxStrokeColor="@color/formosa_blue_primary"
+                    app:boxStrokeWidth="2dp"
+                    app:endIconMode="dropdown_menu"
+                    app:startIconDrawable="@drawable/ic_location"
+                    app:startIconTint="@color/formosa_blue_primary"
+                    app:hintTextColor="@color/formosa_blue_primary"
+                    app:endIconTint="@color/formosa_blue_primary"
+                    app:helperText="Elige la estación meteorológica"
+                    app:helperTextTextColor="@color/text_white_primary"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/menuButton"
                     app:layout_constraintTop_toTopOf="parent">
@@ -57,7 +73,12 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="none"
-                        android:text="Estación Actual" />
+                        android:text="Estación Actual"
+                        android:textColor="@color/text_primary_dark"
+                        android:textSize="16sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:singleLine="true"
+                        android:ellipsize="end" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -67,9 +88,12 @@
                     android:id="@+id/card_temp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardBackgroundColor="#FFFFFF"
-                    app:cardElevation="6dp"
-                    app:cardCornerRadius="16dp"
+                    android:layout_marginTop="16dp"
+                    app:cardBackgroundColor="@android:color/white"
+                    app:cardElevation="12dp"
+                    app:cardCornerRadius="20dp"
+                    app:strokeWidth="0dp"
+                    app:cardPreventCornerOverlap="false"
                     app:layout_constraintTop_toBottomOf="@id/stationSpinnerLayout"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent">
@@ -78,9 +102,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="24dp"
+                        android:padding="32dp"
                         android:gravity="center"
-                        android:background="@drawable/gradient_card_background">
+                        android:background="@android:color/transparent">
 
                         <!-- Icono del clima -->
                         <ImageView
@@ -189,10 +213,13 @@
     <!-- Menú lateral -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"
-        android:layout_width="wrap_content"
+        android:layout_width="280dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
+        android:background="@android:color/white"
         app:headerLayout="@layout/nav_header"
-        app:menu="@menu/nav_menu" />
+        app:menu="@menu/nav_menu"
+        app:itemTextColor="@color/text_primary_dark"
+        app:itemIconTint="@color/formosa_blue_primary" />
 
 </androidx.drawerlayout.widget.DrawerLayout>

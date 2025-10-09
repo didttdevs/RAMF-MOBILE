@@ -33,7 +33,6 @@ enum class ChartCategory(val displayName: String) {
     WIND("Viento"),
     PRECIPITATION("Precipitación"),
     PRESSURE("Presión"),
-    RADIATION("Radiación"),
     COMBINED("Combinados")
 }
 

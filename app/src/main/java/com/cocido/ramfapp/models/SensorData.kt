@@ -12,7 +12,9 @@ data class Sensors(
     @SerializedName("dewpoint") val dewPoint: SensorAvg? = null,
     @SerializedName("airpressure") val airPressure: SensorAvg? = null,
     @SerializedName("windgust") val windGust: SensorMax? = null,
-    @SerializedName("windorientation") val windOrientation: SensorResult? = null
+    @SerializedName("windorientation") val windOrientation: SensorResult? = null,
+    @SerializedName("vpd") val vpd: SensorAvg? = null,
+    @SerializedName("deltat") val deltaT: SensorAvg? = null
 )
 
 data class SensorAvg(

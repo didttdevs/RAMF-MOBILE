@@ -6,16 +6,21 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.cocido.ramfapp.models.WeatherStation
 import com.cocido.ramfapp.models.WeatherData
+import com.cocido.ramfapp.models.ChartsPayload
 import com.cocido.ramfapp.common.Resource
 import com.cocido.ramfapp.repository.WeatherRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
 data class GraphUiState(
     val isLoading: Boolean = false,
     val weatherData: List<WeatherData> = emptyList(),
+    val chartsData: ChartsPayload? = null,
     val stations: List<WeatherStation> = emptyList(),
     val currentStationId: String = "00210E7D",
     val selectedParameters: Set<String> = setOf("temperatura"),
@@ -27,6 +32,10 @@ class GraphViewModel(private val repository: WeatherRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GraphUiState())
     val uiState: StateFlow<GraphUiState> = _uiState.asStateFlow()
+    
+    // Navegación al login cuando expira la sesión
+    private val _navigateToLogin = MutableSharedFlow<Boolean>()
+    val navigateToLogin: SharedFlow<Boolean> = _navigateToLogin.asSharedFlow()
 
     init {
         loadStations()
@@ -59,7 +68,7 @@ class GraphViewModel(private val repository: WeatherRepository) : ViewModel() {
 
     fun loadWeatherData(from: String, to: String) {
         val currentState = _uiState.value
-        Log.d("GraphViewModel", "🔄 Loading weather data:")
+        Log.d("GraphViewModel", "🔄 Loading charts data:")
         Log.d("GraphViewModel", "   Station: ${currentState.currentStationId}")
         Log.d("GraphViewModel", "   From: $from")
         Log.d("GraphViewModel", "   To: $to")
@@ -75,9 +84,12 @@ class GraphViewModel(private val repository: WeatherRepository) : ViewModel() {
                         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
                     }
                     is Resource.Success -> {
-                        Log.d("GraphViewModel", "✅ Data loaded successfully: ${resource.data.size} points")
+                        Log.d("GraphViewModel", "✅ Charts data loaded successfully")
+                        Log.d("GraphViewModel", "   tempHum points: ${resource.data.charts.tempHum?.size ?: 0}")
+                        Log.d("GraphViewModel", "   viento points: ${resource.data.charts.viento?.size ?: 0}")
+                        Log.d("GraphViewModel", "   presion points: ${resource.data.charts.presion?.size ?: 0}")
                         _uiState.value = _uiState.value.copy(
-                            weatherData = resource.data,
+                            chartsData = resource.data,
                             isLoading = false,
                             errorMessage = null
                         )
@@ -87,6 +99,12 @@ class GraphViewModel(private val repository: WeatherRepository) : ViewModel() {
                             isLoading = false,
                             errorMessage = "Error al cargar datos: ${resource.message}"
                         )
+                        
+                        // Detectar sesión expirada y navegar al login
+                        if (resource.message?.contains("Sesión expirada", ignoreCase = true) == true) {
+                            Log.d("GraphViewModel", "Session expired, navigating to login")
+                            _navigateToLogin.emit(true)
+                        }
                     }
                 }
             }

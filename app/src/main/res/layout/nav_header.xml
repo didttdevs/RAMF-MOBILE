@@ -1,83 +1,62 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical">
+    android:layout_height="200dp"
+    android:orientation="vertical"
+    android:background="@drawable/splash_background"
+    android:padding="24dp"
+    android:gravity="center">
 
-    <!-- Logo de Todos Unidos en la parte inferior -->
-    <ImageView
-        android:id="@+id/logoTodosUnidos"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:layout_margin="16dp"
-        android:src="@drawable/logo_gob_todos_unidos_trans"
-        app:tint="@color/black" />
+    <!-- Avatar del usuario con diseño profesional -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginBottom="16dp"
+        app:cardBackgroundColor="@android:color/white"
+        app:cardCornerRadius="40dp"
+        app:cardElevation="8dp"
+        app:strokeWidth="0dp"
+        app:cardPreventCornerOverlap="false">
 
-    <!-- Espacio vacío para separar el logo del usuario -->
-    <Space
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
+        <ImageView
+            android:id="@+id/navHeaderProfileImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_default_profile"
+            android:padding="16dp" />
 
+    </com.google.android.material.card.MaterialCardView>
 
-    <!-- Espacio para el nombre o detalles de usuario -->
-
+    <!-- Información del usuario -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:orientation="horizontal">
+        android:orientation="vertical"
+        android:gravity="center">
 
-        <!-- Imagen de perfil -->
-        <ImageView
-            android:id="@+id/navHeaderProfileImage"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="8dp"
-            android:layout_marginEnd="5dp"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_default_profile" />
-
-        <LinearLayout
+        <TextView
+            android:id="@+id/navHeaderUsername"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:text="Usuario"
+            android:textColor="@color/text_white_primary"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center" />
 
-            <TextView
-                android:id="@+id/navHeaderUsername"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:text="Usuario"
-                android:textColor="@android:color/black"
-                android:textSize="18sp" />
-
-            <TextView
-                android:id="@+id/navHeaderDetailsUser"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Detalles de usuario"
-                android:textColor="@android:color/black"
-                android:textSize="12sp" />
-
-        </LinearLayout>
-
+        <TextView
+            android:id="@+id/navHeaderDetailsUser"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Detalles de usuario"
+            android:textColor="@color/text_white_primary"
+            android:textSize="14sp"
+            android:alpha="0.8"
+            android:gravity="center" />
 
     </LinearLayout>
-
-    <!-- Espacio para otras opciones del header -->
-    <!--
-    <TextView
-        android:id="@+id/navHeaderDetails"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Detalles de usuario o cualquier cosa"
-        android:textColor="@android:color/white"
-        android:textSize="14sp"/>
-
-     -->
-
 
 </LinearLayout>

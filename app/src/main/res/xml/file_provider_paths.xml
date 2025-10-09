@@ -3,7 +3,7 @@
     <!-- Directorio de exportaciones -->
     <external-files-path 
         name="exports" 
-        path="Documents/RAF_Exports/" />
+        path="Documents/RAMF_Exports/" />
     
     <!-- Directorio general de archivos externos -->
     <external-files-path 

@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.RAFapp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.RAMFapp" parent="Theme.MaterialComponents.Light.NoActionBar">
         <!-- Formosa Government Blue Colors -->
         <item name="colorPrimary">@color/formosa_blue_primary</item>
         <item name="colorPrimaryVariant">@color/formosa_blue_dark</item>
@@ -18,6 +18,9 @@
         <!-- Material Components -->
         <item name="materialCardViewStyle">@style/Widget.App.CardView</item>
         <item name="textInputStyle">@style/Widget.App.TextInputLayout</item>
+        
+        <!-- AutoCompleteTextView text appearance -->
+        <item name="android:textAppearance">@style/TextAppearance.AppCompat.Body1</item>
     </style>
 
     <!-- High Contrast Typography Styles -->
@@ -116,8 +119,21 @@
         <item name="hintTextColor">@color/text_secondary_gray</item>
     </style>
 
+    <!-- Splash Screen Theme -->
+    <style name="Theme.Splash" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentNavigation">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
     <!-- Theme for full-screen charts activity -->
-    <style name="Theme.RAFapp.NoActionBar" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.RAMFapp.NoActionBar" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="colorPrimary">@color/formosa_blue_primary</item>
         <item name="colorPrimaryVariant">@color/formosa_blue_dark</item>
         <item name="colorOnPrimary">@color/text_white_primary</item>

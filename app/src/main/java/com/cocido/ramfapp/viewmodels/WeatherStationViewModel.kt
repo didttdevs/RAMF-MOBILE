@@ -46,8 +46,12 @@ class WeatherStationViewModel : ViewModel() {
     private val _historicalData = MutableStateFlow<UiState<List<WeatherData>>>(UiState())
     val historicalData: StateFlow<UiState<List<WeatherData>>> = _historicalData.asStateFlow()
 
-    private val _chartsData = MutableStateFlow<UiState<List<WeatherData>>>(UiState())
-    val chartsData: StateFlow<UiState<List<WeatherData>>> = _chartsData.asStateFlow()
+    private val _chartsData = MutableStateFlow<UiState<ChartsPayload>>(UiState())
+    val chartsData: StateFlow<UiState<ChartsPayload>> = _chartsData.asStateFlow()
+
+    // Navigation event for session expiration
+    private val _navigateToLogin = MutableSharedFlow<Boolean>()
+    val navigateToLogin: SharedFlow<Boolean> = _navigateToLogin.asSharedFlow()
 
     // Date Range Management
     private val _selectedDateRange = MutableStateFlow(DateRange.getDefault())
@@ -224,6 +228,14 @@ class WeatherStationViewModel : ViewModel() {
                         if (resource.message?.contains("autenticación", ignoreCase = true) == true) {
                             securityLogger.logAuthenticationEvent("data_access_denied", false)
                         }
+                        
+                        // Handle session expiration
+                        if (resource.message?.contains("Sesión expirada", ignoreCase = true) == true) {
+                            Log.d(TAG, "Session expired, navigating to login")
+                            viewModelScope.launch {
+                                _navigateToLogin.emit(true)
+                            }
+                        }
                     }
                 }
             }
@@ -245,11 +257,19 @@ class WeatherStationViewModel : ViewModel() {
                         val data = resource.data
                         _chartsData.value = UiState(data = data, isLoading = false)
 
-                        Log.d(TAG, "Charts data loaded: ${data.size} records")
+                        Log.d(TAG, "Charts data loaded successfully")
                     }
                     is Resource.Error -> {
                         _chartsData.value = UiState(error = resource.message, isLoading = false)
                         Log.e(TAG, "Error loading charts data: ${resource.message}")
+                        
+                        // Handle session expiration
+                        if (resource.message?.contains("Sesión expirada", ignoreCase = true) == true) {
+                            Log.d(TAG, "Session expired, navigating to login")
+                            viewModelScope.launch {
+                                _navigateToLogin.emit(true)
+                            }
+                        }
                     }
                 }
             }
@@ -391,7 +411,7 @@ class WeatherStationViewModel : ViewModel() {
                     }
                     is Resource.Success -> {
                         _chartsData.value = UiState(data = resource.data, isLoading = false)
-                        Log.d(TAG, "Charts data loaded with custom range: ${resource.data.size} records")
+                        Log.d(TAG, "Charts data loaded with custom range successfully")
                     }
                     is Resource.Error -> {
                         _chartsData.value = UiState(error = resource.message, isLoading = false)

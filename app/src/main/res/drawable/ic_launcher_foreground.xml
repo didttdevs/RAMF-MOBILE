@@ -1,30 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:pathData="M31,63.928c0,0 6.4,-11 12.1,-13.1c7.2,-2.6 26,-1.4 26,-1.4l38.1,38.1L107,108.928l-32,-1L31,63.928z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:endX="85.84757"
-                android:endY="92.4963"
-                android:startX="42.9492"
-                android:startY="49.59793"
-                android:type="linear">
-                <item
-                    android:color="#44000000"
-                    android:offset="0.0" />
-                <item
-                    android:color="#00000000"
-                    android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
+    
+    <!-- Fondo circular para el logo -->
     <path
         android:fillColor="#FFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M65.3,45.828l3.8,-6.6c0.2,-0.4 0.1,-0.9 -0.3,-1.1c-0.4,-0.2 -0.9,-0.1 -1.1,0.3l-3.9,6.7c-6.3,-2.8 -13.4,-2.8 -19.7,0l-3.9,-6.7c-0.2,-0.4 -0.7,-0.5 -1.1,-0.3C38.8,38.328 38.7,38.828 38.9,39.228l3.8,6.6C36.2,49.428 31.7,56.028 31,63.928h46C76.3,56.028 71.8,49.428 65.3,45.828zM43.4,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2c-0.3,-0.7 -0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C45.3,56.528 44.5,57.328 43.4,57.328L43.4,57.328zM64.6,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2s-0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C66.5,56.528 65.6,57.328 64.6,57.328L64.6,57.328z"
-        android:strokeWidth="1"
-        android:strokeColor="#00000000" />
+        android:pathData="M54,54m-48,0a48,48 0,1 1,96 0a48,48 0,1 1,-96 0" />
+    
+    <!-- Sombra interna sutil -->
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M54,54m-46,0a46,46 0,1 1,92 0a46,46 0,1 1,-92 0" />
+    
+    <!-- Icono de estación meteorológica moderno y elegante -->
+    <!-- Base triangular -->
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M54,82 L48,92 L60,92 Z" />
+    
+    <!-- Poste principal -->
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M53,54 L53,92 L55,92 L55,54 Z" />
+    
+    <!-- Panel solar rectangular -->
+    <path
+        android:fillColor="#3B82F6"
+        android:pathData="M42,44 L42,54 L66,54 L66,44 Z" />
+    
+    <!-- Líneas del panel solar -->
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M44,46 L44,52 L64,52 L64,46 Z" />
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M46,48 L46,50 L62,50 L62,48 Z" />
+    
+    <!-- Anemómetro central -->
+    <path
+        android:fillColor="#60A5FA"
+        android:pathData="M54,39m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+    
+    <!-- Aspas del anemómetro -->
+    <path
+        android:fillColor="#60A5FA"
+        android:pathData="M54,39 L54,34 L55,34 L55,39 Z" />
+    <path
+        android:fillColor="#60A5FA"
+        android:pathData="M54,39 L59,39 L59,40 L54,40 Z" />
+    <path
+        android:fillColor="#60A5FA"
+        android:pathData="M54,39 L54,44 L55,44 L55,39 Z" />
+    <path
+        android:fillColor="#60A5FA"
+        android:pathData="M54,39 L49,39 L49,40 L54,40 Z" />
+    
+    <!-- Texto RAMF estilizado y elegante -->
+    <!-- R -->
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M32,24 L32,32 L36,32 L36,29 L38,29 L38,32 L42,32 L42,24 L38,24 L38,26 L36,26 L36,24 Z" />
+    
+    <!-- A -->
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M44,24 L46,32 L50,32 L52,24 L48,24 L47,26 L45,26 L44,24 Z M46,28 L48,28 L47,30 Z" />
+    
+    <!-- M -->
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M54,24 L54,32 L56,32 L56,26 L57,26 L58,32 L60,32 L61,26 L61,32 L63,32 L63,24 L61,24 L60,29 L59,24 Z" />
+    
+    <!-- F -->
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M65,24 L65,32 L71,32 L71,30 L67,30 L67,28 L70,28 L70,26 L67,26 L67,24 Z" />
+    
+    <!-- Línea decorativa inferior -->
+    <path
+        android:fillColor="#3B82F6"
+        android:pathData="M32,34 L76,34 L76,36 L32,36 Z" />
+    
+    <!-- Puntos decorativos -->
+    <path
+        android:fillColor="#60A5FA"
+        android:pathData="M38,39m-1.5,0a1.5,1.5 0,1 1,3 0a1.5,1.5 0,1 1,-3 0" />
+    <path
+        android:fillColor="#60A5FA"
+        android:pathData="M54,39m-1.5,0a1.5,1.5 0,1 1,3 0a1.5,1.5 0,1 1,-3 0" />
+    <path
+        android:fillColor="#60A5FA"
+        android:pathData="M70,39m-1.5,0a1.5,1.5 0,1 1,3 0a1.5,1.5 0,1 1,-3 0" />
 </vector>

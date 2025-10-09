@@ -110,7 +110,7 @@ interface WeatherStationService {
         @Query("from") from: String,
         @Query("to") to: String,
         @Query("timeRange") timeRange: String = "custom"
-    ): Response<WeatherDataResponse>
+    ): Response<ChartsPayload>
 
     /**
      * Datos entre fechas específicas (requiere auth)

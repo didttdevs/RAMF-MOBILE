@@ -6,6 +6,7 @@ import com.cocido.ramfapp.common.Resource
 import com.cocido.ramfapp.models.*
 import com.cocido.ramfapp.network.RetrofitClient
 import com.cocido.ramfapp.utils.AuthHelper
+import com.cocido.ramfapp.utils.AuthManager
 import com.cocido.ramfapp.utils.SecurityLogger
 import com.cocido.ramfapp.utils.ApiErrorHandler
 import kotlinx.coroutines.*
@@ -87,6 +88,92 @@ class WeatherRepository {
     }
     
     /**
+     * Get charts data with authentication and validation
+     * Uses the correct backend endpoint for pre-processed chart data
+     */
+    fun getChartsData(
+        stationName: String,
+        from: String,
+        to: String
+    ): Flow<Resource<ChartsPayload>> = flow {
+        // Security validation
+        if (!isValidStationName(stationName)) {
+            emit(Resource.Error(Exception("Invalid station"), "Nombre de estación inválido"))
+            return@flow
+        }
+
+        if (!isValidDateRange(from, to)) {
+            emit(Resource.Error(Exception("Invalid date range"), "Rango de fechas inválido"))
+            return@flow
+        }
+
+        if (!AuthHelper.isAuthenticated()) {
+            securityLogger.logAuthenticationEvent("unauthorized_access", false)
+            emit(Resource.Error(Exception("Unauthorized"), "Autenticación requerida"))
+            return@flow
+        }
+
+        val cacheKey = "charts_${stationName}_${from}_${to}"
+
+        // Check cache for charts data (shorter TTL for real-time data)
+        getCachedData<ChartsPayload>(cacheKey, ttlMinutes = 5)?.let { cached ->
+            Log.d(TAG, "Returning cached charts data for $stationName")
+            emit(Resource.Success(cached))
+            return@flow
+        }
+
+        emit(Resource.Loading)
+
+        try {
+            val result = executeWithDeduplication(cacheKey) {
+                weatherStationService.getWeatherDataForCharts(
+                    stationName = stationName,
+                    from = from,
+                    to = to
+                )
+            }
+
+            result.fold(
+                onSuccess = { response ->
+                    when (response.code()) {
+                        200 -> {
+                            response.body()?.let { chartsPayload ->
+                                cacheData(cacheKey, chartsPayload, ttlMinutes = 5)
+                                securityLogger.logDataAccess("charts_data", 1, stationName)
+                                Log.d(TAG, "✅ Charts data loaded successfully: ${chartsPayload.charts}")
+                                emit(Resource.Success(chartsPayload))
+                            } ?: emit(Resource.Error(Exception("Empty response"), "Respuesta vacía del servidor"))
+                        }
+                        401 -> {
+                            securityLogger.logAuthenticationEvent("token_expired", false)
+                            // Hacer logout automático y limpiar sesión
+                            AuthManager.logout()
+                            emit(Resource.Error(Exception("Token expired"), "Sesión expirada. Inicia sesión nuevamente."))
+                        }
+                        403 -> {
+                            securityLogger.logAuthenticationEvent("access_denied", false)
+                            emit(Resource.Error(Exception("Access denied"), "No tienes permisos para estos datos."))
+                        }
+                        else -> {
+                            val error = mapHttpError(response.code(), response.message())
+                            securityLogger.logNetworkSecurityEvent("charts_data_$stationName", response.code())
+                            emit(Resource.Error(Exception("HTTP ${response.code()}"), error))
+                        }
+                    }
+                },
+                onFailure = { exception ->
+                    Log.e(TAG, "Error getting charts data", exception)
+                    securityLogger.logNetworkSecurityEvent("charts_data_$stationName", 0)
+                    emit(Resource.Error(exception, "Error de conexión: ${exception.message}"))
+                }
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error getting charts data", e)
+            emit(Resource.Error(e, "Error inesperado: ${e.message}"))
+        }
+    }
+
+    /**
      * Get historical weather data with authentication and validation
      */
     fun getWeatherDataTimeRange(
@@ -144,6 +231,8 @@ class WeatherRepository {
                         }
                         401 -> {
                             securityLogger.logAuthenticationEvent("token_expired", false)
+                            // Hacer logout automático y limpiar sesión
+                            AuthManager.logout()
                             emit(Resource.Error(Exception("Token expired"), "Sesión expirada. Inicia sesión nuevamente."))
                         }
                         403 -> {
@@ -225,48 +314,6 @@ class WeatherRepository {
         }
     }
     
-    /**
-     * Get charts data - Requiere autenticación para datos históricos
-     */
-    fun getChartsData(
-        stationName: String,
-        from: String,
-        to: String
-    ): Flow<Resource<List<WeatherData>>> = flow {
-
-        // Verificar autenticación primero
-        if (!AuthHelper.isAuthenticated()) {
-            Log.w(TAG, "User not authenticated, charts require login for historical data")
-            emit(Resource.Error(
-                Exception("Authentication required"),
-                "Inicia sesión para ver gráficos históricos con datos detallados"
-            ))
-            return@flow
-        }
-
-        // Usuario autenticado: obtener datos históricos
-        getWeatherDataTimeRange(stationName, from, to).collect { resource ->
-            when (resource) {
-                is Resource.Success -> {
-                    if (resource.data.isNotEmpty()) {
-                        Log.d(TAG, "Historical data loaded: ${resource.data.size} data points")
-                        emit(Resource.Success(resource.data))
-                    } else {
-                        Log.w(TAG, "No historical data available for period")
-                        emit(Resource.Error(
-                            Exception("No data"),
-                            "No hay datos disponibles para el período seleccionado"
-                        ))
-                    }
-                }
-                is Resource.Error -> {
-                    Log.e(TAG, "Failed to load historical data: ${resource.message}")
-                    emit(resource)
-                }
-                is Resource.Loading -> emit(Resource.Loading)
-            }
-        }
-    }
 
     
     // MARK: - Private Helper Methods

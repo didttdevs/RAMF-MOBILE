@@ -13,6 +13,9 @@ import com.cocido.ramfapp.R
 import com.cocido.ramfapp.models.ChartConfig
 import com.cocido.ramfapp.models.ChartParameter
 import com.cocido.ramfapp.models.WeatherData
+import com.cocido.ramfapp.models.ChartsPayload
+import com.cocido.ramfapp.models.ChartPoint
+import com.cocido.ramfapp.models.ChartCategory
 import com.cocido.ramfapp.utils.ChartUtils
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.Description
@@ -31,7 +34,8 @@ import java.util.*
  */
 class MultiChartAdapter(
     private var charts: List<ChartConfig>,
-    private var weatherData: List<WeatherData>
+    private var weatherData: List<WeatherData>,
+    private var chartsData: ChartsPayload? = null
 ) : RecyclerView.Adapter<MultiChartAdapter.ChartViewHolder>() {
 
     private var onChartOptionsClickListener: ((ChartConfig) -> Unit)? = null
@@ -44,7 +48,13 @@ class MultiChartAdapter(
 
     override fun onBindViewHolder(holder: ChartViewHolder, position: Int) {
         val chartConfig = charts[position]
-        holder.bind(chartConfig, weatherData)
+        
+        // Usar datos del backend si están disponibles, sino usar datos legacy
+        if (chartsData != null) {
+            holder.bindWithBackendData(chartConfig, chartsData!!)
+        } else {
+            holder.bind(chartConfig, weatherData)
+        }
     }
 
     override fun getItemCount(): Int = charts.size
@@ -56,6 +66,11 @@ class MultiChartAdapter(
 
     fun updateData(newData: List<WeatherData>) {
         weatherData = newData
+        notifyDataSetChanged()
+    }
+
+    fun updateChartsData(newChartsData: ChartsPayload) {
+        chartsData = newChartsData
         notifyDataSetChanged()
     }
 
@@ -119,6 +134,126 @@ class MultiChartAdapter(
                 minValue.text = "--"
                 maxValue.text = "--"
                 avgValue.text = "--"
+            }
+        }
+
+        fun bindWithBackendData(chartConfig: ChartConfig, chartsData: ChartsPayload) {
+            chartTitle.text = chartConfig.title
+
+            // Configurar listener de opciones
+            chartOptionsButton.setOnClickListener {
+                onChartOptionsClickListener?.invoke(chartConfig)
+            }
+
+            // Configurar gráfico
+            setupChart(lineChart, chartConfig)
+
+            // Obtener datos del grupo correspondiente del backend
+            // El backend agrupa por tipo de sensor, no por categoría de gráfico
+            val groupData = when {
+                // Temperatura y Humedad usan el mismo grupo del backend
+                chartConfig.category == ChartCategory.TEMPERATURE -> chartsData.charts.tempHum
+                chartConfig.category == ChartCategory.HUMIDITY -> chartsData.charts.tempHum
+                chartConfig.category == ChartCategory.COMBINED -> {
+                    // Para gráficos COMBINED, determinar el grupo por el ID del gráfico
+                    when (chartConfig.id) {
+                        "radiation" -> chartsData.charts.radiacion
+                        else -> chartsData.charts.tempHum
+                    }
+                }
+                
+                // Viento
+                chartConfig.category == ChartCategory.WIND -> chartsData.charts.viento
+                
+                // Presión
+                chartConfig.category == ChartCategory.PRESSURE -> chartsData.charts.presion
+                
+                // Precipitación (el backend devuelve datos en el grupo lluvia)
+                chartConfig.category == ChartCategory.PRECIPITATION -> {
+                    // Primero intentar lluvia, si no hay datos usar tempHum para Delta T
+                    chartsData.charts.lluvia ?: chartsData.charts.tempHum
+                }
+                
+                else -> null
+            }
+
+            if (groupData != null && groupData.isNotEmpty()) {
+                // Crear datasets basados en los datos del backend
+                val dataSets = chartConfig.parameters.mapNotNull { parameter ->
+                    val entries = groupData.mapNotNull { chartPoint ->
+                        val timestamp = parseBackendTimestamp(chartPoint.date)
+                        val value = extractValueFromChartPoint(chartPoint, parameter.key)
+
+                        if (timestamp != null && value != null) {
+                            Entry(timestamp.toFloat(), value.toFloat())
+                        } else null
+                    }.sortedBy { it.x }
+
+                    if (entries.isNotEmpty()) {
+                        createLineDataSet(entries, parameter.label, parameter.color, parameter.unit)
+                    } else null
+                }
+
+                if (dataSets.isNotEmpty()) {
+                    val lineData = LineData(dataSets)
+                    lineChart.data = lineData
+                    
+                    // Configurar escalas independientes para gráficos combinados
+                    if (chartConfig.parameters.size > 1) {
+                        setupIndependentScales(lineChart, dataSets, chartConfig.parameters)
+                    }
+                    
+                    lineChart.animateX(800)
+                    lineChart.invalidate()
+
+                    // Actualizar estadísticas
+                    updateStats(dataSets.firstOrNull(), chartConfig.parameters.firstOrNull()?.unit ?: "")
+                } else {
+                    lineChart.clear()
+                    currentValue.text = "--"
+                    minValue.text = "--"
+                    maxValue.text = "--"
+                    avgValue.text = "--"
+                }
+            } else {
+                lineChart.clear()
+                currentValue.text = "--"
+                minValue.text = "--"
+                maxValue.text = "--"
+                avgValue.text = "--"
+            }
+        }
+
+        private fun parseBackendTimestamp(dateString: String): Long? {
+            return try {
+                // El backend devuelve fechas en formato "dd-MM-yyyy HH:mm:ss"
+                val formatter = SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault())
+                formatter.parse(dateString)?.time
+            } catch (e: Exception) {
+                Log.e("MultiChartAdapter", "Error parsing backend timestamp: $dateString", e)
+                null
+            }
+        }
+
+        private fun extractValueFromChartPoint(chartPoint: ChartPoint, parameterKey: String): Double? {
+            return when (parameterKey.lowercase()) {
+                "temperatura" -> chartPoint.temperatura
+                "humedad" -> chartPoint.humedad
+                "dewpoint", "punto_rocio" -> chartPoint.puntoRocio
+                "vpd" -> chartPoint.vpd
+                "deltat", "delta_t" -> chartPoint.deltaT
+                "radiacion", "radiation" -> chartPoint.radiacionSolar
+                "viento", "wind" -> chartPoint.velocidadViento
+                "windgust", "rafaga" -> chartPoint.rafaga
+                "winddir", "direccion_viento" -> chartPoint.direccionViento
+                "presion", "pressure" -> chartPoint.presion
+                "precipitacion", "rain" -> chartPoint.precipitacion
+                "bateria", "battery" -> chartPoint.bateria
+                "panel_solar", "solar_panel" -> chartPoint.panelSolar
+                "et0" -> chartPoint.et0
+                "horas_sol", "sunshine" -> chartPoint.horasSol
+                "orientacion", "orientation" -> chartPoint.orientacion
+                else -> null
             }
         }
 

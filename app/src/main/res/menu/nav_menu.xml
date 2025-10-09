@@ -8,23 +8,23 @@
     <item
         android:id="@+id/nav_charts"
         android:icon="@drawable/ic_chart"
-        android:title="Clima" />
+        android:title="Gráficos" />
+    <!--
     <item
         android:id="@+id/nav_soil_moisture"
         android:icon="@drawable/ic_soil"
         android:title="Humedad del Suelo" />
+        -->
     <item
         android:id="@+id/nav_map_view"
         android:icon="@drawable/ic_map"
-        android:title="Mapa" />
-    <item
-        android:id="@+id/nav_station_overview"
-        android:icon="@drawable/ic_station"
         android:title="Vista de Estaciones" />
+    <!--
     <item
         android:id="@+id/nav_device_management"
         android:icon="@drawable/ic_device"
         android:title="Gestión de Dispositivos" />
+        -->
     <item
         android:id="@+id/nav_profile"
         android:icon="@drawable/ic_default_profile"
