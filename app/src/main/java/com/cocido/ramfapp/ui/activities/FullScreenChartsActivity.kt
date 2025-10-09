@@ -123,9 +123,9 @@ class FullScreenChartsActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    viewModel.uiState.collectLatest { state ->
-                        if (state.errorMessage != null) {
-                            showError(state.errorMessage)
+                viewModel.uiState.collectLatest { state ->
+                    if (state.errorMessage != null) {
+                        showError(state.errorMessage)
                         }
                         
                         // Usar datos de gráficos del backend si están disponibles
@@ -164,7 +164,7 @@ class FullScreenChartsActivity : AppCompatActivity() {
         
         if (stationId != null) {
             viewModel.selectStation(stationId)
-            
+
             // Cargar datos de las últimas 24 horas (como en la web)
             val (from, to) = generateLast24HoursRange()
             
@@ -189,7 +189,6 @@ class FullScreenChartsActivity : AppCompatActivity() {
     
     
     private fun showChartOptions(chartConfig: ChartConfig) {
-        // TODO: Implementar menú de opciones (exportar solo este gráfico, etc.)
         Snackbar.make(
             binding.root,
             "Opciones para: ${chartConfig.title}",

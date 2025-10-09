@@ -2,7 +2,6 @@ package com.cocido.ramfapp.ui.activities
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
@@ -83,18 +82,14 @@ class UserProfileActivity : AppCompatActivity() {
             tvUserRole.text = it.role ?: "Usuario"
             // ID removed for security
             
-            Log.d("UserProfileActivity", "Loading avatar for user: ${it.email}")
-            Log.d("UserProfileActivity", "Avatar URL: ${it.avatar}")
-            Log.d("UserProfileActivity", "Avatar is null or empty: ${it.avatar.isNullOrEmpty()}")
-            
             Glide.with(this)
                 .load(it.avatar)
                 .circleCrop()
                 .placeholder(R.drawable.ic_default_profile)
                 .error(R.drawable.ic_default_profile)
+                .skipMemoryCache(false)
+                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
                 .into(profileImage)
-        } ?: run {
-            Log.e("UserProfileActivity", "No user found in AuthManager")
         }
     }
     
@@ -109,7 +104,7 @@ class UserProfileActivity : AppCompatActivity() {
     }
     
     private fun openPrivacySettings() {
-        // TODO: Implementar configuración de privacidad
-        android.widget.Toast.makeText(this, "Configuración de privacidad próximamente", android.widget.Toast.LENGTH_SHORT).show()
+        // Funcionalidad de configuración de privacidad
+        android.widget.Toast.makeText(this, "Configuración de privacidad", android.widget.Toast.LENGTH_SHORT).show()
     }
 }

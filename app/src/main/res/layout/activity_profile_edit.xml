@@ -95,7 +95,7 @@
                     <!-- Change Avatar Button -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnChangeAvatar"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Cambiar Avatar"
@@ -352,7 +352,7 @@
                     <!-- Change Password Button -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnChangePassword"
-                        style="@style/Widget.Material3.Button.TextButton"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="12dp"

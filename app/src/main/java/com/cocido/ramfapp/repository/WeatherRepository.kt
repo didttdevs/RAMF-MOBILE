@@ -48,7 +48,6 @@ class WeatherRepository {
 
         // Check cache first
         getCachedData<List<WeatherStation>>(cacheKey)?.let { cached ->
-            Log.d(TAG, "Returning cached weather stations")
             emit(Resource.Success(cached))
             return@flow
         }
@@ -76,13 +75,11 @@ class WeatherRepository {
                     }
                 },
                 onFailure = { exception ->
-                    Log.e(TAG, "Error getting weather stations", exception)
                     securityLogger.logNetworkSecurityEvent("stations", 0)
                     emit(Resource.Error(exception, "Error de conexión: ${exception.message}"))
                 }
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error getting weather stations", e)
             emit(Resource.Error(e, "Error inesperado: ${e.message}"))
         }
     }
@@ -117,7 +114,6 @@ class WeatherRepository {
 
         // Check cache for charts data (shorter TTL for real-time data)
         getCachedData<ChartsPayload>(cacheKey, ttlMinutes = 5)?.let { cached ->
-            Log.d(TAG, "Returning cached charts data for $stationName")
             emit(Resource.Success(cached))
             return@flow
         }
@@ -140,7 +136,6 @@ class WeatherRepository {
                             response.body()?.let { chartsPayload ->
                                 cacheData(cacheKey, chartsPayload, ttlMinutes = 5)
                                 securityLogger.logDataAccess("charts_data", 1, stationName)
-                                Log.d(TAG, "✅ Charts data loaded successfully: ${chartsPayload.charts}")
                                 emit(Resource.Success(chartsPayload))
                             } ?: emit(Resource.Error(Exception("Empty response"), "Respuesta vacía del servidor"))
                         }
@@ -162,13 +157,11 @@ class WeatherRepository {
                     }
                 },
                 onFailure = { exception ->
-                    Log.e(TAG, "Error getting charts data", exception)
                     securityLogger.logNetworkSecurityEvent("charts_data_$stationName", 0)
                     emit(Resource.Error(exception, "Error de conexión: ${exception.message}"))
                 }
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error getting charts data", e)
             emit(Resource.Error(e, "Error inesperado: ${e.message}"))
         }
     }
@@ -202,7 +195,6 @@ class WeatherRepository {
 
         // Check cache for historical data (longer TTL acceptable)
         getCachedData<List<WeatherData>>(cacheKey, ttlMinutes = 10)?.let { cached ->
-            Log.d(TAG, "Returning cached historical data for $stationName")
             emit(Resource.Success(cached))
             return@flow
         }
@@ -247,7 +239,6 @@ class WeatherRepository {
                     }
                 },
                 onFailure = { exception ->
-                    Log.e(TAG, "Error getting historical data for $stationName", exception)
                     securityLogger.logNetworkSecurityEvent("historical_data_$stationName", 0)
                     emit(Resource.Error(exception, "Error de conexión: ${exception.message}"))
                 }

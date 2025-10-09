@@ -25,7 +25,6 @@ import com.cocido.ramfapp.models.User
 import com.cocido.ramfapp.utils.AuthManager
 import com.cocido.ramfapp.utils.ImageUtils
 import com.cocido.ramfapp.viewmodels.ProfileViewModel
-// import com.yalantis.ucrop.UCrop // TODO: Agregar dependencia UCrop
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -57,7 +56,6 @@ class ProfileEditActivity : AppCompatActivity() {
         }
     }
     
-    // TODO: Implementar UCrop cuando se agregue la dependencia
     // private val cropLauncher = registerForActivityResult(
     //     ActivityResultContracts.StartActivityForResult()
     // ) { result ->

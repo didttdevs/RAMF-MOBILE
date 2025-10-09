@@ -433,7 +433,6 @@ class MainActivity : AppCompatActivity() {
         // Update timestamp
         updateLastUpdateTime(widget.timestamp)
 
-        // Log detailed widget data for debugging
         logWidgetDataDetails(widget)
     }
 

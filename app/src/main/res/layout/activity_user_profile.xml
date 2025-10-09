@@ -207,7 +207,7 @@
                     <!-- Edit Profile Button -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnEditProfile"
-                        style="@style/Widget.Material3.Button.TextButton"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="12dp"
@@ -225,7 +225,7 @@
                     <!-- Change Password Button -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnChangePassword"
-                        style="@style/Widget.Material3.Button.TextButton"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="12dp"
@@ -243,7 +243,7 @@
                     <!-- Privacy Settings Button -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnPrivacySettings"
-                        style="@style/Widget.Material3.Button.TextButton"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="start|center_vertical"

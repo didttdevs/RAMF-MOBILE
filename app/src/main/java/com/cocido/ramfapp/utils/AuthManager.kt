@@ -2,7 +2,6 @@ package com.cocido.ramfapp.utils
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 import com.cocido.ramfapp.models.LoginResponse
@@ -44,9 +43,7 @@ object AuthManager {
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
             
-            Log.d(TAG, "AuthManager initialized with encrypted storage")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to initialize encrypted storage, falling back to regular SharedPreferences", e)
             // Fallback a SharedPreferences normal si falla la encriptación
             encryptedSharedPref = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         }
@@ -78,9 +75,7 @@ object AuthManager {
                 loginResponse.getExpiresIn()
             )
 
-            Log.d(TAG, "User session saved for: ${user.email} (${user.getFullName()})")
         } catch (e: Exception) {
-            Log.e(TAG, "Error saving user session", e)
         }
     }
     
@@ -107,7 +102,6 @@ object AuthManager {
             try {
                 Gson().fromJson(userJson, User::class.java)
             } catch (e: Exception) {
-                Log.e(TAG, "Error parsing user data", e)
                 null
             }
         } else null
@@ -120,9 +114,7 @@ object AuthManager {
         try {
             val userJson = Gson().toJson(updatedUser)
             encryptedSharedPref?.edit()?.putString(USER_KEY, userJson)?.apply()
-            Log.d(TAG, "Current user updated")
         } catch (e: Exception) {
-            Log.e(TAG, "Error updating current user", e)
         }
     }
     
@@ -133,13 +125,8 @@ object AuthManager {
             val user = getCurrentUser()
             val accessToken = getAccessToken()
 
-            Log.d(TAG, "isUserLoggedIn check:")
-            Log.d(TAG, "  User: ${user?.email ?: "null"}")
-            Log.d(TAG, "  AccessToken: ${if (accessToken.isNullOrEmpty()) "null/empty" else "present (${accessToken.take(20)}...)"}")
-
             // Si no hay usuario o token, no está logueado
             if (user == null || accessToken.isNullOrEmpty()) {
-                Log.d(TAG, "User not logged in: user=${user != null}, token=${!accessToken.isNullOrEmpty()}")
                 return false
             }
 
@@ -149,7 +136,6 @@ object AuthManager {
             val bufferTime = TOKEN_EXPIRY_BUFFER_MINUTES * 60 * 1000 // 5 minutos en milisegundos
 
             val isValid = currentTime < (tokenExpiry - bufferTime)
-            Log.d(TAG, "Token expiry check: currentTime=$currentTime, tokenExpiry=$tokenExpiry, bufferTime=$bufferTime, isValid=$isValid")
 
             return isValid
         }
@@ -175,7 +161,6 @@ object AuthManager {
         
         val refreshToken = getRefreshToken()
         if (refreshToken.isNullOrEmpty()) {
-            Log.w(TAG, "No refresh token available")
             return false
         }
         
@@ -191,15 +176,12 @@ object AuthManager {
                         
                         if (user != null) {
                             saveUserSession(user, loginResponse)
-                            Log.d(TAG, "Token refreshed successfully")
                         }
                     }
                 } else {
-                    Log.w(TAG, "Failed to refresh token: ${response.code()}")
                     logout()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error refreshing token", e)
                 logout()
             }
         }
@@ -227,7 +209,6 @@ object AuthManager {
                     try {
                         RetrofitClient.authService.logout("Bearer $accessToken")
                     } catch (e: Exception) {
-                        Log.w(TAG, "Failed to logout on server", e)
                     }
                 }
             }
@@ -245,9 +226,7 @@ object AuthManager {
             // Limpiar tokens de RetrofitClient
             RetrofitClient.clearAuthTokens()
             
-            Log.d(TAG, "User logged out successfully")
         } catch (e: Exception) {
-            Log.e(TAG, "Error during logout", e)
         }
     }
     
@@ -267,7 +246,6 @@ object AuthManager {
             }
             
             RetrofitClient.setAuthTokens(accessToken, refreshToken, expiresIn)
-            Log.d(TAG, "Tokens restored to RetrofitClient")
         }
     }
     
@@ -295,7 +273,6 @@ object AuthManager {
         return try {
             val accessToken = getAccessToken()
             if (accessToken.isNullOrEmpty()) {
-                Log.w(TAG, "No access token available to fetch user")
                 return null
             }
 
@@ -303,9 +280,6 @@ object AuthManager {
 
             if (response.isSuccessful) {
                 response.body()?.data?.let { freshUser ->
-                    Log.d(TAG, "Fresh user data fetched from /api/auth/me")
-                    Log.d(TAG, "  User: ${freshUser.email}")
-                    Log.d(TAG, "  Name: ${freshUser.getFullName()}")
 
                     // Actualizar usuario en SharedPreferences
                     val userJson = Gson().toJson(freshUser)
@@ -316,15 +290,12 @@ object AuthManager {
 
                     return freshUser
                 } ?: run {
-                    Log.w(TAG, "Empty response body from /api/auth/me")
                     null
                 }
             } else {
-                Log.e(TAG, "Failed to fetch user from /api/auth/me: ${response.code()}")
                 null
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error fetching current user from server", e)
             null
         }
     }

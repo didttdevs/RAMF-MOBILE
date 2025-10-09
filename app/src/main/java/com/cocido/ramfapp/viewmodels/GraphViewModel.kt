@@ -68,10 +68,6 @@ class GraphViewModel(private val repository: WeatherRepository) : ViewModel() {
 
     fun loadWeatherData(from: String, to: String) {
         val currentState = _uiState.value
-        Log.d("GraphViewModel", "🔄 Loading charts data:")
-        Log.d("GraphViewModel", "   Station: ${currentState.currentStationId}")
-        Log.d("GraphViewModel", "   From: $from")
-        Log.d("GraphViewModel", "   To: $to")
         
         viewModelScope.launch {
             repository.getChartsData(
@@ -84,10 +80,6 @@ class GraphViewModel(private val repository: WeatherRepository) : ViewModel() {
                         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
                     }
                     is Resource.Success -> {
-                        Log.d("GraphViewModel", "✅ Charts data loaded successfully")
-                        Log.d("GraphViewModel", "   tempHum points: ${resource.data.charts.tempHum?.size ?: 0}")
-                        Log.d("GraphViewModel", "   viento points: ${resource.data.charts.viento?.size ?: 0}")
-                        Log.d("GraphViewModel", "   presion points: ${resource.data.charts.presion?.size ?: 0}")
                         _uiState.value = _uiState.value.copy(
                             chartsData = resource.data,
                             isLoading = false,
@@ -102,7 +94,6 @@ class GraphViewModel(private val repository: WeatherRepository) : ViewModel() {
                         
                         // Detectar sesión expirada y navegar al login
                         if (resource.message?.contains("Sesión expirada", ignoreCase = true) == true) {
-                            Log.d("GraphViewModel", "Session expired, navigating to login")
                             _navigateToLogin.emit(true)
                         }
                     }
