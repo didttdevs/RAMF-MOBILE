@@ -3,30 +3,18 @@
     android:layout_width="match_parent"
     android:layout_height="200dp"
     android:orientation="vertical"
-    android:background="@drawable/splash_background"
+    android:background="@drawable/formosa_gradient_professional"
     android:padding="24dp"
     android:gravity="center">
 
     <!-- Avatar del usuario con diseño profesional -->
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="80dp"
-        android:layout_height="80dp"
+    <ImageView
+        android:id="@+id/navHeaderProfileImage"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
         android:layout_marginBottom="16dp"
-        app:cardBackgroundColor="@android:color/white"
-        app:cardCornerRadius="40dp"
-        app:cardElevation="8dp"
-        app:strokeWidth="0dp"
-        app:cardPreventCornerOverlap="false">
-
-        <ImageView
-            android:id="@+id/navHeaderProfileImage"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_default_profile"
-            android:padding="16dp" />
-
-    </com.google.android.material.card.MaterialCardView>
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_default_profile" />
 
     <!-- Información del usuario -->
     <LinearLayout
@@ -46,16 +34,6 @@
             android:fontFamily="sans-serif-medium"
             android:gravity="center" />
 
-        <TextView
-            android:id="@+id/navHeaderDetailsUser"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Detalles de usuario"
-            android:textColor="@color/text_white_primary"
-            android:textSize="14sp"
-            android:alpha="0.8"
-            android:gravity="center" />
 
     </LinearLayout>
 

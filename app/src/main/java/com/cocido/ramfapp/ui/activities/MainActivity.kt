@@ -33,7 +33,7 @@ import java.util.*
  * Professional MainActivity implementing Clean Architecture principles
  * with proper state management, security logging, and error handling
  */
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
 
     private val TAG = "MainActivity"
     private val securityLogger = SecurityLogger()
@@ -50,7 +50,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navigationView: NavigationView
     private lateinit var navHeaderProfileImage: ImageView
     private lateinit var navHeaderName: TextView
-    private lateinit var navHeaderRoleUser: TextView
 
     // State Management
     private var weatherStations: List<WeatherStation> = emptyList()
@@ -106,9 +105,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupUI() {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         setContentView(R.layout.activity_main)
-
-        // Hide system bars for immersive experience
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
+        
         actionBar?.hide()
     }
 
@@ -144,7 +141,6 @@ class MainActivity : AppCompatActivity() {
         val headerView = navigationView.getHeaderView(0)
         navHeaderProfileImage = headerView.findViewById(R.id.navHeaderProfileImage)
         navHeaderName = headerView.findViewById(R.id.navHeaderUsername)
-        navHeaderRoleUser = headerView.findViewById(R.id.navHeaderDetailsUser)
 
         // Intentar actualizar usuario desde el servidor primero
         lifecycleScope.launch {
@@ -160,7 +156,6 @@ class MainActivity : AppCompatActivity() {
                 } ?: run {
                     Log.w(TAG, "No user found in AuthManager")
                     navHeaderName.text = "Usuario"
-                    navHeaderRoleUser.text = "Invitado"
                 }
             }
         }
@@ -169,7 +164,6 @@ class MainActivity : AppCompatActivity() {
     private fun updateNavigationHeaderUI(user: User) {
         val fullName = user.getFullName()
         navHeaderName.text = fullName
-        navHeaderRoleUser.text = user.role?.takeIf { it.isNotBlank() }?.replaceFirstChar { it.uppercase() } ?: "Usuario"
 
         Log.d(TAG, "Navigation header set for: $fullName (${user.email})")
 

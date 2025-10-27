@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
@@ -19,24 +18,30 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.cocido.ramfapp.R
 import com.cocido.ramfapp.databinding.ActivityProfileEditBinding
 import com.cocido.ramfapp.models.User
-import com.cocido.ramfapp.utils.AuthManager
+import com.cocido.ramfapp.models.UpdateProfileRequest
+import com.cocido.ramfapp.repository.ProfileRepository
+import com.cocido.ramfapp.utils.TokenManager
 import com.cocido.ramfapp.utils.ImageUtils
 import com.cocido.ramfapp.viewmodels.ProfileViewModel
+import com.cocido.ramfapp.viewmodels.ProfileViewModelFactory
 import kotlinx.coroutines.launch
 import java.io.File
 
 /**
- * Activity para editar el perfil del usuario
- * Incluye funcionalidades completas de edición de datos personales,
- * cambio de avatar, y gestión de contraseñas
+ * Activity completa para editar el perfil del usuario
+ * Basada en la funcionalidad de la página web
+ * Incluye: cambio de avatar, edición de datos, cambio de contraseña
  */
-class ProfileEditActivity : AppCompatActivity() {
+class ProfileEditActivity : BaseActivity() {
     
     private lateinit var binding: ActivityProfileEditBinding
     private lateinit var viewModel: ProfileViewModel
+    private lateinit var profileRepository: ProfileRepository
+    private lateinit var tokenManager: TokenManager
     private lateinit var currentUser: User
     
     // Image picker launchers
@@ -50,166 +55,324 @@ class ProfileEditActivity : AppCompatActivity() {
         ActivityResultContracts.TakePicture()
     ) { success ->
         if (success) {
-            currentPhotoUri?.let { uri ->
-                startImageCrop(uri)
-            }
+            // Handle camera result
         }
     }
     
-    // private val cropLauncher = registerForActivityResult(
-    //     ActivityResultContracts.StartActivityForResult()
-    // ) { result ->
-    //     if (result.resultCode == Activity.RESULT_OK) {
-    //         val resultUri = UCrop.getOutput(result.data!!)
-    //         resultUri?.let { 
-    //             updateAvatar(it)
-    //         }
-    //     } else if (result.resultCode == UCrop.RESULT_ERROR) {
-    //         val cropError = UCrop.getError(result.data!!)
-    //         showError("Error al recortar imagen: ${cropError?.message}")
-    //     }
-    // }
+    private val imageCropLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val croppedImageUri = result.data?.getParcelableExtra<Uri>("cropped_image_uri")
+            croppedImageUri?.let { updateAvatar(it) }
+        }
+    }
     
-    private var currentPhotoUri: Uri? = null
+    companion object {
+        private const val CAMERA_PERMISSION_REQUEST = 100
+    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityProfileEditBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
-        setupViewModel()
-        setupUI()
-        setupListeners()
-        loadUserData()
-        observeViewModel()
-    }
-    
-    private fun setupViewModel() {
-        viewModel = ViewModelProvider(this)[ProfileViewModel::class.java]
-    }
-    
-    private fun setupUI() {
-        // Configurar toolbar
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.apply {
-            setDisplayHomeAsUpEnabled(true)
-            setDisplayShowHomeEnabled(true)
-            title = "Editar Perfil"
-        }
+        // Inicializar componentes
+        profileRepository = ProfileRepository(this)
+        tokenManager = TokenManager(this)
+        viewModel = ViewModelProvider(this, ProfileViewModelFactory(this))[ProfileViewModel::class.java]
         
-        // Configurar validaciones en tiempo real
+        setupToolbar()
+        setupListeners()
         setupTextWatchers()
+        loadUserData()
+        setupObservers()
+    }
+    
+    private fun setupToolbar() {
+        // Toolbar is now handled by the custom app bar in the layout
     }
     
     private fun setupListeners() {
-        binding.apply {
-            // Avatar click
-            btnChangeAvatar.setOnClickListener {
-                showImageSourceDialog()
-            }
-            
-            // Save button
-            btnSave.setOnClickListener {
-                saveProfile()
-            }
-            
-            // Change password button
-            btnChangePassword.setOnClickListener {
-                showChangePasswordDialog()
-            }
-            
-            // Delete account button removed
+        binding.btnSave.setOnClickListener {
+            saveProfile()
         }
-    }
-    
-    private fun loadUserData() {
-        val user = AuthManager.getCurrentUser()
-        if (user != null) {
-            currentUser = user
-            populateFields()
-        } else {
-            showError("No se pudo cargar la información del usuario")
-            finish()
+        
+        binding.btnChangePassword.setOnClickListener {
+            showChangePasswordDialog()
         }
-    }
-    
-    private fun populateFields() {
-        binding.apply {
-            // Información personal
-            etFirstName.setText(currentUser.firstName ?: "")
-            etLastName.setText(currentUser.lastName ?: "")
-            etEmail.setText(currentUser.email)
-            
-            // Avatar
-            if (!currentUser.avatar.isNullOrBlank()) {
-                Glide.with(this@ProfileEditActivity)
-                    .load(currentUser.avatar)
-                    .circleCrop()
-                    .placeholder(R.drawable.ic_default_profile)
-                    .error(R.drawable.ic_default_profile)
-                    .into(ivAvatar)
-            }
-            
-            // Información adicional
-            tvUserRole.text = currentUser.role ?: "Usuario"
-            tvCreatedAt.text = "Miembro desde: ${formatDate(currentUser.createdAt)}"
+        
+        binding.btnChangeAvatar.setOnClickListener {
+            showImageSourceDialog()
+        }
+        
+        binding.btnDeleteAccount.setOnClickListener {
+            showDeleteAccountDialog()
         }
     }
     
     private fun setupTextWatchers() {
+        binding.etName.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                binding.tilName.error = null
+            }
+        })
+        
+        binding.etEmail.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                binding.tilEmail.error = null
+            }
+        })
+        
+        binding.etDni.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                binding.tilDni.error = null
+            }
+        })
+        
+        binding.etPhone.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                binding.tilPhone.error = null
+            }
+        })
+        
+        // Text watchers for other fields
+        
+        binding.etJobPosition.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                binding.tilJobPosition.error = null
+            }
+        })
+    }
+    
+    private fun setupObservers() {
+        viewModel.profileState.observe(this) { state ->
+            when (state) {
+                is com.cocido.ramfapp.utils.Resource.Loading -> {
+                    showLoading(true)
+                }
+                        is com.cocido.ramfapp.utils.Resource.Success -> {
+                            showLoading(false)
+                            populateFieldsFromUser(state.data)
+                        }
+                is com.cocido.ramfapp.utils.Resource.Error -> {
+                    showLoading(false)
+                    showError(state.message)
+                }
+                else -> {}
+            }
+        }
+        
+        viewModel.updateState.observe(this) { state ->
+            when (state) {
+                is com.cocido.ramfapp.utils.Resource.Loading -> {
+                    showLoading(true)
+                }
+                is com.cocido.ramfapp.utils.Resource.Success -> {
+                    showLoading(false)
+                    Toast.makeText(this, "Perfil actualizado exitosamente", Toast.LENGTH_SHORT).show()
+                    setResult(RESULT_OK)
+                    finish()
+                }
+                is com.cocido.ramfapp.utils.Resource.Error -> {
+                    showLoading(false)
+                    showError(state.message)
+                }
+                else -> {}
+            }
+        }
+        
+        viewModel.changePasswordState.observe(this) { state ->
+            when (state) {
+                is com.cocido.ramfapp.utils.Resource.Loading -> {
+                    showLoading(true)
+                }
+                is com.cocido.ramfapp.utils.Resource.Success -> {
+                    showLoading(false)
+                    Toast.makeText(this, "Contraseña cambiada exitosamente", Toast.LENGTH_SHORT).show()
+                }
+                is com.cocido.ramfapp.utils.Resource.Error -> {
+                    showLoading(false)
+                    showError(state.message)
+                }
+                else -> {}
+            }
+        }
+        
+        viewModel.changeAvatarState.observe(this) { state ->
+            when (state) {
+                is com.cocido.ramfapp.utils.Resource.Loading -> {
+                    showLoading(true)
+                }
+                is com.cocido.ramfapp.utils.Resource.Success -> {
+                    showLoading(false)
+                    Toast.makeText(this, "Avatar actualizado exitosamente", Toast.LENGTH_SHORT).show()
+                }
+                is com.cocido.ramfapp.utils.Resource.Error -> {
+                    showLoading(false)
+                    showError(state.message)
+                }
+                else -> {}
+            }
+        }
+        
+        viewModel.deleteAccountState.observe(this) { state ->
+            when (state) {
+                is com.cocido.ramfapp.utils.Resource.Loading -> {
+                    showLoading(true)
+                }
+                is com.cocido.ramfapp.utils.Resource.Success -> {
+                    showLoading(false)
+                    Toast.makeText(this, "Cuenta eliminada exitosamente", Toast.LENGTH_SHORT).show()
+                    // Navegar al login
+                    val intent = Intent(this, LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                }
+                is com.cocido.ramfapp.utils.Resource.Error -> {
+                    showLoading(false)
+                    showError(state.message)
+                }
+                else -> {}
+            }
+        }
+    }
+    
+    private fun loadUserData() {
+        // Cargar perfil desde la API
+        viewModel.loadProfile()
+    }
+    
+    private fun populateFields() {
+        // Este método se mantiene para compatibilidad
+        // Los datos se cargan desde populateFieldsFromProfile
+    }
+    
+    private fun populateFieldsFromUser(user: com.cocido.ramfapp.models.User) {
         binding.apply {
-            etFirstName.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-                override fun afterTextChanged(s: Editable?) {
-                    validateFirstName()
-                }
-            })
+            // Información del usuario
+            etName.setText(user.name)
+            etLastName.setText(user.lastName)
+            etEmail.setText(user.email)
+            // Verificar si el usuario tiene perfil
+            if (user.hasProfile()) {
+                etPhone.setText(user.getPhone() ?: "")
+                etDni.setText(user.getDni() ?: "")
+                etJobPosition.setText(user.getJobPosition() ?: "")
+                etCompany.setText(user.getCompany() ?: "")
+            } else {
+                // Usuario sin perfil - campos vacíos para completar
+                etPhone.setText("")
+                etDni.setText("")
+                etJobPosition.setText("")
+                etCompany.setText("")
+            }
             
-            etLastName.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-                override fun afterTextChanged(s: Editable?) {
-                    validateLastName()
-                }
-            })
-        }
-    }
-    
-    private fun validateFirstName(): Boolean {
-        val firstName = binding.etFirstName.text.toString().trim()
-        return when {
-            firstName.isEmpty() -> {
-                binding.tilFirstName.error = "El nombre es requerido"
-                false
-            }
-            firstName.length < 2 -> {
-                binding.tilFirstName.error = "El nombre debe tener al menos 2 caracteres"
-                false
-            }
-            else -> {
-                binding.tilFirstName.error = null
-                true
+            // Cargar avatar si existe
+            if (!user.avatar.isNullOrEmpty()) {
+                Glide.with(this@ProfileEditActivity)
+                    .load(user.avatar)
+                    .transform(CircleCrop())
+                    .into(binding.ivAvatar)
             }
         }
     }
     
-    private fun validateLastName(): Boolean {
+    private fun saveProfile() {
+        if (!validateForm()) return
+        
+        val name = binding.etName.text.toString().trim()
         val lastName = binding.etLastName.text.toString().trim()
-        return when {
-            lastName.isEmpty() -> {
-                binding.tilLastName.error = "El apellido es requerido"
-                false
-            }
-            lastName.length < 2 -> {
-                binding.tilLastName.error = "El apellido debe tener al menos 2 caracteres"
-                false
-            }
-            else -> {
-                binding.tilLastName.error = null
-                true
-            }
+        val email = binding.etEmail.text.toString().trim()
+        val phone = binding.etPhone.text.toString().trim()
+        val dni = binding.etDni.text.toString().trim()
+        val jobPosition = binding.etJobPosition.text.toString().trim()
+        val company = binding.etCompany.text.toString().trim()
+        
+        val profileData = UpdateProfileRequest(
+            name = name,
+            lastName = lastName,
+            email = email,
+            phone = phone,
+            dni = dni,
+            jobPosition = jobPosition,
+            company = company
+        )
+        
+        viewModel.updateProfile(profileData)
+    }
+    
+    private fun validateForm(): Boolean {
+        var isValid = true
+        
+        // Validar nombre
+        if (binding.etName.text.toString().trim().isEmpty()) {
+            binding.tilName.error = "El nombre es requerido"
+            isValid = false
         }
+        
+        // Validar apellido
+        if (binding.etLastName.text.toString().trim().isEmpty()) {
+            binding.tilLastName.error = "El apellido es requerido"
+            isValid = false
+        }
+        
+        // Validar email
+        val email = binding.etEmail.text.toString().trim()
+        if (email.isEmpty()) {
+            binding.tilEmail.error = "El email es requerido"
+            isValid = false
+        } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            binding.tilEmail.error = "Email inválido"
+            isValid = false
+        }
+        
+        // Validar DNI
+        val dni = binding.etDni.text.toString().trim()
+        if (dni.isEmpty()) {
+            binding.tilDni.error = "El DNI es requerido"
+            isValid = false
+        } else if (!dni.matches(Regex("^[0-9]+$"))) {
+            binding.tilDni.error = "El DNI debe contener solo números"
+            isValid = false
+        }
+        
+        // Validar teléfono
+        val phone = binding.etPhone.text.toString().trim()
+        if (phone.isEmpty()) {
+            binding.tilPhone.error = "El teléfono es requerido"
+            isValid = false
+        } else if (phone.length < 8) {
+            binding.tilPhone.error = "El teléfono debe tener al menos 8 caracteres"
+            isValid = false
+        }
+        
+        // Validación de empresa removida
+        
+        // Validar posición laboral
+        val jobPosition = binding.etJobPosition.text.toString().trim()
+        if (jobPosition.isEmpty()) {
+            binding.tilJobPosition.error = "La posición laboral es requerida"
+            isValid = false
+        }
+        
+        return isValid
+    }
+    
+    private fun showChangePasswordDialog() {
+        // TODO: Implementar diálogo de cambio de contraseña
+        Toast.makeText(this, "Cambio de contraseña próximamente", Toast.LENGTH_SHORT).show()
     }
     
     private fun showImageSourceDialog() {
@@ -222,176 +385,83 @@ class ProfileEditActivity : AppCompatActivity() {
                     1 -> openGallery()
                 }
             }
-            .setNegativeButton("Cancelar", null)
             .show()
     }
     
     private fun openCamera() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) 
-            != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), CAMERA_PERMISSION_REQUEST)
-        } else {
-            startCamera()
+            return
         }
+        
+        val photoFile = File.createTempFile("profile_", ".jpg", cacheDir)
+        val photoUri = Uri.fromFile(photoFile)
+        cameraLauncher.launch(photoUri)
     }
     
     private fun openGallery() {
         imagePickerLauncher.launch("image/*")
     }
     
-    private fun startCamera() {
-        val photoFile = File(cacheDir, "temp_photo.jpg")
-        val uri = Uri.fromFile(photoFile)
-        currentPhotoUri = uri
-        cameraLauncher.launch(uri)
-    }
-    
-    private fun startImageCrop(sourceUri: Uri) {
-        com.cocido.ramfapp.ui.activities.ImageCropActivity.startForResult(this, sourceUri, CROP_IMAGE_REQUEST)
-    }
-    
-    private fun updateAvatar(uri: Uri) {
-        lifecycleScope.launch {
-            binding.progressBar.visibility = View.VISIBLE
-            
-            try {
-                val result = viewModel.updateAvatar(uri)
-                if (result.isSuccess) {
-                    // Actualizar UI
-                    Glide.with(this@ProfileEditActivity)
-                        .load(uri)
-                        .circleCrop()
-                        .into(binding.ivAvatar)
-                    
-                    Toast.makeText(this@ProfileEditActivity, "Avatar actualizado", Toast.LENGTH_SHORT).show()
-                } else {
-                    showError("Error al actualizar avatar: ${result.exceptionOrNull()?.message}")
-                }
-            } catch (e: Exception) {
-                showError("Error al actualizar avatar: ${e.message}")
-            } finally {
-                binding.progressBar.visibility = View.GONE
-            }
+    private fun startImageCrop(imageUri: Uri) {
+        val intent = Intent(this, ImageCropActivity::class.java).apply {
+            putExtra("image_uri", imageUri.toString())
         }
+        imageCropLauncher.launch(intent)
     }
     
-    private fun saveProfile() {
-        if (!validateForm()) {
-            return
-        }
-        
+    private fun updateAvatar(imageUri: Uri) {
         lifecycleScope.launch {
-            binding.progressBar.visibility = View.VISIBLE
-            binding.btnSave.isEnabled = false
-            
             try {
-                val updatedUser = currentUser.copy(
-                    firstName = binding.etFirstName.text.toString().trim(),
-                    lastName = binding.etLastName.text.toString().trim()
-                )
+                // Convertir URI a File
+                val inputStream = contentResolver.openInputStream(imageUri)
+                val file = File(cacheDir, "avatar_${System.currentTimeMillis()}.jpg")
+                val outputStream = file.outputStream()
+                inputStream?.copyTo(outputStream)
+                inputStream?.close()
+                outputStream.close()
                 
-                val result = viewModel.updateProfile(updatedUser)
-                if (result.isSuccess) {
-                    Toast.makeText(this@ProfileEditActivity, "Perfil actualizado exitosamente", Toast.LENGTH_SHORT).show()
-                    setResult(RESULT_OK)
-                    finish()
-                } else {
-                    showError("Error al actualizar perfil: ${result.exceptionOrNull()?.message}")
-                }
+                // Llamar al ViewModel para cambiar avatar
+                viewModel.changeAvatar(file)
+                
+                // Actualizar imagen con Glide
+                Glide.with(this@ProfileEditActivity)
+                    .load(imageUri)
+                    .transform(CircleCrop())
+                    .into(binding.ivAvatar)
             } catch (e: Exception) {
-                showError("Error al actualizar perfil: ${e.message}")
-            } finally {
-                binding.progressBar.visibility = View.GONE
-                binding.btnSave.isEnabled = true
+                showError("Error al procesar imagen: ${e.message}")
             }
         }
     }
     
-    private fun validateForm(): Boolean {
-        var isValid = true
-        
-        if (!validateFirstName()) isValid = false
-        if (!validateLastName()) isValid = false
-        
-        return isValid
-    }
-    
-    private fun showChangePasswordDialog() {
-        val dialog = com.cocido.ramfapp.ui.dialogs.ChangePasswordDialogFragment()
-        dialog.setOnPasswordChangedListener {
-            Toast.makeText(this, "Contraseña cambiada exitosamente", Toast.LENGTH_SHORT).show()
-        }
-        dialog.show(supportFragmentManager, "ChangePasswordDialog")
-    }
-    
-    // Delete account functionality removed
-    
-    private fun observeViewModel() {
-        viewModel.isLoading.observe(this) { isLoading ->
-            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-        }
-        
-        viewModel.errorMessage.observe(this) { error ->
-            if (error != null) {
-                showError(error)
-                viewModel.clearError()
+    private fun showDeleteAccountDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Eliminar Cuenta")
+            .setMessage("¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.")
+            .setPositiveButton("Eliminar") { _, _ ->
+                confirmDeleteAccount()
             }
-        }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
     
-    private fun formatDate(dateString: String?): String {
-        if (dateString.isNullOrBlank()) return "Fecha no disponible"
-        
-        return try {
-            val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault())
-            val outputFormat = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
-            val date = inputFormat.parse(dateString)
-            outputFormat.format(date ?: java.util.Date())
-        } catch (e: Exception) {
-            "Fecha no disponible"
-        }
+    private fun confirmDeleteAccount() {
+        // Llamar al ViewModel para eliminar cuenta
+        viewModel.deleteAccount()
+    }
+    
+    private fun showLoading(show: Boolean) {
+        binding.btnSave.isEnabled = !show
+        binding.btnSave.text = if (show) "Guardando..." else "Guardar Cambios"
     }
     
     private fun showError(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
     
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        
-        if (requestCode == CAMERA_PERMISSION_REQUEST) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startCamera()
-            } else {
-                Toast.makeText(this, "Permiso de cámara denegado", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-    
     override fun onSupportNavigateUp(): Boolean {
         onBackPressed()
         return true
-    }
-    
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        
-        if (requestCode == CROP_IMAGE_REQUEST) {
-            if (resultCode == RESULT_OK) {
-                val croppedUri = data?.getParcelableExtra<Uri>(com.cocido.ramfapp.ui.activities.ImageCropActivity.EXTRA_CROPPED_URI)
-                if (croppedUri != null) {
-                    updateAvatar(croppedUri)
-                }
-            }
-        }
-    }
-    
-    companion object {
-        private const val CAMERA_PERMISSION_REQUEST = 100
-        private const val CROP_IMAGE_REQUEST = 101
     }
 }

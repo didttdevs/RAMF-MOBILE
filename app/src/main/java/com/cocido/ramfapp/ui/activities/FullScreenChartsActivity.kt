@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.ArrayAdapter
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.Lifecycle
@@ -30,7 +29,7 @@ import android.content.Intent
  * Activity profesional para mostrar múltiples gráficos meteorológicos
  * Fase 2: Layout vertical con scroll, gráficos combinados y filtros avanzados
  */
-class FullScreenChartsActivity : AppCompatActivity() {
+class FullScreenChartsActivity : BaseActivity() {
     
     private lateinit var binding: ActivityFullScreenChartsBinding
     private lateinit var multiChartAdapter: MultiChartAdapter
@@ -46,6 +45,10 @@ class FullScreenChartsActivity : AppCompatActivity() {
         const val EXTRA_STATION_ID = "station_id"
         const val EXTRA_STATION_NAME = "station_name"
         private const val TAG = "FullScreenCharts"
+    }
+    
+    override fun requiresAuthentication(): Boolean {
+        return true
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {

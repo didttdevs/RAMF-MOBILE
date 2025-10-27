@@ -2,6 +2,7 @@ package com.cocido.ramfapp.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 import com.cocido.ramfapp.models.LoginResponse
@@ -74,8 +75,13 @@ object AuthManager {
                 loginResponse.refreshToken,
                 loginResponse.getExpiresIn()
             )
+            
+            // Debug: Verificar que el token se guardó correctamente
+            Log.d("AuthManager", "Token saved: ${loginResponse.accessToken.take(20)}...")
+            Log.d("AuthManager", "Token length: ${loginResponse.accessToken.length}")
 
         } catch (e: Exception) {
+            Log.e("AuthManager", "Error saving user session", e)
         }
     }
     
@@ -231,6 +237,30 @@ object AuthManager {
     }
     
     /**
+     * Forzar logout y redirección al login
+     */
+    fun forceLogout(context: Context) {
+        logout()
+        // La redirección se manejará en las Activities
+    }
+    
+    /**
+     * Verificar si la sesión ha expirado y necesita logout
+     */
+    fun checkSessionExpiry(): Boolean {
+        val tokenExpiry = encryptedSharedPref?.getLong(TOKEN_EXPIRY_KEY, 0L) ?: 0L
+        val currentTime = System.currentTimeMillis()
+        
+        // Si el token ha expirado completamente
+        if (currentTime >= tokenExpiry) {
+            logout()
+            return true
+        }
+        
+        return false
+    }
+    
+    /**
      * Restaurar tokens en RetrofitClient al inicializar
      */
     private fun restoreTokensToRetrofit() {
@@ -279,7 +309,7 @@ object AuthManager {
             val response = RetrofitClient.authService.getCurrentUser("Bearer $accessToken")
 
             if (response.isSuccessful) {
-                response.body()?.data?.let { freshUser ->
+                response.body()?.let { freshUser ->
 
                     // Actualizar usuario en SharedPreferences
                     val userJson = Gson().toJson(freshUser)
@@ -288,7 +318,7 @@ object AuthManager {
                         apply()
                     }
 
-                    return freshUser
+                    freshUser
                 } ?: run {
                     null
                 }

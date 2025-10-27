@@ -7,7 +7,6 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import com.cocido.ramfapp.R
@@ -19,10 +18,14 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class RegisterActivity : AppCompatActivity() {
+class RegisterActivity : BaseActivity() {
 
     companion object {
         private const val TAG = "RegisterActivity"
+    }
+    
+    override fun requiresAuthentication(): Boolean {
+        return false
     }
 
     private lateinit var etFirstName: EditText
@@ -88,12 +91,24 @@ class RegisterActivity : AppCompatActivity() {
             return false
         }
 
-        if (password.length < 6) {
-            Toast.makeText(this, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show()
+        if (password.length < 8) {
+            Toast.makeText(this, "La contraseña debe tener al menos 8 caracteres", Toast.LENGTH_SHORT).show()
+            return false
+        }
+        
+        if (!isValidPassword(password)) {
+            Toast.makeText(this, "La contraseña debe contener al menos una mayúscula, una minúscula y un número", Toast.LENGTH_LONG).show()
             return false
         }
 
         return true
+    }
+    
+    private fun isValidPassword(password: String): Boolean {
+        val hasUpperCase = password.any { it.isUpperCase() }
+        val hasLowerCase = password.any { it.isLowerCase() }
+        val hasDigit = password.any { it.isDigit() }
+        return hasUpperCase && hasLowerCase && hasDigit
     }
 
     private fun performRegister(firstName: String, lastName: String, email: String, password: String) {
@@ -102,18 +117,16 @@ class RegisterActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.authService.register(registerRequest)
-                val result = RetrofitClient.handleApiResponse(response)
                 
-                result.onSuccess { loginResponse ->
-                    Toast.makeText(this@RegisterActivity, "Cuenta creada exitosamente", Toast.LENGTH_SHORT).show()
-                    AuthManager.saveUserSession(loginResponse.user, loginResponse)
-                    goToMainActivity()
-                }.onFailure { exception ->
-                    val errorMessage = when {
-                        exception.message?.contains("400") == true -> "Datos inválidos. Verifica la información ingresada"
-                        exception.message?.contains("409") == true -> "El email ya está registrado"
-                        exception.message?.contains("network") == true -> "Error de conexión. Verifica tu internet"
-                        else -> "Error en registro: ${exception.message}"
+                if (response.isSuccessful) {
+                    Toast.makeText(this@RegisterActivity, "Cuenta creada exitosamente. Ahora puedes iniciar sesión.", Toast.LENGTH_LONG).show()
+                    goToLoginActivity()
+                } else {
+                    val errorMessage = when (response.code()) {
+                        400 -> "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número"
+                        409 -> "El email ya está registrado"
+                        422 -> "Datos inválidos. Verifica la información ingresada"
+                        else -> "Error en registro: ${response.message()}"
                     }
                     Toast.makeText(this@RegisterActivity, errorMessage, Toast.LENGTH_LONG).show()
                 }

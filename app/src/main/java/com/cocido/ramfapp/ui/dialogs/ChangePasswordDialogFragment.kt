@@ -8,17 +8,20 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
+import com.cocido.ramfapp.R
 import com.cocido.ramfapp.databinding.DialogChangePasswordBinding
+import com.cocido.ramfapp.models.ChangePasswordRequest
+import com.cocido.ramfapp.utils.Resource
 import com.cocido.ramfapp.viewmodels.ProfileViewModel
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import kotlinx.coroutines.launch
+import com.cocido.ramfapp.viewmodels.ProfileViewModelFactory
+import android.content.Context
 
 /**
- * Dialog para cambiar la contraseña del usuario
- * Incluye validaciones en tiempo real y manejo de errores
+ * Dialog fragment para cambiar la contraseña del usuario
+ * Basado en la funcionalidad de la página web
  */
 class ChangePasswordDialogFragment : DialogFragment() {
     
@@ -26,198 +29,167 @@ class ChangePasswordDialogFragment : DialogFragment() {
     private val binding get() = _binding!!
     
     private lateinit var viewModel: ProfileViewModel
-    private var onPasswordChangedListener: (() -> Unit)? = null
     
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        _binding = DialogChangePasswordBinding.inflate(layoutInflater)
-        
-        viewModel = ViewModelProvider(requireActivity())[ProfileViewModel::class.java]
-        
-        setupUI()
-        setupListeners()
-        observeViewModel()
-        
-        return MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Cambiar Contraseña")
-            .setView(binding.root)
-            .setPositiveButton("Cambiar", null) // Se maneja en el listener
-            .setNegativeButton("Cancelar") { _, _ -> dismiss() }
-            .create()
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = DialogChangePasswordBinding.inflate(inflater, container, false)
+        return binding.root
     }
     
-    override fun onStart() {
-        super.onStart()
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val dialog = super.onCreateDialog(savedInstanceState)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        return dialog
+    }
+    
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         
-        // Configurar el botón positivo después de que el dialog esté creado
-        val dialog = dialog as? androidx.appcompat.app.AlertDialog
-        dialog?.getButton(DialogInterface.BUTTON_POSITIVE)?.setOnClickListener {
+        // Configurar el tamaño del diálogo
+        dialog?.window?.setLayout(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        
+        viewModel = ViewModelProvider(requireActivity(), ProfileViewModelFactory(requireContext()))[ProfileViewModel::class.java]
+        setupListeners()
+        setupTextWatchers()
+        setupObservers()
+    }
+    
+    private fun setupListeners() {
+        binding.btnCancel.setOnClickListener {
+            dismiss()
+        }
+        
+        binding.btnUpdatePassword.setOnClickListener {
             changePassword()
         }
     }
     
-    private fun setupUI() {
-        // Configurar TextWatchers para validación en tiempo real
-        setupTextWatchers()
-    }
-    
-    private fun setupListeners() {
-        // Los botones de toggle se manejan automáticamente por Material Design
-    }
-    
     private fun setupTextWatchers() {
-        binding.apply {
-            etCurrentPassword.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-                override fun afterTextChanged(s: Editable?) {
-                    validateCurrentPassword()
-                }
-            })
-            
-            etNewPassword.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-                override fun afterTextChanged(s: Editable?) {
-                    validateNewPassword()
-                    validatePasswordMatch()
-                }
-            })
-            
-            etConfirmPassword.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-                override fun afterTextChanged(s: Editable?) {
-                    validatePasswordMatch()
-                }
-            })
-        }
-    }
-    
-    private fun validateCurrentPassword(): Boolean {
-        val currentPassword = binding.etCurrentPassword.text.toString()
-        return when {
-            currentPassword.isEmpty() -> {
-                binding.tilCurrentPassword.error = "La contraseña actual es requerida"
-                false
-            }
-            else -> {
+        binding.etCurrentPassword.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
                 binding.tilCurrentPassword.error = null
-                true
             }
-        }
-    }
-    
-    private fun validateNewPassword(): Boolean {
-        val newPassword = binding.etNewPassword.text.toString()
-        return when {
-            newPassword.isEmpty() -> {
-                binding.tilNewPassword.error = "La nueva contraseña es requerida"
-                false
-            }
-            newPassword.length < 8 -> {
-                binding.tilNewPassword.error = "La contraseña debe tener al menos 8 caracteres"
-                false
-            }
-            !isValidPassword(newPassword) -> {
-                binding.tilNewPassword.error = "Debe contener mayúscula, minúscula y número"
-                false
-            }
-            else -> {
-                binding.tilNewPassword.error = null
-                true
-            }
-        }
-    }
-    
-    private fun validatePasswordMatch(): Boolean {
-        val newPassword = binding.etNewPassword.text.toString()
-        val confirmPassword = binding.etConfirmPassword.text.toString()
+        })
         
-        return when {
-            confirmPassword.isEmpty() -> {
-                binding.tilConfirmPassword.error = "Confirma tu nueva contraseña"
-                false
+        binding.etNewPassword.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                binding.tilNewPassword.error = null
             }
-            newPassword != confirmPassword -> {
-                binding.tilConfirmPassword.error = "Las contraseñas no coinciden"
-                false
-            }
-            else -> {
+        })
+        
+        binding.etConfirmPassword.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
                 binding.tilConfirmPassword.error = null
-                true
+            }
+        })
+    }
+    
+    private fun setupObservers() {
+        viewModel.changePasswordState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is Resource.Loading -> {
+                    showLoading(true)
+                }
+                is Resource.Success -> {
+                    showLoading(false)
+                    Toast.makeText(requireContext(), "Contraseña cambiada exitosamente", Toast.LENGTH_SHORT).show()
+                    dismiss()
+                }
+                is Resource.Error -> {
+                    showLoading(false)
+                    // Mostrar mensaje de error más descriptivo
+                    val errorMessage = when {
+                        state.message?.contains("400") == true -> "La contraseña debe contener al menos 8 caracteres, una mayúscula, una minúscula y un número"
+                        state.message?.contains("401") == true -> "Contraseña actual incorrecta"
+                        state.message?.contains("403") == true -> "No tienes permisos para realizar esta acción"
+                        else -> state.message ?: "Error al cambiar la contraseña"
+                    }
+                    Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_LONG).show()
+                }
+                null -> {}
             }
         }
+    }
+    
+    private fun changePassword() {
+        if (!validateForm()) return
+        
+        val currentPassword = binding.etCurrentPassword.text.toString()
+        val newPassword = binding.etNewPassword.text.toString()
+        
+        val changePasswordRequest = ChangePasswordRequest(
+            password = currentPassword,
+            newPassword = newPassword
+        )
+        
+        viewModel.changePassword(changePasswordRequest)
+    }
+    
+    private fun validateForm(): Boolean {
+        var isValid = true
+        
+        // Validar contraseña actual
+        val currentPassword = binding.etCurrentPassword.text.toString()
+        if (currentPassword.isEmpty()) {
+            binding.tilCurrentPassword.error = "La contraseña actual es requerida"
+            isValid = false
+        } else if (currentPassword.length < 8) {
+            binding.tilCurrentPassword.error = "La contraseña debe tener al menos 8 caracteres"
+            isValid = false
+        } else if (!isValidPassword(currentPassword)) {
+            binding.tilCurrentPassword.error = "La contraseña debe contener mayúscula, minúscula y número"
+            isValid = false
+        }
+        
+        // Validar nueva contraseña
+        val newPassword = binding.etNewPassword.text.toString()
+        if (newPassword.isEmpty()) {
+            binding.tilNewPassword.error = "La nueva contraseña es requerida"
+            isValid = false
+        } else if (newPassword.length < 8) {
+            binding.tilNewPassword.error = "La contraseña debe tener al menos 8 caracteres"
+            isValid = false
+        } else if (!isValidPassword(newPassword)) {
+            binding.tilNewPassword.error = "La contraseña debe contener al menos una letra mayúscula, una minúscula y un número"
+            isValid = false
+        }
+        
+        // Validar confirmación de contraseña
+        val confirmPassword = binding.etConfirmPassword.text.toString()
+        if (confirmPassword.isEmpty()) {
+            binding.tilConfirmPassword.error = "La confirmación de contraseña es requerida"
+            isValid = false
+        } else if (newPassword != confirmPassword) {
+            binding.tilConfirmPassword.error = "Las contraseñas no coinciden"
+            isValid = false
+        }
+        
+        return isValid
     }
     
     private fun isValidPassword(password: String): Boolean {
         val hasUpperCase = password.any { it.isUpperCase() }
         val hasLowerCase = password.any { it.isLowerCase() }
         val hasDigit = password.any { it.isDigit() }
-        
         return hasUpperCase && hasLowerCase && hasDigit
     }
     
-    private fun changePassword() {
-        val currentPassword = binding.etCurrentPassword.text.toString()
-        val newPassword = binding.etNewPassword.text.toString()
-        val confirmPassword = binding.etConfirmPassword.text.toString()
-        
-        // Validar formulario
-        val validation = viewModel.validatePasswordForm(currentPassword, newPassword, confirmPassword)
-        
-        if (!validation.isValid) {
-            // Mostrar errores
-            binding.tilCurrentPassword.error = validation.errors.find { it.contains("actual") }
-            binding.tilNewPassword.error = validation.errors.find { it.contains("nueva") }
-            binding.tilConfirmPassword.error = validation.errors.find { it.contains("coinciden") || it.contains("confirmación") }
-            return
-        }
-        
-        // Limpiar errores
-        binding.tilCurrentPassword.error = null
-        binding.tilNewPassword.error = null
-        binding.tilConfirmPassword.error = null
-        
-        // Cambiar contraseña
-        lifecycleScope.launch {
-            binding.progressBar.visibility = View.VISIBLE
-            
-            try {
-                val result = viewModel.changePassword(currentPassword, newPassword)
-                
-                if (result.isSuccess) {
-                    onPasswordChangedListener?.invoke()
-                    dismiss()
-                } else {
-                    val error = result.exceptionOrNull()?.message ?: "Error desconocido"
-                    showError(error)
-                }
-            } catch (e: Exception) {
-                showError("Error al cambiar contraseña: ${e.message}")
-            } finally {
-                binding.progressBar.visibility = View.GONE
-            }
-        }
-    }
-    
-    private fun observeViewModel() {
-        viewModel.errorMessage.observe(this) { error ->
-            if (error != null) {
-                showError(error)
-                viewModel.clearError()
-            }
-        }
-    }
-    
-    private fun showError(message: String) {
-        binding.tvError.apply {
-            text = message
-            visibility = View.VISIBLE
-        }
-    }
-    
-    fun setOnPasswordChangedListener(listener: () -> Unit) {
-        onPasswordChangedListener = listener
+    private fun showLoading(show: Boolean) {
+        binding.btnUpdatePassword.isEnabled = !show
+        binding.btnCancel.isEnabled = !show
+        binding.btnUpdatePassword.text = if (show) "Cambiando..." else "Actualizar Contraseña"
     }
     
     override fun onDestroyView() {

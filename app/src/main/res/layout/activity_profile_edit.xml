@@ -4,123 +4,122 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_color"
+    android:background="@drawable/formosa_gradient_professional"
     tools:context=".ui.activities.ProfileEditActivity">
 
-    <!-- Toolbar -->
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar"
+    <!-- App Bar -->
+    <LinearLayout
+        android:id="@+id/appBar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/background_color"
+        android:background="@color/formosa_blue_primary"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:title="Editar Perfil"
-        app:titleTextColor="@color/text_white_primary" />
+        app:layout_constraintTop_toTopOf="parent">
 
-    <!-- Progress Bar -->
-    <com.google.android.material.progressindicator.CircularProgressIndicator
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:visibility="gone"
-        app:indicatorColor="@color/formosa_blue_primary"
-        app:indicatorSize="48dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar"
-        app:trackColor="@color/white"
-        app:trackThickness="4dp" />
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Volver"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/white" />
 
-    <!-- ScrollView for content -->
-    <ScrollView
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Editar Perfil"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="48dp"
+            android:layout_height="48dp" />
+
+    </LinearLayout>
+
+    <!-- Profile Content -->
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="16dp"
+        android:fillViewport="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar">
+        app:layout_constraintTop_toBottomOf="@id/appBar">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="16dp">
 
-            <!-- Profile Avatar Card -->
+            <!-- Avatar Section -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                app:cardBackgroundColor="@color/background_color_btn"
+                app:cardBackgroundColor="@android:color/white"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="12dp"
-                app:strokeWidth="0dp"
-                app:cardPreventCornerOverlap="false">
+                app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="32dp">
+                    android:padding="24dp">
 
-                    <!-- Avatar Image -->
-                    <com.google.android.material.card.MaterialCardView
+                    <!-- Profile Image -->
+                    <ImageView
+                        android:id="@+id/ivAvatar"
                         android:layout_width="120dp"
                         android:layout_height="120dp"
                         android:layout_marginBottom="16dp"
-                        app:cardBackgroundColor="@color/white"
-                        app:cardCornerRadius="60dp"
-                        app:cardElevation="8dp"
-                        app:strokeWidth="4dp"
-                        app:strokeColor="@color/formosa_blue_primary"
-                        app:cardPreventCornerOverlap="false">
-
-                        <ImageView
-                            android:id="@+id/ivAvatar"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:contentDescription="Avatar del usuario"
-                            android:padding="8dp"
-                            android:scaleType="centerCrop"
-                            android:src="@drawable/ic_default_profile"
-                            app:tint="@color/formosa_blue_primary" />
-
-                    </com.google.android.material.card.MaterialCardView>
+                        android:background="@drawable/circular_background"
+                        android:contentDescription="Foto de perfil"
+                        android:padding="4dp"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/ic_default_profile" />
 
                     <!-- Change Avatar Button -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnChangeAvatar"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Cambiar Avatar"
-                        android:textColor="@color/formosa_blue_primary"
-                        app:icon="@drawable/ic_camera"
-                        app:iconGravity="start"
-                        app:iconPadding="8dp"
+                        android:textColor="@color/formosa_blue_accent"
+                        android:textSize="14sp"
+                        app:backgroundTint="@android:color/transparent"
+                        app:cornerRadius="8dp"
+                        app:icon="@drawable/ic_person"
+                        app:iconGravity="textStart"
+                        app:iconPadding="4dp"
+                        app:iconSize="16dp"
                         app:iconTint="@color/formosa_blue_primary"
-                        app:strokeColor="@color/formosa_blue_primary"
-                        app:strokeWidth="2dp" />
+                        style="@style/Widget.Material3.Button.OutlinedButton" />
 
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Personal Information Card -->
+            <!-- Personal Information Section -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                app:cardBackgroundColor="@color/background_color_btn"
+                app:cardBackgroundColor="@android:color/white"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="12dp"
-                app:strokeWidth="0dp"
-                app:cardPreventCornerOverlap="false">
+                app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -132,92 +131,86 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
+                        android:layout_marginBottom="20dp"
                         android:text="Información Personal"
-                        android:textColor="@color/formosa_blue_primary"
-                        android:textSize="20sp"
+                        android:textColor="@color/text_primary_dark"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
 
-                    <!-- First Name -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilFirstName"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    <!-- Name and Last Name Row -->
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        android:hint="Nombre"
-                        app:boxCornerRadiusBottomEnd="12dp"
-                        app:boxCornerRadiusBottomStart="12dp"
-                        app:boxCornerRadiusTopEnd="12dp"
-                        app:boxCornerRadiusTopStart="12dp"
-                        app:boxStrokeColor="@color/formosa_blue_primary"
-                        app:boxStrokeWidth="2dp"
-                        app:endIconMode="clear_text"
-                        app:helperText="Tu nombre de pila"
-                        app:helperTextTextColor="@color/formosa_blue_primary"
-                        app:startIconDrawable="@drawable/ic_person"
-                        app:startIconTint="@color/formosa_blue_primary">
+                        android:orientation="horizontal">
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etFirstName"
-                            android:layout_width="match_parent"
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilName"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:inputType="textPersonName"
-                            android:maxLength="50"
-                            android:singleLine="true"
-                            android:textColor="@color/formosa_blue_primary"
-                            android:textSize="16sp" />
+                            android:layout_marginEnd="8dp"
+                            android:layout_weight="1"
+                            android:hint="Nombre"
+                            app:boxBackgroundColor="@android:color/white"
+                            app:boxCornerRadiusTopStart="16dp"
+                            app:boxCornerRadiusTopEnd="16dp"
+                            app:boxCornerRadiusBottomStart="16dp"
+                            app:boxCornerRadiusBottomEnd="16dp"
+                            app:boxStrokeColor="@color/formosa_blue_accent"
+                            app:boxStrokeWidth="2dp"
+                            app:startIconDrawable="@drawable/ic_person"
+                            app:startIconTint="@color/formosa_blue_primary">
 
-                    </com.google.android.material.textfield.TextInputLayout>
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etName"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textPersonName"
+                                android:maxLines="1" />
 
-                    <!-- Last Name -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilLastName"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        android:hint="Apellido"
-                        app:boxCornerRadiusBottomEnd="12dp"
-                        app:boxCornerRadiusBottomStart="12dp"
-                        app:boxCornerRadiusTopEnd="12dp"
-                        app:boxCornerRadiusTopStart="12dp"
-                        app:boxStrokeColor="@color/formosa_blue_primary"
-                        app:boxStrokeWidth="2dp"
-                        app:endIconMode="clear_text"
-                        app:helperText="Tu apellido"
-                        app:helperTextTextColor="@color/formosa_blue_primary"
-                        app:startIconDrawable="@drawable/ic_person"
-                        app:startIconTint="@color/formosa_blue_primary">
+                        </com.google.android.material.textfield.TextInputLayout>
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etLastName"
-                            android:layout_width="match_parent"
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilLastName"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:inputType="textPersonName"
-                            android:maxLength="50"
-                            android:singleLine="true"
-                            android:textColor="@color/formosa_blue_primary"
-                            android:textSize="16sp" />
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="1"
+                            android:hint="Apellido"
+                            app:boxBackgroundColor="@android:color/white"
+                            app:boxCornerRadiusTopStart="16dp"
+                            app:boxCornerRadiusTopEnd="16dp"
+                            app:boxCornerRadiusBottomStart="16dp"
+                            app:boxCornerRadiusBottomEnd="16dp"
+                            app:boxStrokeColor="@color/formosa_blue_accent"
+                            app:boxStrokeWidth="2dp"
+                            app:startIconDrawable="@drawable/ic_person"
+                            app:startIconTint="@color/formosa_blue_primary">
 
-                    </com.google.android.material.textfield.TextInputLayout>
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etLastName"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textPersonName"
+                                android:maxLines="1" />
 
-                    <!-- Email (Read-only) -->
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                    </LinearLayout>
+
+                    <!-- Email -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilEmail"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        android:hint="Correo electrónico"
-                        app:boxCornerRadiusBottomEnd="12dp"
-                        app:boxCornerRadiusBottomStart="12dp"
-                        app:boxCornerRadiusTopEnd="12dp"
+                        android:layout_marginTop="16dp"
+                        android:hint="Correo Electrónico"
+                        app:boxBackgroundColor="@color/background_color"
                         app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
                         app:boxStrokeColor="@color/formosa_blue_primary"
-                        app:boxStrokeWidth="1dp"
-                        app:helperText="El email no se puede cambiar"
-                        app:helperTextTextColor="@color/formosa_blue_primary"
+                        app:boxStrokeWidth="2dp"
                         app:startIconDrawable="@drawable/ic_email"
                         app:startIconTint="@color/formosa_blue_primary">
 
@@ -225,11 +218,60 @@
                             android:id="@+id/etEmail"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:enabled="false"
                             android:inputType="textEmailAddress"
-                            android:singleLine="true"
-                            android:textColor="@color/formosa_blue_primary"
-                            android:textSize="16sp" />
+                            android:maxLines="1" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Phone -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilPhone"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:hint="Teléfono"
+                        app:boxBackgroundColor="@color/background_color"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxStrokeColor="@color/formosa_blue_primary"
+                        app:boxStrokeWidth="2dp"
+                        app:startIconDrawable="@drawable/ic_phone"
+                        app:startIconTint="@color/formosa_blue_primary">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etPhone"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="phone"
+                            android:maxLines="1" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- DNI -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilDni"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:hint="DNI"
+                        app:boxBackgroundColor="@color/background_color"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxStrokeColor="@color/formosa_blue_primary"
+                        app:boxStrokeWidth="2dp"
+                        app:startIconDrawable="@drawable/ic_description"
+                        app:startIconTint="@color/formosa_blue_primary">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etDni"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:maxLines="1" />
 
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -237,16 +279,15 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Account Information Card -->
+            <!-- Professional Information Section -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                app:cardBackgroundColor="@color/background_color_btn"
+                app:cardBackgroundColor="@android:color/white"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="12dp"
-                app:strokeWidth="0dp"
-                app:cardPreventCornerOverlap="false">
+                app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -258,139 +299,138 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        android:text="Información de Cuenta"
-                        android:textColor="@color/formosa_blue_primary"
-                        android:textSize="20sp"
+                        android:layout_marginBottom="20dp"
+                        android:text="Información Profesional"
+                        android:textColor="@color/text_primary_dark"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
 
-
-                    <!-- User Role -->
-                    <LinearLayout
+                    <!-- Job Position -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilJobPosition"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="12dp"
-                        android:orientation="vertical">
+                        android:layout_marginBottom="16dp"
+                        android:hint="Puesto de trabajo"
+                        app:boxBackgroundColor="@color/background_color"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxStrokeColor="@color/formosa_blue_primary"
+                        app:boxStrokeWidth="2dp"
+                        app:startIconDrawable="@drawable/ic_priority"
+                        app:startIconTint="@color/formosa_blue_primary">
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etJobPosition"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:alpha="0.7"
-                            android:text="Rol"
-                            android:textColor="@color/formosa_blue_primary"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
+                            android:inputType="text"
+                            android:maxLines="1" />
 
-                        <TextView
-                            android:id="@+id/tvUserRole"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Usuario"
-                            android:textColor="@color/formosa_blue_primary"
-                            android:textSize="16sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                    </LinearLayout>
-
-                    <!-- Created At -->
-                    <LinearLayout
+                    <!-- Company -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilCompany"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical">
+                        android:hint="Empresa o Institución"
+                        app:boxBackgroundColor="@color/background_color"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxStrokeColor="@color/formosa_blue_primary"
+                        app:boxStrokeWidth="2dp"
+                        app:startIconDrawable="@drawable/ic_battery"
+                        app:startIconTint="@color/formosa_blue_primary">
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etCompany"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:alpha="0.7"
-                            android:text="Miembro desde"
-                            android:textColor="@color/formosa_blue_primary"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
+                            android:inputType="text"
+                            android:maxLines="1" />
 
-                        <TextView
-                            android:id="@+id/tvCreatedAt"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="01/01/2024"
-                            android:textColor="@color/formosa_blue_primary"
-                            android:textSize="16sp" />
-
-                    </LinearLayout>
+                    </com.google.android.material.textfield.TextInputLayout>
 
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Actions Card -->
-            <com.google.android.material.card.MaterialCardView
+            <!-- Action Buttons -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                app:cardBackgroundColor="@color/background_color_btn"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="12dp"
-                app:strokeWidth="0dp"
-                app:cardPreventCornerOverlap="false">
+                android:orientation="vertical"
+                android:padding="16dp">
 
-                <LinearLayout
+                <!-- Save Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSave"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="24dp">
-
-                    <!-- Section Title -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        android:text="Acciones de Cuenta"
-                        android:textColor="@color/formosa_blue_primary"
-                        android:textSize="20sp"
-                        android:textStyle="bold" />
-
-                    <!-- Change Password Button -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnChangePassword"
-                        style="@style/Widget.MaterialComponents.Button.TextButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="12dp"
-                        android:gravity="start|center_vertical"
-                        android:padding="16dp"
-                        android:text="Cambiar Contraseña"
-                        android:textAlignment="textStart"
-                        android:textColor="@color/formosa_blue_primary"
+                    android:layout_marginBottom="16dp"
+                    android:text="Guardar Cambios"
+                        android:textColor="@android:color/white"
                         android:textSize="16sp"
-                        app:icon="@drawable/ic_lock"
-                        app:iconGravity="start"
-                        app:iconPadding="16dp"
-                        app:iconTint="@color/formosa_blue_primary" />
+                        android:textStyle="bold"
+                        app:backgroundTint="@color/formosa_blue_accent"
+                        app:cornerRadius="12dp"
+                    app:icon="@drawable/ic_check_circle"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp"
+                    app:iconSize="20dp"
+                    app:iconTint="@color/formosa_blue_primary"
+                    style="@style/Widget.Material3.Button" />
 
+                <!-- Change Password Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnChangePassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:text="Cambiar Contraseña"
+                        android:textColor="@android:color/white"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:backgroundTint="@color/formosa_blue_accent"
+                        app:cornerRadius="12dp"
+                    app:icon="@drawable/ic_lock"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp"
+                    app:iconSize="20dp"
+                    app:iconTint="@color/formosa_blue_primary"
+                    app:strokeColor="@color/formosa_blue_primary"
+                    app:strokeWidth="2dp"
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
 
-                </LinearLayout>
+                <!-- Delete Account Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDeleteAccount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Eliminar Cuenta"
+                    android:textColor="@color/error_color"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/button_background_color_selector"
+                    app:cornerRadius="12dp"
+                    app:icon="@drawable/ic_delete"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp"
+                    app:iconSize="20dp"
+                    app:iconTint="@color/error_color"
+                    app:strokeColor="@color/error_color"
+                    app:strokeWidth="2dp"
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
 
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Save Button -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSave"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginBottom="32dp"
-                android:text="Guardar Cambios"
-                android:textColor="@color/text_white_primary"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                app:backgroundTint="@color/formosa_blue_primary"
-                app:cornerRadius="28dp"
-                app:icon="@drawable/ic_check_circle"
-                app:iconGravity="start"
-                app:iconPadding="12dp"
-                app:iconTint="@color/text_white_primary" />
+            </LinearLayout>
 
         </LinearLayout>
 
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

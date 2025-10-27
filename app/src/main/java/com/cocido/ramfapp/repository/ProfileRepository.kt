@@ -1,8 +1,15 @@
 package com.cocido.ramfapp.repository
 
+import android.content.Context
 import android.net.Uri
+import android.util.Log
 import com.cocido.ramfapp.models.User
+import com.cocido.ramfapp.models.Profile
+import com.cocido.ramfapp.models.UpdateProfileRequest
+import com.cocido.ramfapp.models.ChangePasswordRequest
 import com.cocido.ramfapp.network.AuthService
+import com.cocido.ramfapp.network.ProfileService
+import com.cocido.ramfapp.network.UserService
 import com.cocido.ramfapp.network.RetrofitClient
 import com.cocido.ramfapp.utils.AuthManager
 import com.cocido.ramfapp.utils.ImageUtils
@@ -17,156 +24,132 @@ import java.io.File
  * Repository para gestionar operaciones relacionadas con el perfil del usuario
  * Maneja la comunicación con la API para actualización de perfil, avatar y contraseña
  */
-class ProfileRepository {
+class ProfileRepository(private val context: Context) {
     
     private val authService: AuthService = RetrofitClient.authService
+    private val profileService: ProfileService = RetrofitClient.profileService
+    private val userService: UserService = RetrofitClient.userService
+    
+    /**
+     * Obtener usuario actual
+     */
+    suspend fun getCurrentUser(): User = withContext(Dispatchers.IO) {
+        try {
+            val token = AuthManager.getAccessToken()
+            if (token == null) {
+                throw Exception("Token de acceso no disponible")
+            }
+            
+            val response = authService.getCurrentUser("Bearer $token")
+            if (response.isSuccessful) {
+                val user = response.body()
+                Log.d("ProfileRepository", "API Response: $user")
+                if (user != null) {
+                    Log.d("ProfileRepository", "User data: name=${user.name}, email=${user.email}, phone=${user.getPhone()}, dni=${user.getDni()}, jobPosition=${user.getJobPosition()}, company=${user.getCompany()}")
+                    Log.d("ProfileRepository", "Profile data: ${user.profile}")
+                    user
+                } else {
+                    throw Exception("No se recibieron datos del usuario")
+                }
+            } else {
+                Log.e("ProfileRepository", "Error response: ${response.code()} - ${response.message()}")
+                throw Exception("Error al obtener usuario: ${response.code()} - ${response.message()}")
+            }
+        } catch (e: Exception) {
+            throw e
+        }
+    }
     
     /**
      * Actualizar información del perfil del usuario
      */
-    suspend fun updateProfile(user: User): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun updateProfile(updateRequest: UpdateProfileRequest): Unit = withContext(Dispatchers.IO) {
         try {
             val token = AuthManager.getAccessToken()
             if (token == null) {
-                return@withContext Result.failure(Exception("Token de acceso no disponible"))
+                throw Exception("Token de acceso no disponible")
             }
             
-            val updateData = mapOf(
-                "first_name" to (user.firstName ?: ""),
-                "last_name" to (user.lastName ?: "")
-            )
-            
-            val response = authService.updateProfile(
-                token = "Bearer $token",
-                profileData = updateData
-            )
-            
-            when (response.code()) {
-                200 -> Result.success(Unit)
-                400 -> Result.failure(Exception("Datos de perfil inválidos"))
-                401 -> {
-                    AuthManager.logout()
-                    Result.failure(Exception("Sesión expirada"))
-                }
-                403 -> Result.failure(Exception("No tienes permisos para actualizar el perfil"))
-                404 -> Result.failure(Exception("Usuario no encontrado"))
-                else -> Result.failure(Exception("Error del servidor: ${response.code()}"))
+            val response = profileService.updateProfile("Bearer $token", updateRequest)
+            if (!response.isSuccessful) {
+                throw Exception("Error al actualizar perfil: ${response.code()} - ${response.message()}")
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            throw e
         }
     }
     
-    /**
-     * Actualizar avatar del usuario
-     */
-    suspend fun updateAvatar(avatarUri: Uri): Result<String> = withContext(Dispatchers.IO) {
-        try {
-            val token = AuthManager.getAccessToken()
-            if (token == null) {
-                return@withContext Result.failure(Exception("Token de acceso no disponible"))
-            }
-            
-            // Crear archivo temporal
-            val file = File(avatarUri.path ?: "")
-            if (!file.exists()) {
-                return@withContext Result.failure(Exception("Archivo de imagen no encontrado"))
-            }
-            
-            // Preparar multipart request
-            val requestFile = file.asRequestBody("image/*".toMediaType())
-            val avatarPart = MultipartBody.Part.createFormData(
-                "avatar",
-                file.name,
-                requestFile
-            )
-            
-            val response = authService.updateAvatar(
-                token = "Bearer $token",
-                avatar = avatarPart
-            )
-            
-            when (response.code()) {
-                200 -> {
-                    val avatarUrl = response.body()?.data?.get("avatar_url") as? String
-                    if (avatarUrl != null) {
-                        Result.success(avatarUrl)
-                    } else {
-                        Result.failure(Exception("No se recibió URL del avatar"))
-                    }
-                }
-                400 -> Result.failure(Exception("Formato de imagen inválido"))
-                401 -> {
-                    AuthManager.logout()
-                    Result.failure(Exception("Sesión expirada"))
-                }
-                413 -> Result.failure(Exception("La imagen es demasiado grande"))
-                else -> Result.failure(Exception("Error del servidor: ${response.code()}"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
     
     /**
      * Cambiar contraseña del usuario
      */
-    suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun changePassword(changePasswordRequest: ChangePasswordRequest): Unit = withContext(Dispatchers.IO) {
         try {
             val token = AuthManager.getAccessToken()
             if (token == null) {
-                return@withContext Result.failure(Exception("Token de acceso no disponible"))
+                throw Exception("Token de acceso no disponible")
             }
             
-            val passwordData = mapOf(
-                "current_password" to currentPassword,
-                "new_password" to newPassword
-            )
-            
-            val response = authService.changePassword(
-                token = "Bearer $token",
-                passwordData = passwordData
-            )
-            
-            when (response.code()) {
-                200 -> Result.success(Unit)
-                400 -> Result.failure(Exception("Contraseña actual incorrecta"))
-                401 -> {
-                    AuthManager.logout()
-                    Result.failure(Exception("Sesión expirada"))
-                }
-                422 -> Result.failure(Exception("La nueva contraseña no cumple los requisitos"))
-                else -> Result.failure(Exception("Error del servidor: ${response.code()}"))
+            val response = userService.changePassword("Bearer $token", changePasswordRequest)
+            if (!response.isSuccessful) {
+                throw Exception("Error al cambiar contraseña: ${response.code()} - ${response.message()}")
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            throw e
+        }
+    }
+    
+    /**
+     * Cambiar avatar del usuario
+     */
+    suspend fun changeAvatar(avatarFile: File): String = withContext(Dispatchers.IO) {
+        try {
+            val token = AuthManager.getAccessToken()
+            if (token == null) {
+                throw Exception("Token de acceso no disponible")
+            }
+            
+            // Crear MultipartBody.Part para el archivo
+            val requestFile = avatarFile.asRequestBody("image/*".toMediaType())
+            val avatarPart = MultipartBody.Part.createFormData(
+                "avatar",
+                avatarFile.name,
+                requestFile
+            )
+            
+            val response = userService.changeAvatar("Bearer $token", avatarPart)
+            if (response.isSuccessful) {
+                val result = response.body()
+                result?.get("avatar_url") ?: result?.get("secure_url") ?: throw Exception("No se recibió URL del avatar")
+            } else {
+                throw Exception("Error al cambiar avatar: ${response.code()} - ${response.message()}")
+            }
+        } catch (e: Exception) {
+            throw e
         }
     }
     
     /**
      * Eliminar cuenta del usuario
      */
-    suspend fun deleteAccount(): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun deleteAccount(): Unit = withContext(Dispatchers.IO) {
         try {
             val token = AuthManager.getAccessToken()
             if (token == null) {
-                return@withContext Result.failure(Exception("Token de acceso no disponible"))
+                throw Exception("Token de acceso no disponible")
             }
             
-            val response = authService.deleteAccount("Bearer $token")
+            val userId = AuthManager.getCurrentUser()?.id
+            if (userId == null) {
+                throw Exception("ID de usuario no disponible")
+            }
             
-            when (response.code()) {
-                200 -> Result.success(Unit)
-                401 -> {
-                    AuthManager.logout()
-                    Result.failure(Exception("Sesión expirada"))
-                }
-                403 -> Result.failure(Exception("No tienes permisos para eliminar la cuenta"))
-                404 -> Result.failure(Exception("Usuario no encontrado"))
-                else -> Result.failure(Exception("Error del servidor: ${response.code()}"))
+            val response = userService.deleteAccount("Bearer $token", userId)
+            if (!response.isSuccessful) {
+                throw Exception("Error al eliminar cuenta: ${response.code()} - ${response.message()}")
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            throw e
         }
     }
     
@@ -184,7 +167,7 @@ class ProfileRepository {
             
             when (response.code()) {
                 200 -> {
-                    val user = response.body()?.data
+                    val user = response.body()
                     if (user != null) {
                         Result.success(user)
                     } else {
@@ -228,6 +211,72 @@ class ProfileRepository {
                 else -> Result.failure(Exception("Error del servidor: ${response.code()}"))
             }
         } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    /**
+     * Actualizar avatar del usuario
+     */
+    suspend fun updateAvatar(avatarUri: Uri): String = withContext(Dispatchers.IO) {
+        try {
+            val token = AuthManager.getAccessToken()
+            if (token == null) {
+                throw Exception("Token de acceso no disponible")
+            }
+            
+            // Convertir URI a File
+            val avatarFile = File(avatarUri.path ?: "")
+            val requestFile = avatarFile.asRequestBody("image/*".toMediaType())
+            val avatarPart = MultipartBody.Part.createFormData("avatar", avatarFile.name, requestFile)
+            
+            val response = profileService.updateAvatar("Bearer $token", avatarPart)
+            if (response.isSuccessful) {
+                // Asumir que la respuesta contiene la URL del avatar
+                response.body()?.toString() ?: throw Exception("No se recibió URL del avatar")
+            } else {
+                throw Exception("Error al actualizar avatar: ${response.code()} - ${response.message()}")
+            }
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+    
+    /**
+     * Eliminar avatar del usuario
+     */
+    suspend fun removeAvatar(): Unit = withContext(Dispatchers.IO) {
+        try {
+            val token = AuthManager.getAccessToken()
+            if (token == null) {
+                throw Exception("Token de acceso no disponible")
+            }
+            
+            val response = profileService.removeAvatar("Bearer $token")
+            if (!response.isSuccessful) {
+                throw Exception("Error al eliminar avatar: ${response.code()} - ${response.message()}")
+            }
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+    
+    /**
+     * Método de prueba para verificar el token
+     */
+    suspend fun testToken(): Result<String> {
+        return try {
+            val response = profileService.testToken()
+            if (response.isSuccessful) {
+                val message = response.body() ?: "Token válido"
+                Log.d("ProfileRepository", "Test token response: $message")
+                Result.success(message)
+            } else {
+                Log.e("ProfileRepository", "Test token failed: ${response.code()} - ${response.message()}")
+                throw Exception("Error al verificar token: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Test token error: ${e.message}")
             Result.failure(e)
         }
     }

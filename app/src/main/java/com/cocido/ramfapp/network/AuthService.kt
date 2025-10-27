@@ -14,13 +14,13 @@ interface AuthService {
      * Iniciar sesión con email y contraseña
      */
     @POST("auth/login")
-    suspend fun login(@Body request: LoginRequest): Response<ApiResponse<LoginResponse>>
+    suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
     
     /**
      * Registrar nuevo usuario
      */
     @POST("auth/register")
-    suspend fun register(@Body request: RegisterRequest): Response<ApiResponse<LoginResponse>>
+    suspend fun register(@Body request: RegisterRequest): Response<Unit>
     
     /**
      * Cerrar sesión
@@ -68,7 +68,7 @@ interface AuthService {
      * Obtener información del usuario autenticado actual
      */
     @GET("auth/me")
-    suspend fun getCurrentUser(@Header("Authorization") token: String): Response<ApiResponse<User>>
+    suspend fun getCurrentUser(@Header("Authorization") token: String): Response<User>
 
     /**
      * Obtener perfil del usuario actual (alternativo)

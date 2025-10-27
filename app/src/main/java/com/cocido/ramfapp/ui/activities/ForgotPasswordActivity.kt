@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.util.Patterns
 import android.view.View
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.cocido.ramfapp.databinding.ActivityForgotPasswordBinding
 import com.cocido.ramfapp.models.ForgotPasswordRequest
@@ -15,10 +14,14 @@ import kotlinx.coroutines.launch
  * Activity profesional para recuperación de contraseña
  * Envía email con instrucciones para resetear contraseña
  */
-class ForgotPasswordActivity : AppCompatActivity() {
+class ForgotPasswordActivity : BaseActivity() {
 
     private lateinit var binding: ActivityForgotPasswordBinding
     private var TAG = "ForgotPasswordActivity"
+    
+    override fun requiresAuthentication(): Boolean {
+        return false
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

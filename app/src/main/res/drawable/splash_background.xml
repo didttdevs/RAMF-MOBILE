@@ -1,71 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    
-    <!-- Fondo base con gradiente gubernamental -->
+    <!-- Beautiful gradient background -->
     <item>
         <shape android:shape="rectangle">
             <gradient
-                android:startColor="@color/formosa_blue_primary"
-                android:centerColor="@color/formosa_blue_light"
-                android:endColor="@color/formosa_blue_dark"
-                android:angle="135"/>
+                android:angle="270"
+                android:startColor="#1A237E"
+                android:centerColor="#283593"
+                android:endColor="#3949AB"
+                android:type="linear" />
         </shape>
     </item>
     
-    <!-- Patrón geométrico sutil -->
-    <item>
+    <!-- Subtle overlay for depth -->
+    <item android:top="0dp" android:left="0dp" android:right="0dp" android:height="200dp">
         <shape android:shape="rectangle">
             <gradient
-                android:startColor="#15FFFFFF"
-                android:endColor="#00FFFFFF"
-                android:angle="45"/>
+                android:angle="270"
+                android:startColor="#1A237E"
+                android:endColor="#283593"
+                android:type="linear" />
         </shape>
     </item>
-    
-    <!-- Elementos decorativos abstractos -->
-    <item android:gravity="top|end" android:top="-100dp" android:right="-50dp">
-        <shape android:shape="oval">
-            <gradient
-                android:type="radial"
-                android:gradientRadius="200dp"
-                android:startColor="#20FFFFFF"
-                android:endColor="#00FFFFFF"/>
-            <size android:width="300dp" android:height="300dp"/>
-        </shape>
-    </item>
-    
-    <item android:gravity="bottom|start" android:bottom="-80dp" android:left="-60dp">
-        <shape android:shape="oval">
-            <gradient
-                android:type="radial"
-                android:gradientRadius="150dp"
-                android:startColor="#15FFFFFF"
-                android:endColor="#00FFFFFF"/>
-            <size android:width="200dp" android:height="200dp"/>
-        </shape>
-    </item>
-    
-    <!-- Líneas geométricas sutiles -->
-    <item android:gravity="top|center_horizontal" android:top="100dp">
-        <shape android:shape="rectangle">
-            <gradient
-                android:startColor="#00FFFFFF"
-                android:centerColor="#10FFFFFF"
-                android:endColor="#00FFFFFF"
-                android:angle="0"/>
-            <size android:width="200dp" android:height="2dp"/>
-        </shape>
-    </item>
-    
-    <item android:gravity="bottom|center_horizontal" android:bottom="150dp">
-        <shape android:shape="rectangle">
-            <gradient
-                android:startColor="#00FFFFFF"
-                android:centerColor="#10FFFFFF"
-                android:endColor="#00FFFFFF"
-                android:angle="0"/>
-            <size android:width="150dp" android:height="1dp"/>
-        </shape>
-    </item>
-    
 </layer-list>

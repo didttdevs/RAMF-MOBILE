@@ -2,39 +2,38 @@ package com.cocido.ramfapp.ui.activities
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.cocido.ramfapp.R
 import com.cocido.ramfapp.utils.AuthManager
+import kotlinx.coroutines.launch
 
 /**
  * Activity principal para mostrar el perfil del usuario
  * Incluye navegación a edición de perfil y otras funcionalidades
  */
-class UserProfileActivity : AppCompatActivity() {
+class UserProfileActivity : BaseActivity() {
 
     private lateinit var btnBack: ImageButton
     private lateinit var profileImage: ImageView
     private lateinit var tvUserName: TextView
     private lateinit var tvUserEmail: TextView
     private lateinit var tvUserRole: TextView
-    private lateinit var btnEditProfile: com.google.android.material.button.MaterialButton
+    private lateinit var tvUserStatus: TextView
+    private lateinit var tvUserPhone: TextView
+    private lateinit var tvUserJobPosition: TextView
+    private lateinit var tvUserLastLogin: TextView
+    private lateinit var tvUserDni: TextView
+    private lateinit var tvUserCompany: TextView
     private lateinit var btnChangePassword: com.google.android.material.button.MaterialButton
     private lateinit var btnPrivacySettings: com.google.android.material.button.MaterialButton
 
-    // Result launcher para cuando regrese de editar perfil
-    private val editProfileLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            // Recargar datos del usuario
-            loadUserData()
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,7 +50,12 @@ class UserProfileActivity : AppCompatActivity() {
         tvUserName = findViewById(R.id.tvUserName)
         tvUserEmail = findViewById(R.id.tvUserEmail)
         tvUserRole = findViewById(R.id.tvUserRole)
-        btnEditProfile = findViewById(R.id.btnEditProfile)
+        tvUserStatus = findViewById(R.id.tvUserStatus)
+        tvUserPhone = findViewById(R.id.tvUserPhone)
+        tvUserJobPosition = findViewById(R.id.tvUserJobPosition)
+        tvUserLastLogin = findViewById(R.id.tvUserLastLogin)
+        tvUserDni = findViewById(R.id.tvUserDni)
+        tvUserCompany = findViewById(R.id.tvUserCompany)
         btnChangePassword = findViewById(R.id.btnChangePassword)
         btnPrivacySettings = findViewById(R.id.btnPrivacySettings)
     }
@@ -61,13 +65,11 @@ class UserProfileActivity : AppCompatActivity() {
             finish()
         }
         
-        btnEditProfile.setOnClickListener {
-            openEditProfile()
-        }
         
         btnChangePassword.setOnClickListener {
             openChangePassword()
         }
+        
         
         btnPrivacySettings.setOnClickListener {
             openPrivacySettings()
@@ -75,36 +77,66 @@ class UserProfileActivity : AppCompatActivity() {
     }
 
     private fun loadUserData() {
-        val user = AuthManager.getCurrentUser()
-        user?.let {
-            tvUserName.text = it.getFullName()
-            tvUserEmail.text = it.email
-            tvUserRole.text = it.role ?: "Usuario"
-            // ID removed for security
+        // Forzar actualización del usuario desde el servidor
+        lifecycleScope.launch {
+            try {
+                AuthManager.fetchAndUpdateCurrentUser()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error fetching user data: ${e.message}")
+            }
             
-            Glide.with(this)
-                .load(it.avatar)
-                .circleCrop()
-                .placeholder(R.drawable.ic_default_profile)
-                .error(R.drawable.ic_default_profile)
-                .skipMemoryCache(false)
-                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
-                .into(profileImage)
+            val user = AuthManager.getCurrentUser()
+            user?.let {
+                tvUserName.text = it.getFullName()
+                tvUserEmail.text = it.email
+                tvUserRole.text = it.roles?.firstOrNull()?.name?.replaceFirstChar { char -> char.uppercase() } ?: "Usuario"
+                
+                // Mostrar todos los campos del perfil
+                tvUserStatus.text = if (it.isActive) "ACTIVO" else "INACTIVO"
+            
+                // Mostrar datos del perfil
+                tvUserPhone.text = it.getPhone() ?: "No especificado"
+                tvUserJobPosition.text = it.getJobPosition() ?: "No especificado"
+                tvUserDni.text = it.getDni() ?: "No especificado"
+                tvUserCompany.text = it.getCompany() ?: "No especificado"
+                
+                // Formatear último ingreso
+                tvUserLastLogin.text = it.lastLogin?.let { loginDate ->
+                    try {
+                        val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault())
+                        val outputFormat = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
+                        val date = inputFormat.parse(loginDate)
+                        "Último ingreso: ${outputFormat.format(date ?: java.util.Date())}"
+                    } catch (e: Exception) {
+                        "Último ingreso: ${loginDate}"
+                    }
+                } ?: "Último ingreso: No disponible"
+                
+                Glide.with(this@UserProfileActivity)
+                    .load(it.avatar)
+                    .circleCrop()
+                    .placeholder(R.drawable.ic_default_profile)
+                    .error(R.drawable.ic_default_profile)
+                    .skipMemoryCache(false)
+                    .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
+                    .into(profileImage)
+            }
         }
     }
     
-    private fun openEditProfile() {
-        val intent = Intent(this, ProfileEditActivity::class.java)
-        editProfileLauncher.launch(intent)
-    }
     
     private fun openChangePassword() {
-        // Por ahora abrimos la edición de perfil, donde está el diálogo de cambio de contraseña
-        openEditProfile()
+        val dialog = com.cocido.ramfapp.ui.dialogs.ChangePasswordDialogFragment.newInstance()
+        dialog.show(supportFragmentManager, "ChangePasswordDialog")
     }
+    
     
     private fun openPrivacySettings() {
         // Funcionalidad de configuración de privacidad
         android.widget.Toast.makeText(this, "Configuración de privacidad", android.widget.Toast.LENGTH_SHORT).show()
+    }
+    
+    companion object {
+        private const val TAG = "UserProfileActivity"
     }
 }

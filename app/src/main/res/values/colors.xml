@@ -92,4 +92,49 @@
     <color name="temperature_hot">#FF5722</color>
     <color name="temperature_normal">#4CAF50</color>
     
+    <!-- Missing Colors for Layouts -->
+    <color name="success_color">#38A169</color>
+    <color name="text_secondary">#757575</color>
+    <color name="error_color">#E53E3E</color>
+    <color name="background_light">#F8F9FA</color>
+    <color name="text_primary">#212121</color>
+    
+    <!-- Material Design 3 Colors for Buttons -->
+    <color name="md_theme_light_primary">#1976D2</color>
+    <color name="md_theme_light_onPrimary">#FFFFFF</color>
+    <color name="md_theme_light_primaryContainer">#BBDEFB</color>
+    <color name="md_theme_light_onPrimaryContainer">#0D47A1</color>
+    <color name="md_theme_light_secondary">#757575</color>
+    <color name="md_theme_light_onSecondary">#FFFFFF</color>
+    <color name="md_theme_light_secondaryContainer">#E0E0E0</color>
+    <color name="md_theme_light_onSecondaryContainer">#424242</color>
+    <color name="md_theme_light_tertiary">#FF5722</color>
+    <color name="md_theme_light_onTertiary">#FFFFFF</color>
+    <color name="md_theme_light_tertiaryContainer">#FFCCBC</color>
+    <color name="md_theme_light_onTertiaryContainer">#BF360C</color>
+    <color name="md_theme_light_error">#E53E3E</color>
+    <color name="md_theme_light_onError">#FFFFFF</color>
+    <color name="md_theme_light_errorContainer">#FFEBEE</color>
+    <color name="md_theme_light_onErrorContainer">#B71C1C</color>
+    <color name="md_theme_light_outline">#757575</color>
+    <color name="md_theme_light_outlineVariant">#E0E0E0</color>
+    <color name="md_theme_light_surface">#FFFFFF</color>
+    <color name="md_theme_light_onSurface">#212121</color>
+    <color name="md_theme_light_surfaceVariant">#F5F5F5</color>
+    <color name="md_theme_light_onSurfaceVariant">#424242</color>
+    <color name="md_theme_light_inverseSurface">#2F2F2F</color>
+    <color name="md_theme_light_inverseOnSurface">#F5F5F5</color>
+    <color name="md_theme_light_inversePrimary">#90CAF9</color>
+    <color name="md_theme_light_surfaceTint">#1976D2</color>
+    <color name="md_theme_light_surfaceContainerHighest">#E0E0E0</color>
+    
+    <!-- Button State Colors -->
+    <color name="button_text_color">#1976D2</color>
+    <color name="button_text_color_disabled">#BDBDBD</color>
+    <color name="button_background_color">#E3F2FD</color>
+    <color name="button_background_color_pressed">#BBDEFB</color>
+    <color name="button_background_color_disabled">#F5F5F5</color>
+    <color name="button_stroke_color">#1976D2</color>
+    <color name="button_stroke_color_disabled">#E0E0E0</color>
+    
 </resources>

@@ -1,60 +1,64 @@
 package com.cocido.ramfapp.viewmodels
 
-import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocido.ramfapp.models.User
-import com.cocido.ramfapp.network.AuthService
+import com.cocido.ramfapp.models.UpdateProfileRequest
+import com.cocido.ramfapp.models.ChangePasswordRequest
 import com.cocido.ramfapp.repository.ProfileRepository
-import com.cocido.ramfapp.utils.AuthManager
-import com.cocido.ramfapp.utils.ImageUtils
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.cocido.ramfapp.utils.Resource
+import android.content.Context
 import kotlinx.coroutines.launch
 
 /**
  * ViewModel para gestionar el perfil del usuario
- * Maneja la lógica de negocio para edición de perfil, cambio de avatar,
- * cambio de contraseña y eliminación de cuenta
+ * Basado en la funcionalidad de la página web
  */
-class ProfileViewModel : ViewModel() {
+class ProfileViewModel(private val context: Context) : ViewModel() {
     
-    private val profileRepository = ProfileRepository()
+    private val profileRepository = ProfileRepository(context)
     
-    // UI State
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> = _isLoading
+    // Estados del perfil
+    private val _profileState = MutableLiveData<Resource<User>>()
+    val profileState: LiveData<Resource<User>> = _profileState
     
-    private val _errorMessage = MutableLiveData<String?>()
-    val errorMessage: LiveData<String?> = _errorMessage
+    // Estados de actualización
+    private val _updateState = MutableLiveData<Resource<Unit>>()
+    val updateState: LiveData<Resource<Unit>> = _updateState
     
-    private val _profileUpdated = MutableLiveData<Boolean>()
-    val profileUpdated: LiveData<Boolean> = _profileUpdated
+    // Estados de cambio de contraseña
+    private val _changePasswordState = MutableLiveData<Resource<Unit>>()
+    val changePasswordState: LiveData<Resource<Unit>> = _changePasswordState
     
-    // Profile data state
-    private val _currentUser = MutableStateFlow<User?>(null)
-    val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
+    // Estados de cambio de avatar
+    private val _changeAvatarState = MutableLiveData<Resource<String>>()
+    val changeAvatarState: LiveData<Resource<String>> = _changeAvatarState
+    
+    // Estados de actualización de avatar (para el diálogo)
+    private val _avatarUpdateState = MutableLiveData<Resource<String>>()
+    val avatarUpdateState: LiveData<Resource<String>> = _avatarUpdateState
+    
+    // Estados de eliminación de cuenta
+    private val _deleteAccountState = MutableLiveData<Resource<Unit>>()
+    val deleteAccountState: LiveData<Resource<Unit>> = _deleteAccountState
     
     init {
-        loadCurrentUser()
+        loadProfile()
     }
     
     /**
-     * Cargar información del usuario actual
+     * Cargar perfil del usuario
      */
-    private fun loadCurrentUser() {
+    fun loadProfile() {
         viewModelScope.launch {
+            _profileState.value = Resource.Loading()
             try {
-                _isLoading.value = true
-                val user = AuthManager.getCurrentUser()
-                _currentUser.value = user
+                val user = profileRepository.getCurrentUser()
+                _profileState.value = Resource.Success(user)
             } catch (e: Exception) {
-                _errorMessage.value = "Error al cargar información del usuario: ${e.message}"
-            } finally {
-                _isLoading.value = false
+                _profileState.value = Resource.Error(e.message ?: "Error al cargar el usuario")
             }
         }
     }
@@ -62,201 +66,108 @@ class ProfileViewModel : ViewModel() {
     /**
      * Actualizar perfil del usuario
      */
-    suspend fun updateProfile(user: User): Result<Unit> {
-        return try {
-            _isLoading.value = true
-            
-            val result = profileRepository.updateProfile(user)
-            
-            if (result.isSuccess) {
-                // Actualizar el usuario en AuthManager
-                AuthManager.updateCurrentUser(user)
-                _currentUser.value = user
-                _profileUpdated.value = true
+    fun updateProfile(updateRequest: UpdateProfileRequest) {
+        viewModelScope.launch {
+            _updateState.value = Resource.Loading()
+            try {
+                profileRepository.updateProfile(updateRequest)
+                _updateState.value = Resource.Success(Unit)
+                // Recargar perfil después de actualizar
+                loadProfile()
+            } catch (e: Exception) {
+                _updateState.value = Resource.Error(e.message ?: "Error al actualizar el perfil")
             }
-            
-            result
-        } catch (e: Exception) {
-            _errorMessage.value = "Error al actualizar perfil: ${e.message}"
-            Result.failure(e)
-        } finally {
-            _isLoading.value = false
-        }
-    }
-    
-    /**
-     * Actualizar avatar del usuario
-     */
-    suspend fun updateAvatar(avatarUri: Uri): Result<String> {
-        return try {
-            _isLoading.value = true
-            
-            // Comprimir y subir imagen
-            val compressedUri = ImageUtils.compressImage(avatarUri)
-            val result = profileRepository.updateAvatar(compressedUri)
-            
-            if (result.isSuccess) {
-                val avatarUrl = result.getOrNull()
-                val currentUser = _currentUser.value
-                if (currentUser != null && avatarUrl != null) {
-                    val updatedUser = currentUser.copy(avatar = avatarUrl)
-                    AuthManager.updateCurrentUser(updatedUser)
-                    _currentUser.value = updatedUser
-                }
-            }
-            
-            result
-        } catch (e: Exception) {
-            _errorMessage.value = "Error al actualizar avatar: ${e.message}"
-            Result.failure(e)
-        } finally {
-            _isLoading.value = false
         }
     }
     
     /**
      * Cambiar contraseña del usuario
      */
-    suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit> {
-        return try {
-            _isLoading.value = true
-            
-            val result = profileRepository.changePassword(currentPassword, newPassword)
-            
-            if (result.isFailure) {
-                _errorMessage.value = "Error al cambiar contraseña: ${result.exceptionOrNull()?.message}"
+    fun changePassword(changePasswordRequest: ChangePasswordRequest) {
+        viewModelScope.launch {
+            _changePasswordState.value = Resource.Loading()
+            try {
+                profileRepository.changePassword(changePasswordRequest)
+                _changePasswordState.value = Resource.Success(Unit)
+            } catch (e: Exception) {
+                _changePasswordState.value = Resource.Error(e.message ?: "Error al cambiar la contraseña")
             }
-            
-            result
-        } catch (e: Exception) {
-            _errorMessage.value = "Error al cambiar contraseña: ${e.message}"
-            Result.failure(e)
-        } finally {
-            _isLoading.value = false
+        }
+    }
+    
+    /**
+     * Cambiar avatar del usuario
+     */
+    fun changeAvatar(avatarFile: java.io.File) {
+        viewModelScope.launch {
+            _changeAvatarState.value = Resource.Loading()
+            try {
+                val avatarUrl = profileRepository.changeAvatar(avatarFile)
+                _changeAvatarState.value = Resource.Success(avatarUrl)
+                // Recargar perfil después de cambiar avatar
+                loadProfile()
+            } catch (e: Exception) {
+                _changeAvatarState.value = Resource.Error(e.message ?: "Error al cambiar el avatar")
+            }
+        }
+    }
+    
+    /**
+     * Actualizar avatar del usuario
+     */
+    fun updateAvatar(avatarUri: android.net.Uri) {
+        viewModelScope.launch {
+            _avatarUpdateState.value = Resource.Loading()
+            try {
+                val avatarUrl = profileRepository.updateAvatar(avatarUri)
+                _avatarUpdateState.value = Resource.Success(avatarUrl)
+                // Recargar perfil después de cambiar avatar
+                loadProfile()
+            } catch (e: Exception) {
+                _avatarUpdateState.value = Resource.Error(e.message ?: "Error al actualizar el avatar")
+            }
+        }
+    }
+    
+    /**
+     * Eliminar avatar del usuario
+     */
+    fun removeAvatar() {
+        viewModelScope.launch {
+            _avatarUpdateState.value = Resource.Loading()
+            try {
+                profileRepository.removeAvatar()
+                _avatarUpdateState.value = Resource.Success("")
+                // Recargar perfil después de eliminar avatar
+                loadProfile()
+            } catch (e: Exception) {
+                _avatarUpdateState.value = Resource.Error(e.message ?: "Error al eliminar el avatar")
+            }
         }
     }
     
     /**
      * Eliminar cuenta del usuario
      */
-    suspend fun deleteAccount(): Result<Unit> {
-        return try {
-            _isLoading.value = true
-            
-            val result = profileRepository.deleteAccount()
-            
-            if (result.isSuccess) {
-                // Hacer logout después de eliminar la cuenta
-                AuthManager.logout()
-            } else {
-                _errorMessage.value = "Error al eliminar cuenta: ${result.exceptionOrNull()?.message}"
+    fun deleteAccount() {
+        viewModelScope.launch {
+            _deleteAccountState.value = Resource.Loading()
+            try {
+                profileRepository.deleteAccount()
+                _deleteAccountState.value = Resource.Success(Unit)
+            } catch (e: Exception) {
+                _deleteAccountState.value = Resource.Error(e.message ?: "Error al eliminar la cuenta")
             }
-            
-            result
-        } catch (e: Exception) {
-            _errorMessage.value = "Error al eliminar cuenta: ${e.message}"
-            Result.failure(e)
-        } finally {
-            _isLoading.value = false
-        }
-    }
-    
-    /**
-     * Validar formulario de perfil
-     */
-    fun validateProfileForm(firstName: String, lastName: String): ProfileValidationResult {
-        val errors = mutableListOf<String>()
-        
-        if (firstName.trim().isEmpty()) {
-            errors.add("El nombre es requerido")
-        } else if (firstName.trim().length < 2) {
-            errors.add("El nombre debe tener al menos 2 caracteres")
-        }
-        
-        if (lastName.trim().isEmpty()) {
-            errors.add("El apellido es requerido")
-        } else if (lastName.trim().length < 2) {
-            errors.add("El apellido debe tener al menos 2 caracteres")
-        }
-        
-        return ProfileValidationResult(
-            isValid = errors.isEmpty(),
-            errors = errors
-        )
-    }
-    
-    /**
-     * Validar formulario de cambio de contraseña
-     */
-    fun validatePasswordForm(currentPassword: String, newPassword: String, confirmPassword: String): PasswordValidationResult {
-        val errors = mutableListOf<String>()
-        
-        if (currentPassword.isEmpty()) {
-            errors.add("La contraseña actual es requerida")
-        }
-        
-        if (newPassword.isEmpty()) {
-            errors.add("La nueva contraseña es requerida")
-        } else if (newPassword.length < 8) {
-            errors.add("La nueva contraseña debe tener al menos 8 caracteres")
-        } else if (!isValidPassword(newPassword)) {
-            errors.add("La nueva contraseña debe contener al menos una letra mayúscula, una minúscula y un número")
-        }
-        
-        if (confirmPassword.isEmpty()) {
-            errors.add("La confirmación de contraseña es requerida")
-        } else if (newPassword != confirmPassword) {
-            errors.add("Las contraseñas no coinciden")
-        }
-        
-        if (currentPassword == newPassword) {
-            errors.add("La nueva contraseña debe ser diferente a la actual")
-        }
-        
-        return PasswordValidationResult(
-            isValid = errors.isEmpty(),
-            errors = errors
-        )
-    }
-    
-    /**
-     * Validar si una contraseña cumple con los requisitos de seguridad
-     */
-    private fun isValidPassword(password: String): Boolean {
-        val hasUpperCase = password.any { it.isUpperCase() }
-        val hasLowerCase = password.any { it.isLowerCase() }
-        val hasDigit = password.any { it.isDigit() }
-        
-        return hasUpperCase && hasLowerCase && hasDigit
-    }
-    
-    /**
-     * Limpiar mensaje de error
-     */
-    fun clearError() {
-        _errorMessage.value = null
-    }
-    
-    /**
-     * Marcar perfil como no actualizado
-     */
-    fun markProfileAsNotUpdated() {
-        _profileUpdated.value = false
     }
 }
 
 /**
- * Resultado de validación del formulario de perfil
- */
-data class ProfileValidationResult(
-    val isValid: Boolean,
-    val errors: List<String>
-)
-
-/**
- * Resultado de validación del formulario de contraseña
- */
-data class PasswordValidationResult(
-    val isValid: Boolean,
-    val errors: List<String>
-)
+     * Limpiar estados
+     */
+    fun clearStates() {
+        _updateState.value = null
+        _changePasswordState.value = null
+        _changeAvatarState.value = null
+        _deleteAccountState.value = null
+    }
+}

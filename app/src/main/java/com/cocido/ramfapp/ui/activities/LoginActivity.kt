@@ -9,13 +9,15 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import com.google.android.material.button.MaterialButton
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.result.contract.ActivityResultContracts
+
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import com.cocido.ramfapp.R
 import com.cocido.ramfapp.models.LoginRequest
 import com.cocido.ramfapp.models.LoginResponse
 import com.cocido.ramfapp.models.User
+import com.cocido.ramfapp.models.CreateProfileRequest
 import com.cocido.ramfapp.network.RetrofitClient
 import com.cocido.ramfapp.utils.AuthManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -28,10 +30,15 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class LoginActivity : AppCompatActivity() {
+class LoginActivity : BaseActivity() {
 
     companion object {
         private const val TAG = "LoginActivity"
+    }
+    
+    override fun requiresAuthentication(): Boolean {
+        // LoginActivity no requiere autenticación ya que es la pantalla de login
+        return false
     }
 
     private lateinit var etUsername: EditText
@@ -41,14 +48,21 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var tvRegisterLink: TextView
     private lateinit var googleSignInClient: com.google.android.gms.auth.api.signin.GoogleSignInClient
 
-    // Para el código de resultado de la actividad de Google
-    private val RC_SIGN_IN = 9001
+    // Activity Result Launcher para Google Sign-In
+    private val googleSignInLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        handleGoogleSignInResult(result.resultCode, result.data)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
         AuthManager.initialize(this)
+        
+        // Verificar si viene de sesión expirada
+        checkSessionExpired()
 
         etUsername = findViewById(R.id.etUsername)
         etPassword = findViewById(R.id.etPassword)
@@ -87,6 +101,15 @@ class LoginActivity : AppCompatActivity() {
         }
         
     }
+    
+    private fun checkSessionExpired() {
+        val sessionExpired = intent.getBooleanExtra("session_expired", false)
+        val message = intent.getStringExtra("message")
+        
+        if (sessionExpired && !message.isNullOrEmpty()) {
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        }
+    }
 
     private fun performLogin(email: String, password: String) {
         
@@ -96,28 +119,31 @@ class LoginActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.authService.login(loginRequest)
-                val result = RetrofitClient.handleApiResponse(response)
                 
-                result.onSuccess { loginResponse ->
+                if (response.isSuccessful) {
+                    val loginResponse = response.body()
+                    if (loginResponse != null) {
+                        // Guardar sesión del usuario
+                        AuthManager.saveUserSession(loginResponse.user, loginResponse)
 
-                    // Guardar sesión del usuario
-                    AuthManager.saveUserSession(loginResponse.user, loginResponse)
-
-                    // Obtener datos completos del usuario desde /api/auth/me
-                    lifecycleScope.launch {
-                        val freshUser = AuthManager.fetchAndUpdateCurrentUser()
-                        if (freshUser != null) {
+                        // Obtener datos completos del usuario desde /api/auth/me
+                        lifecycleScope.launch {
+                            val freshUser = AuthManager.fetchAndUpdateCurrentUser()
+                            if (freshUser != null) {
+                            }
                         }
-                    }
 
-                    Toast.makeText(this@LoginActivity, "Login exitoso", Toast.LENGTH_SHORT).show()
-                    goToMainActivity()
-                }.onFailure { exception ->
-                    val errorMessage = when {
-                        exception.message?.contains("401") == true -> "Credenciales incorrectas"
-                        exception.message?.contains("403") == true -> "Cuenta deshabilitada"
-                        exception.message?.contains("network") == true -> "Error de conexión. Verifica tu internet"
-                        else -> "Error en login: ${exception.message}"
+                        Toast.makeText(this@LoginActivity, "Login exitoso", Toast.LENGTH_SHORT).show()
+                        goToMainActivity()
+                    } else {
+                        Toast.makeText(this@LoginActivity, "Error en login: Respuesta inválida", Toast.LENGTH_LONG).show()
+                    }
+                } else {
+                    val errorMessage = when (response.code()) {
+                        401 -> "Credenciales incorrectas"
+                        403 -> "Cuenta deshabilitada"
+                        404 -> "Usuario no encontrado"
+                        else -> "Error en login: ${response.code()} - ${response.message()}"
                     }
                     Toast.makeText(this@LoginActivity, errorMessage, Toast.LENGTH_LONG).show()
                 }
@@ -131,25 +157,19 @@ class LoginActivity : AppCompatActivity() {
     private fun signInWithGoogle() {
         try {
             val signInIntent = googleSignInClient.signInIntent
-            startActivityForResult(signInIntent, RC_SIGN_IN)
+            googleSignInLauncher.launch(signInIntent)
         } catch (e: Exception) {
             Toast.makeText(this, "Error al iniciar Google Sign-In: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
     // Método para manejar el resultado del login con Google
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        // Si el código de la solicitud es el que esperamos (RC_SIGN_IN)
-        if (requestCode == RC_SIGN_IN) {
-            try {
-                val task: Task<GoogleSignInAccount> = GoogleSignIn.getSignedInAccountFromIntent(data)
-                handleSignInResult(task)
-            } catch (e: Exception) {
-                Toast.makeText(this, "Error procesando resultado de Google: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        } else {
+    private fun handleGoogleSignInResult(resultCode: Int, data: Intent?) {
+        try {
+            val task: Task<GoogleSignInAccount> = GoogleSignIn.getSignedInAccountFromIntent(data)
+            handleSignInResult(task)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error procesando resultado de Google: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -226,16 +246,14 @@ class LoginActivity : AppCompatActivity() {
                         Log.d(TAG, "  id: ${loginResponse.user.id}")
                         Log.d(TAG, "  email: ${loginResponse.user.email}")
                         Log.d(TAG, "  name: ${loginResponse.user.name}")
-                        Log.d(TAG, "  firstName: ${loginResponse.user.firstName}")
                         Log.d(TAG, "  lastName: ${loginResponse.user.lastName}")
                         Log.d(TAG, "  avatar: ${loginResponse.user.avatar}")
 
                         // Sobrescribir el nombre con el nombre completo de Google
                         // ya que el backend no lo guarda correctamente
                         val correctedUser = loginResponse.user.copy(
-                            name = fullName,
-                            firstName = account.givenName,
-                            lastName = account.familyName
+                            name = account.givenName ?: loginResponse.user.name,
+                            lastName = account.familyName ?: loginResponse.user.lastName
                         )
 
                         Log.d(TAG, "Corrected user with Google data: name='$fullName'")

@@ -72,6 +72,7 @@ object RetrofitClient {
             "/auth/register",
             "/auth/forgot-password",
             "/auth/reset-password",
+            "/auth/login/google",
             "/stations",
             "/stations/geo",
             "/stations/",
@@ -102,6 +103,8 @@ object RetrofitClient {
                     requestBuilder.addHeader("Authorization", fullToken)
                     Log.d(TAG, "Added accessToken to request: ${url}")
                     Log.d(TAG, "Token being sent: ${fullToken.take(20)}...")
+                    Log.d(TAG, "Full token length: ${fullToken.length}")
+                    Log.d(TAG, "Token starts with Bearer: ${fullToken.startsWith("Bearer ")}")
                 } ?: run {
                     Log.w(TAG, "Auth required but no accessToken available for: ${url}")
                 }
@@ -110,6 +113,24 @@ object RetrofitClient {
             }
 
         chain.proceed(requestBuilder.build())
+    }
+    
+    /**
+     * Interceptor para manejar errores 401 (Unauthorized) automáticamente
+     */
+    private val unauthorizedInterceptor = Interceptor { chain ->
+        val response = chain.proceed(chain.request())
+        
+        // Si recibimos un 401, limpiar tokens y forzar logout
+        if (response.code == 401) {
+            Log.w(TAG, "Received 401 Unauthorized, clearing tokens")
+            clearAuthTokens()
+            
+            // Notificar a las Activities que la sesión ha expirado
+            // Esto se manejará en BaseActivity
+        }
+        
+        response
     }
     
     /**
@@ -190,6 +211,7 @@ object RetrofitClient {
         .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .addInterceptor(authInterceptor)
+        .addInterceptor(unauthorizedInterceptor)
         .addInterceptor(errorInterceptor)
         .apply {
             if (BuildConfig.DEBUG_MODE) {
@@ -219,6 +241,14 @@ object RetrofitClient {
 
     val authService: AuthService by lazy {
         retrofit.create(AuthService::class.java)
+    }
+    
+    val profileService: ProfileService by lazy {
+        retrofit.create(ProfileService::class.java)
+    }
+    
+    val userService: UserService by lazy {
+        retrofit.create(UserService::class.java)
     }
     
     /**
