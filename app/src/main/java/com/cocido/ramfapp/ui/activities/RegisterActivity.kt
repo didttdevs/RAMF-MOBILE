@@ -52,7 +52,7 @@ class RegisterActivity : BaseActivity() {
         btnRegister.setOnClickListener {
             val firstName = etFirstName.text.toString().trim()
             val lastName = etLastName.text.toString().trim()
-            val email = etEmail.text.toString().trim()
+            val email = etEmail.text.toString().trim().lowercase()
             val password = etPassword.text.toString().trim()
 
             if (validateFields(firstName, lastName, email, password)) {

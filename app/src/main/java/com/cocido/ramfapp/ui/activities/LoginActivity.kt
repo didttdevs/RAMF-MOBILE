@@ -79,7 +79,7 @@ class LoginActivity : BaseActivity() {
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
         btnLogin.setOnClickListener {
-            val username = etUsername.text.toString().trim()
+            val username = etUsername.text.toString().trim().lowercase()
             val password = etPassword.text.toString().trim()
 
             if (username.isEmpty() || password.isEmpty()) {

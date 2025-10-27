@@ -31,7 +31,7 @@ interface AuthService {
     /**
      * Refrescar token de acceso
      */
-    @POST("auth/refresh")
+    @POST("auth/refresh-token")
     suspend fun refreshToken(@Header("Authorization") token: String): Response<ApiResponse<LoginResponse>>
     
     /**
