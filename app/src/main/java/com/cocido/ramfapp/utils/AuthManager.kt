@@ -173,8 +173,10 @@ object AuthManager {
         // Intentar refrescar el token en un hilo separado
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val response = RetrofitClient.authService.refreshToken("Bearer $refreshToken")
-                if (response.isSuccessful) {
+                // El backend espera el refreshToken en el body, no en el header
+                val response = RetrofitClient.authService.refreshToken(mapOf("refreshToken" to refreshToken))
+                // El backend retorna 202 Accepted en vez de 200 OK
+                if (response.code() == 202) {
                     val apiResponse = response.body()
                     if (apiResponse?.success == true && apiResponse.data != null) {
                         val loginResponse = apiResponse.data
@@ -306,7 +308,8 @@ object AuthManager {
                 return null
             }
 
-            val response = RetrofitClient.authService.getCurrentUser("Bearer $accessToken")
+            // El token se agrega automáticamente por el interceptor de RetrofitClient
+            val response = RetrofitClient.authService.getCurrentUser()
 
             if (response.isSuccessful) {
                 response.body()?.let { freshUser ->

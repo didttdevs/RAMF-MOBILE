@@ -35,12 +35,8 @@ class ProfileRepository(private val context: Context) {
      */
     suspend fun getCurrentUser(): User = withContext(Dispatchers.IO) {
         try {
-            val token = AuthManager.getAccessToken()
-            if (token == null) {
-                throw Exception("Token de acceso no disponible")
-            }
-            
-            val response = authService.getCurrentUser("Bearer $token")
+            // El token se agrega automáticamente por el interceptor de RetrofitClient
+            val response = authService.getCurrentUser()
             if (response.isSuccessful) {
                 val user = response.body()
                 Log.d("ProfileRepository", "API Response: $user")
@@ -52,8 +48,19 @@ class ProfileRepository(private val context: Context) {
                     throw Exception("No se recibieron datos del usuario")
                 }
             } else {
+                val errorBody = response.errorBody()?.string()
+                val isHtmlError = errorBody?.contains("<html>", ignoreCase = true) == true ||
+                                  response.errorBody()?.contentType()?.toString()?.contains("text/html") == true
+                
                 Log.e("ProfileRepository", "Error response: ${response.code()} - ${response.message()}")
-                throw Exception("Error al obtener usuario: ${response.code()} - ${response.message()}")
+                Log.e("ProfileRepository", "Error body: $errorBody")
+                
+                if (isHtmlError && response.code() == 400) {
+                    Log.e("ProfileRepository", "Received HTML error from Nginx on /auth/me - likely token validation issue")
+                    throw Exception("Error de autenticación. El token no es válido. Por favor, inicia sesión nuevamente.")
+                } else {
+                    throw Exception("Error al obtener usuario: ${response.code()} - ${response.message()}")
+                }
             }
         } catch (e: Exception) {
             throw e
@@ -82,6 +89,7 @@ class ProfileRepository(private val context: Context) {
     
     /**
      * Cambiar contraseña del usuario
+     * Usa el endpoint /auth/change-password que solo requiere autenticación (no permiso específico)
      */
     suspend fun changePassword(changePasswordRequest: ChangePasswordRequest): Unit = withContext(Dispatchers.IO) {
         try {
@@ -90,9 +98,69 @@ class ProfileRepository(private val context: Context) {
                 throw Exception("Token de acceso no disponible")
             }
             
-            val response = userService.changePassword("Bearer $token", changePasswordRequest)
-            if (!response.isSuccessful) {
-                throw Exception("Error al cambiar contraseña: ${response.code()} - ${response.message()}")
+            // Usar /auth/change-password en vez de /users/change-password
+            // El endpoint /auth/change-password solo requiere @Auth(), no permisos específicos
+            // Retorna 204 No Content
+            // El token se agrega automáticamente por el interceptor de RetrofitClient
+            val response = authService.changePassword(changePasswordRequest)
+            
+            if (response.code() != 204) {
+                // Leer el cuerpo del error para obtener el mensaje exacto del backend
+                val errorBody = response.errorBody()?.string()
+                Log.e("ProfileRepository", "Change password failed: ${response.code()}")
+                Log.e("ProfileRepository", "Error body: $errorBody")
+                
+                // Verificar si el error viene en formato HTML (Nginx) o JSON (Backend)
+                val isHtmlError = errorBody?.contains("<html>", ignoreCase = true) == true || 
+                                  errorBody?.contains("Bad Request", ignoreCase = true) == true ||
+                                  response.errorBody()?.contentType()?.toString()?.contains("text/html") == true
+                
+                // Determinar el mensaje de error específico
+                val errorMessage = when (response.code()) {
+                    400 -> {
+                        if (isHtmlError) {
+                            // Si es HTML, es un error de Nginx (problema con el token o formato de petición)
+                            Log.e("ProfileRepository", "Received HTML error from Nginx - likely token or request format issue")
+                            "Error de autenticación. Tu sesión puede haber expirado. Por favor, cierra sesión e inicia sesión nuevamente."
+                        } else {
+                            // Intentar parsear JSON si es posible
+                            try {
+                                val jsonError = errorBody?.let {
+                                    // Si el error body es JSON, intentar extraer el mensaje
+                                    if (it.contains("\"message\"") || it.contains("\"error\"")) {
+                                        // Es JSON con mensaje de error
+                                        when {
+                                            it.contains("Password not match", ignoreCase = true) -> 
+                                                "La contraseña actual es incorrecta"
+                                            it.contains("must be different", ignoreCase = true) || 
+                                            it.contains("cannot be the same", ignoreCase = true) -> 
+                                                "La nueva contraseña debe ser diferente a la actual"
+                                            it.contains("strong", ignoreCase = true) || 
+                                            it.contains("uppercase", ignoreCase = true) || 
+                                            it.contains("lowercase", ignoreCase = true) -> 
+                                                "La contraseña debe contener al menos 8 caracteres, una mayúscula, una minúscula y un número"
+                                            else -> null
+                                        }
+                                    } else null
+                                }
+                                jsonError ?: "Error de validación. Verifica que la contraseña actual sea correcta y que la nueva contraseña cumpla los requisitos."
+                            } catch (e: Exception) {
+                                "Error de validación. Verifica que la contraseña actual sea correcta y que la nueva contraseña cumpla los requisitos."
+                            }
+                        }
+                    }
+                    401 -> "Sesión expirada. Por favor, inicia sesión nuevamente"
+                    403 -> "No tienes permisos para realizar esta acción"
+                    else -> {
+                        if (isHtmlError) {
+                            "Error del servidor. Intenta más tarde o reinicia la sesión."
+                        } else {
+                            "Error al cambiar contraseña: ${response.code()} - ${errorBody ?: response.message()}"
+                        }
+                    }
+                }
+                
+                throw Exception(errorMessage)
             }
         } catch (e: Exception) {
             throw e
@@ -163,7 +231,8 @@ class ProfileRepository(private val context: Context) {
                 return@withContext Result.failure(Exception("Token de acceso no disponible"))
             }
             
-            val response = authService.getCurrentUser("Bearer $token")
+            // El token se agrega automáticamente por el interceptor de RetrofitClient
+            val response = authService.getCurrentUser()
             
             when (response.code()) {
                 200 -> {

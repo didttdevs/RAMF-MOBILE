@@ -90,12 +90,8 @@ class AuthRepository(private val context: Context) {
      */
     suspend fun getCurrentUser(): Result<User> {
         return try {
-            val token = tokenManager.getAccessToken()
-            if (token == null) {
-                return Result.failure(Exception("Usuario no autenticado"))
-            }
-            
-            val response = authService.getCurrentUser(token)
+            // El token se agrega automáticamente por el interceptor de RetrofitClient
+            val response = authService.getCurrentUser()
             if (response.isSuccessful) {
                 response.body()?.let { user ->
                     Result.success(user)
@@ -137,6 +133,7 @@ class AuthRepository(private val context: Context) {
             }
             
             val request = ChangePasswordRequest(currentPassword, newPassword)
+            // El token se agrega automáticamente por el interceptor de RetrofitClient
             val response = authService.changePassword(request)
             
             if (response.isSuccessful) {

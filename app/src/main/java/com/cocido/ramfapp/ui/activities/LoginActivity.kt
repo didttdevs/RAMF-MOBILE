@@ -120,22 +120,48 @@ class LoginActivity : BaseActivity() {
             try {
                 val response = RetrofitClient.authService.login(loginRequest)
                 
-                if (response.isSuccessful) {
+                // El backend retorna 202 Accepted en vez de 200 OK
+                if (response.code() == 202) {
                     val loginResponse = response.body()
                     if (loginResponse != null) {
+                        // Validar que el token no esté vacío
+                        if (loginResponse.accessToken.isBlank()) {
+                            Log.e("LoginActivity", "Login response received but accessToken is empty")
+                            Toast.makeText(this@LoginActivity, "Error: Token de acceso vacío", Toast.LENGTH_LONG).show()
+                            return@launch
+                        }
+                        
+                        Log.d("LoginActivity", "Login successful, token length: ${loginResponse.accessToken.length}")
+                        Log.d("LoginActivity", "Token preview: ${loginResponse.accessToken.take(20)}...")
+                        
                         // Guardar sesión del usuario
                         AuthManager.saveUserSession(loginResponse.user, loginResponse)
+                        
+                        // Verificar que el token se guardó correctamente
+                        val savedToken = AuthManager.getAccessToken()
+                        if (savedToken.isNullOrBlank()) {
+                            Log.e("LoginActivity", "Token not saved correctly after login")
+                            Toast.makeText(this@LoginActivity, "Error al guardar sesión", Toast.LENGTH_LONG).show()
+                            return@launch
+                        }
 
-                        // Obtener datos completos del usuario desde /api/auth/me
+                        // Obtener datos completos del usuario desde /api/auth/me (opcional, no bloqueante)
                         lifecycleScope.launch {
-                            val freshUser = AuthManager.fetchAndUpdateCurrentUser()
-                            if (freshUser != null) {
+                            try {
+                                val freshUser = AuthManager.fetchAndUpdateCurrentUser()
+                                if (freshUser != null) {
+                                    Log.d("LoginActivity", "User data refreshed successfully")
+                                }
+                            } catch (e: Exception) {
+                                Log.w("LoginActivity", "Failed to fetch user data, but login succeeded: ${e.message}")
+                                // No bloquear el login si falla /auth/me
                             }
                         }
 
                         Toast.makeText(this@LoginActivity, "Login exitoso", Toast.LENGTH_SHORT).show()
                         goToMainActivity()
                     } else {
+                        Log.e("LoginActivity", "Login response body is null")
                         Toast.makeText(this@LoginActivity, "Error en login: Respuesta inválida", Toast.LENGTH_LONG).show()
                     }
                 } else {
@@ -211,34 +237,22 @@ class LoginActivity : BaseActivity() {
     private fun performGoogleLogin(account: GoogleSignInAccount) {
         Log.d(TAG, "performGoogleLogin: Starting Google login for email: ${account.email}")
         
-        // Crear el nombre completo combinando firstName y lastName
-        val fullName = buildString {
-            account.givenName?.let { append(it) }
-            if (!account.givenName.isNullOrEmpty() && !account.familyName.isNullOrEmpty()) {
-                append(" ")
-            }
-            account.familyName?.let { append(it) }
-        }.ifEmpty { account.displayName ?: "" }
+        // El backend solo espera el idToken, extrae el resto del payload del token
+        val idToken = account.idToken
+        if (idToken.isNullOrEmpty()) {
+            Toast.makeText(this@LoginActivity, "Error: No se obtuvo token de Google", Toast.LENGTH_LONG).show()
+            return
+        }
 
-        // Crear el body con los datos de Google que necesita el backend
-        val googleToken = mapOf(
-            "email" to (account.email ?: ""),
-            "name" to fullName,  // Enviar nombre completo aquí
-            "firstName" to (account.givenName ?: ""),
-            "lastName" to (account.familyName ?: ""),
-            "avatar" to (account.photoUrl?.toString() ?: ""),
-            // FORMATO 1: Usar google_id (como en los ejemplos de Postman)
-            "google_id" to (account.id ?: ""),
-            // FORMATO 2: Usar idToken (como está actualmente)
-            "idToken" to (account.idToken ?: "")
-        )
-        
+        // Enviar SOLO el idToken como espera el backend
+        val googleToken = mapOf("idToken" to idToken)
 
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.authService.googleLogin(googleToken)
                 
-                if (response.isSuccessful) {
+                // El backend retorna 202 Accepted en vez de 200 OK
+                if (response.code() == 202) {
                     val loginResponse = response.body()
                     if (loginResponse != null) {
                         Log.d(TAG, "Google login successful for user: ${loginResponse.user.email}")
@@ -249,17 +263,8 @@ class LoginActivity : BaseActivity() {
                         Log.d(TAG, "  lastName: ${loginResponse.user.lastName}")
                         Log.d(TAG, "  avatar: ${loginResponse.user.avatar}")
 
-                        // Sobrescribir el nombre con el nombre completo de Google
-                        // ya que el backend no lo guarda correctamente
-                        val correctedUser = loginResponse.user.copy(
-                            name = account.givenName ?: loginResponse.user.name,
-                            lastName = account.familyName ?: loginResponse.user.lastName
-                        )
-
-                        Log.d(TAG, "Corrected user with Google data: name='$fullName'")
-
-                        // Guardar sesión del usuario con datos corregidos
-                        AuthManager.saveUserSession(correctedUser, loginResponse)
+                        // Guardar sesión del usuario (el backend ya extrajo los datos del idToken)
+                        AuthManager.saveUserSession(loginResponse.user, loginResponse)
 
                         // Obtener datos completos del usuario desde /api/auth/me
                         lifecycleScope.launch {
