@@ -1,6 +1,7 @@
 package com.cocido.ramfapp.ui.activities
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -21,6 +22,7 @@ import com.cocido.ramfapp.models.LoginResponse
 import com.cocido.ramfapp.models.User
 import com.cocido.ramfapp.models.CreateProfileRequest
 import com.cocido.ramfapp.network.RetrofitClient
+import com.cocido.ramfapp.ui.dialogs.LoginSettingsDialogFragment
 import com.cocido.ramfapp.utils.AuthManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
@@ -36,6 +38,8 @@ class LoginActivity : BaseActivity() {
 
     companion object {
         private const val TAG = "LoginActivity"
+        private const val PREFS_NAME = "LoginPrefs"
+        private const val KEY_USE_V2_LAYOUT = "use_v2_layout"
     }
     
     override fun requiresAuthentication(): Boolean {
@@ -48,7 +52,10 @@ class LoginActivity : BaseActivity() {
     private lateinit var btnLogin: Button
     private lateinit var btnGoogle: MaterialButton
     private lateinit var tvRegisterLink: TextView
+    private lateinit var btnSettings: ImageView
     private lateinit var googleSignInClient: com.google.android.gms.auth.api.signin.GoogleSignInClient
+    private lateinit var sharedPreferences: SharedPreferences
+    private var isUsingV2Layout = true
 
     // Activity Result Launcher para Google Sign-In
     private val googleSignInLauncher = registerForActivityResult(
@@ -59,18 +66,22 @@ class LoginActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_login)
-
+        
+        // Inicializar SharedPreferences
+        sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        
+        // Cargar preferencia de layout
+        isUsingV2Layout = sharedPreferences.getBoolean(KEY_USE_V2_LAYOUT, true)
+        
+        // Cargar el layout según la preferencia
+        loadLayout()
+        
         AuthManager.initialize(this)
         
         // Verificar si viene de sesión expirada
         checkSessionExpired()
 
-        etUsername = findViewById(R.id.etUsername)
-        etPassword = findViewById(R.id.etPassword)
-        btnLogin = findViewById(R.id.btnLogin)
-        btnGoogle = findViewById(R.id.btnGoogle)
-        tvRegisterLink = findViewById(R.id.tvRegisterLink)
+        initViews()
 
         // Configura el cliente de Google Sign-In
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -80,6 +91,29 @@ class LoginActivity : BaseActivity() {
             .build()
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
+        setupListeners()
+    }
+    
+    private fun loadLayout() {
+        if (isUsingV2Layout) {
+            setContentView(R.layout.activity_login)
+            // Cargar GIF animado de fondo solo para v2
+            loadBackgroundGif()
+        } else {
+            setContentView(R.layout.activity_login_v1)
+        }
+    }
+    
+    private fun initViews() {
+        etUsername = findViewById(R.id.etUsername)
+        etPassword = findViewById(R.id.etPassword)
+        btnLogin = findViewById(R.id.btnLogin)
+        btnGoogle = findViewById(R.id.btnGoogle)
+        tvRegisterLink = findViewById(R.id.tvRegisterLink)
+        btnSettings = findViewById(R.id.btnSettings)
+    }
+    
+    private fun setupListeners() {
         btnLogin.setOnClickListener {
             val username = etUsername.text.toString().trim().lowercase()
             val password = etPassword.text.toString().trim()
@@ -102,8 +136,29 @@ class LoginActivity : BaseActivity() {
             goToRegisterActivity()
         }
         
-        // Cargar GIF animado de fondo
-        loadBackgroundGif()
+        // Agrega el evento para cambiar layout
+        btnSettings.setOnClickListener {
+            showSettingsDialog()
+        }
+    }
+    
+    private fun showSettingsDialog() {
+        val dialog = LoginSettingsDialogFragment.newInstance(isUsingV2Layout) { selectedVersion ->
+            // Aplicar el nuevo layout
+            if (selectedVersion != isUsingV2Layout) {
+                isUsingV2Layout = selectedVersion
+                
+                // Guardar preferencia
+                sharedPreferences.edit()
+                    .putBoolean(KEY_USE_V2_LAYOUT, isUsingV2Layout)
+                    .apply()
+                
+                // Recargar activity con nuevo layout
+                finish()
+                startActivity(intent)
+            }
+        }
+        dialog.show(supportFragmentManager, "LoginSettingsDialog")
     }
     
     private fun loadBackgroundGif() {
