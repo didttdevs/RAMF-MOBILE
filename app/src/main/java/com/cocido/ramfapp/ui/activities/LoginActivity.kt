@@ -6,7 +6,9 @@ import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.TextView
+import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -100,6 +102,22 @@ class LoginActivity : BaseActivity() {
             goToRegisterActivity()
         }
         
+        // Cargar GIF animado de fondo
+        loadBackgroundGif()
+    }
+    
+    private fun loadBackgroundGif() {
+        try {
+            val backgroundGif = findViewById<ImageView>(R.id.backgroundGif)
+            Glide.with(this)
+                .asGif()
+                .load(R.drawable.anim_baniado)
+                .override(1920, 1080)  // Forzar alta resolución
+                .fitCenter()
+                .into(backgroundGif)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading background GIF", e)
+        }
     }
     
     private fun checkSessionExpired() {
