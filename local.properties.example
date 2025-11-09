@@ -1,0 +1,6 @@
+# Copia este archivo como local.properties y completa los valores necesarios.
+# Este archivo debe permanecer fuera del control de versiones para evitar
+# exponer credenciales sensibles.
+
+MAPS_API_KEY=TU_CLAVE_DE_MAPS
+

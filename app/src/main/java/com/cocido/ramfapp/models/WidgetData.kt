@@ -79,6 +79,10 @@ data class WidgetData(
         return "${String.format("%.1f", rainLastHour)} mm"
     }
 
+    fun getFormattedRainToday(): String {
+        return "${String.format("%.1f", rainDay)} mm"
+    }
+
     fun getFormattedRain24h(): String {
         return "${String.format("%.1f", rain24h)} mm"
     }
