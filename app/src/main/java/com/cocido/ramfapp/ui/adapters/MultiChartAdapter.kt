@@ -10,12 +10,15 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.cocido.ramfapp.R
+import com.cocido.ramfapp.models.AxisPosition
+import com.cocido.ramfapp.models.ChartCategory
 import com.cocido.ramfapp.models.ChartConfig
 import com.cocido.ramfapp.models.ChartParameter
-import com.cocido.ramfapp.models.WeatherData
+import com.cocido.ramfapp.models.ChartValueKey
 import com.cocido.ramfapp.models.ChartsPayload
-import com.cocido.ramfapp.models.ChartPoint
-import com.cocido.ramfapp.models.ChartCategory
+import com.cocido.ramfapp.models.SeriesStyle
+import com.cocido.ramfapp.models.WeatherData
+import com.cocido.ramfapp.models.getPoints
 import com.cocido.ramfapp.utils.ChartUtils
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.Description
@@ -25,9 +28,9 @@ import com.github.mikephil.charting.components.YAxis
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.formatter.ValueFormatter
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.abs
 
 /**
  * Adapter profesional para mostrar múltiples gráficos en RecyclerView
@@ -44,6 +47,28 @@ class MultiChartAdapter(
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_chart_card, parent, false)
         return ChartViewHolder(view)
+    }
+
+    private fun ChartValueKey.extractFromWeatherData(weatherData: WeatherData): Double? {
+        val sensors = weatherData.sensors
+        return when (this) {
+            ChartValueKey.TEMPERATURA -> sensors.hcAirTemperature?.avg
+            ChartValueKey.HUMEDAD -> sensors.hcRelativeHumidity?.avg
+            ChartValueKey.PUNTO_ROCIO -> sensors.dewPoint?.avg
+            ChartValueKey.VPD -> sensors.vpd?.avg
+            ChartValueKey.DELTA_T -> sensors.deltaT?.avg
+            ChartValueKey.RADIACION_SOLAR -> sensors.solarRadiation?.avg
+            ChartValueKey.VELOCIDAD_VIENTO -> sensors.usonicWindSpeed?.avg
+            ChartValueKey.RAFAGA_VIENTO -> sensors.windGust?.max
+            ChartValueKey.DIRECCION_VIENTO -> sensors.usonicWindDir?.last ?: sensors.windOrientation?.result
+            ChartValueKey.PRESION -> sensors.airPressure?.avg
+            ChartValueKey.PRECIPITACION -> sensors.precipitation?.sum
+            ChartValueKey.ET0 -> null
+            ChartValueKey.BATERIA -> null
+            ChartValueKey.PANEL_SOLAR -> null
+            ChartValueKey.HORAS_SOL -> null
+            ChartValueKey.ORIENTACION -> sensors.windOrientation?.result
+        }
     }
 
     override fun onBindViewHolder(holder: ChartViewHolder, position: Int) {
@@ -98,36 +123,20 @@ class MultiChartAdapter(
             // Configurar gráfico
             setupChart(lineChart, chartConfig)
 
-            // Mapear datos y crear datasets
-            val dataSets = chartConfig.parameters.mapNotNull { parameter ->
-                val entries = data.mapNotNull { weatherData ->
-                    val timestamp = parseTimestamp(weatherData.date)
-                    val value = parameter.valueExtractor(weatherData)
-
-                    if (timestamp != null && value != null) {
-                        Entry(timestamp.toFloat(), value.toFloat())
-                    } else null
-                }.sortedBy { it.x }
-
+            val seriesData = chartConfig.parameters.mapNotNull { parameter ->
+                val entries = mapEntriesFromWeatherData(parameter, data)
                 if (entries.isNotEmpty()) {
-                    createLineDataSet(entries, parameter.label, parameter.color, parameter.unit)
+                    SeriesData(parameter, createLineDataSet(entries, parameter))
                 } else null
             }
 
-            if (dataSets.isNotEmpty()) {
-                val lineData = LineData(dataSets)
+            if (seriesData.isNotEmpty()) {
+                val lineData = LineData(seriesData.map { it.dataSet })
                 lineChart.data = lineData
-                
-                // Configurar escalas independientes para gráficos combinados
-                if (chartConfig.parameters.size > 1) {
-                    setupIndependentScales(lineChart, dataSets, chartConfig.parameters)
-                }
-                
+                configureAxes(lineChart, seriesData)
                 lineChart.animateX(800)
                 lineChart.invalidate()
-
-                // Actualizar estadísticas (usa el primer parámetro)
-                updateStats(dataSets.firstOrNull(), chartConfig.parameters.firstOrNull()?.unit ?: "")
+                updateStats(seriesData.firstOrNull()?.dataSet, seriesData.firstOrNull()?.parameter?.unit ?: "")
             } else {
                 lineChart.clear()
                 currentValue.text = "--"
@@ -140,81 +149,26 @@ class MultiChartAdapter(
         fun bindWithBackendData(chartConfig: ChartConfig, chartsData: ChartsPayload) {
             chartTitle.text = chartConfig.title
 
-            // Configurar listener de opciones
             chartOptionsButton.setOnClickListener {
                 onChartOptionsClickListener?.invoke(chartConfig)
             }
 
-            // Configurar gráfico
             setupChart(lineChart, chartConfig)
 
-            // Obtener datos del grupo correspondiente del backend
-            // El backend agrupa por tipo de sensor, no por categoría de gráfico
-            val groupData = when {
-                // Temperatura y Humedad usan el mismo grupo del backend
-                chartConfig.category == ChartCategory.TEMPERATURE -> chartsData.charts.tempHum
-                chartConfig.category == ChartCategory.HUMIDITY -> chartsData.charts.tempHum
-                chartConfig.category == ChartCategory.COMBINED -> {
-                    // Para gráficos COMBINED, determinar el grupo por el ID del gráfico
-                    when (chartConfig.id) {
-                        "radiation" -> chartsData.charts.radiacion
-                        else -> chartsData.charts.tempHum
-                    }
-                }
-                
-                // Viento
-                chartConfig.category == ChartCategory.WIND -> chartsData.charts.viento
-                
-                // Presión
-                chartConfig.category == ChartCategory.PRESSURE -> chartsData.charts.presion
-                
-                // Precipitación (el backend devuelve datos en el grupo lluvia)
-                chartConfig.category == ChartCategory.PRECIPITATION -> {
-                    // Primero intentar lluvia, si no hay datos usar tempHum para Delta T
-                    chartsData.charts.lluvia ?: chartsData.charts.tempHum
-                }
-                
-                else -> null
+            val seriesData = chartConfig.parameters.mapNotNull { parameter ->
+                val entries = mapEntriesForParameter(parameter, chartsData)
+                if (entries.isNotEmpty()) {
+                    SeriesData(parameter, createLineDataSet(entries, parameter))
+                } else null
             }
 
-            if (groupData != null && groupData.isNotEmpty()) {
-                // Crear datasets basados en los datos del backend
-                val dataSets = chartConfig.parameters.mapNotNull { parameter ->
-                    val entries = groupData.mapNotNull { chartPoint ->
-                        val timestamp = parseBackendTimestamp(chartPoint.date)
-                        val value = extractValueFromChartPoint(chartPoint, parameter.key)
-
-                        if (timestamp != null && value != null) {
-                            Entry(timestamp.toFloat(), value.toFloat())
-                        } else null
-                    }.sortedBy { it.x }
-
-                    if (entries.isNotEmpty()) {
-                        createLineDataSet(entries, parameter.label, parameter.color, parameter.unit)
-                    } else null
-                }
-
-                if (dataSets.isNotEmpty()) {
-                    val lineData = LineData(dataSets)
-                    lineChart.data = lineData
-                    
-                    // Configurar escalas independientes para gráficos combinados
-                    if (chartConfig.parameters.size > 1) {
-                        setupIndependentScales(lineChart, dataSets, chartConfig.parameters)
-                    }
-                    
-                    lineChart.animateX(800)
-                    lineChart.invalidate()
-
-                    // Actualizar estadísticas
-                    updateStats(dataSets.firstOrNull(), chartConfig.parameters.firstOrNull()?.unit ?: "")
-                } else {
-                    lineChart.clear()
-                    currentValue.text = "--"
-                    minValue.text = "--"
-                    maxValue.text = "--"
-                    avgValue.text = "--"
-                }
+            if (seriesData.isNotEmpty()) {
+                val lineData = LineData(seriesData.map { it.dataSet })
+                lineChart.data = lineData
+                configureAxes(lineChart, seriesData)
+                lineChart.animateX(800)
+                lineChart.invalidate()
+                updateStats(seriesData.firstOrNull()?.dataSet, seriesData.firstOrNull()?.parameter?.unit ?: "")
             } else {
                 lineChart.clear()
                 currentValue.text = "--"
@@ -222,6 +176,119 @@ class MultiChartAdapter(
                 maxValue.text = "--"
                 avgValue.text = "--"
             }
+        }
+
+        private fun mapEntriesForParameter(parameter: ChartParameter, chartsData: ChartsPayload): List<Entry> {
+            val group = parameter.sourceGroup ?: return emptyList()
+            val points = chartsData.charts.getPoints(group) ?: return emptyList()
+
+            return points.mapNotNull { chartPoint ->
+                val timestamp = parseBackendTimestamp(chartPoint.date) ?: return@mapNotNull null
+                val rawValue = parameter.valueKey?.extractor?.invoke(chartPoint) ?: return@mapNotNull null
+                val scaledValue = (rawValue * parameter.scaleFactor).toFloat()
+                Entry(timestamp.toFloat(), scaledValue).apply { this.data = rawValue }
+            }.sortedBy { it.x }
+        }
+
+        private fun mapEntriesFromWeatherData(parameter: ChartParameter, data: List<WeatherData>): List<Entry> {
+            return data.mapNotNull { weatherData ->
+                val timestamp = parseTimestamp(weatherData.date) ?: return@mapNotNull null
+                val rawValue = when {
+                    parameter.valueExtractor != null -> parameter.valueExtractor.invoke(weatherData)
+                    parameter.valueKey != null -> parameter.valueKey.extractFromWeatherData(weatherData)
+                    else -> null
+                } ?: return@mapNotNull null
+
+                val scaledValue = (rawValue * parameter.scaleFactor).toFloat()
+                Entry(timestamp.toFloat(), scaledValue).apply { this.data = rawValue }
+            }.sortedBy { it.x }
+        }
+
+        private fun createLineDataSet(entries: List<Entry>, parameter: ChartParameter): LineDataSet {
+            val dataSet = LineDataSet(entries, parameter.label).apply {
+                color = parameter.color
+                setCircleColor(parameter.color)
+                lineWidth = parameter.seriesOptions.lineWidth
+                setDrawCircles(parameter.seriesOptions.drawCircles)
+                circleRadius = 3f
+                setDrawCircleHole(false)
+                setDrawValues(parameter.seriesOptions.drawValues)
+                valueTextColor = Color.DKGRAY
+                valueTextSize = 9f
+                mode = LineDataSet.Mode.CUBIC_BEZIER
+                cubicIntensity = 0.2f
+                axisDependency = if (parameter.axisPosition == AxisPosition.LEFT) {
+                    YAxis.AxisDependency.LEFT
+                } else {
+                    YAxis.AxisDependency.RIGHT
+                }
+                isHighlightEnabled = true
+                highLightColor = parameter.color
+                highlightLineWidth = 1.5f
+                setDrawVerticalHighlightIndicator(true)
+                setDrawHorizontalHighlightIndicator(true)
+            }
+
+            when (parameter.seriesOptions.style) {
+                SeriesStyle.LINE -> {
+                    dataSet.setDrawFilled(false)
+                }
+
+                SeriesStyle.AREA -> {
+                    dataSet.setDrawFilled(true)
+                    dataSet.fillAlpha = parameter.seriesOptions.fillAlpha
+                    dataSet.fillColor = parameter.seriesOptions.fillColorOverride ?: parameter.color
+                    dataSet.setDrawCircles(false)
+                }
+
+                SeriesStyle.STEP -> {
+                    dataSet.mode = LineDataSet.Mode.STEPPED
+                    dataSet.setDrawFilled(false)
+                }
+
+                SeriesStyle.DASHED_LINE -> {
+                    dataSet.setDrawFilled(false)
+                    parameter.seriesOptions.dashedIntervals?.let { intervals ->
+                        if (intervals.size >= 2) {
+                            dataSet.enableDashedLine(intervals[0], intervals[1], 0f)
+                        }
+                    }
+                }
+            }
+
+            return dataSet
+        }
+
+        private fun configureAxes(chart: LineChart, seriesData: List<SeriesData>) {
+            val leftSeries = seriesData.filter { it.parameter.axisPosition == AxisPosition.LEFT }
+            val rightSeries = seriesData.filter { it.parameter.axisPosition == AxisPosition.RIGHT }
+
+            configureAxis(chart.axisLeft, leftSeries, drawGridLines = true)
+            configureAxis(chart.axisRight, rightSeries, drawGridLines = false)
+        }
+
+        private fun configureAxis(axis: YAxis, items: List<SeriesData>, drawGridLines: Boolean) {
+            if (items.isEmpty()) {
+                axis.isEnabled = false
+                return
+            }
+
+            axis.isEnabled = true
+            axis.setDrawGridLines(drawGridLines)
+
+            val min = items.minOf { it.dataSet.yMin }
+            val max = items.maxOf { it.dataSet.yMax }
+            val range = max - min
+            val padding = if (range == 0f) {
+                if (max == 0f) 1f else abs(max) * 0.1f
+            } else {
+                range * 0.1f
+            }
+
+            axis.axisMinimum = min - padding
+            axis.axisMaximum = max + padding
+            axis.textColor = items.first().parameter.color
+            axis.setLabelCount(6, true)
         }
 
         private fun parseBackendTimestamp(dateString: String): Long? {
@@ -232,28 +299,6 @@ class MultiChartAdapter(
             } catch (e: Exception) {
                 Log.e("MultiChartAdapter", "Error parsing backend timestamp: $dateString", e)
                 null
-            }
-        }
-
-        private fun extractValueFromChartPoint(chartPoint: ChartPoint, parameterKey: String): Double? {
-            return when (parameterKey.lowercase()) {
-                "temperatura" -> chartPoint.temperatura
-                "humedad" -> chartPoint.humedad
-                "dewpoint", "punto_rocio" -> chartPoint.puntoRocio
-                "vpd" -> chartPoint.vpd
-                "deltat", "delta_t" -> chartPoint.deltaT
-                "radiacion", "radiation" -> chartPoint.radiacionSolar
-                "viento", "wind" -> chartPoint.velocidadViento
-                "windgust", "rafaga" -> chartPoint.rafaga
-                "winddir", "direccion_viento" -> chartPoint.direccionViento
-                "presion", "pressure" -> chartPoint.presion
-                "precipitacion", "rain" -> chartPoint.precipitacion
-                "bateria", "battery" -> chartPoint.bateria
-                "panel_solar", "solar_panel" -> chartPoint.panelSolar
-                "et0" -> chartPoint.et0
-                "horas_sol", "sunshine" -> chartPoint.horasSol
-                "orientacion", "orientation" -> chartPoint.orientacion
-                else -> null
             }
         }
 
@@ -301,17 +346,14 @@ class MultiChartAdapter(
 
                 // Configurar eje Y derecho (para gráficos combinados)
                 axisRight.apply {
-                    if (config.parameters.size > 1) {
-                        isEnabled = true
-                        textColor = ContextCompat.getColor(context, R.color.chart_text_color)
-                        textSize = 10f
-                        setDrawGridLines(false)
-                        setDrawAxisLine(true)
-                        axisLineColor = ContextCompat.getColor(context, R.color.chart_axis_color)
-                        axisLineWidth = 1f
-                    } else {
-                        isEnabled = false
-                    }
+                    val hasRightAxis = config.parameters.any { it.axisPosition == AxisPosition.RIGHT }
+                    isEnabled = hasRightAxis
+                    textColor = ContextCompat.getColor(context, R.color.chart_text_color)
+                    textSize = 10f
+                    setDrawGridLines(false)
+                    setDrawAxisLine(true)
+                    axisLineColor = ContextCompat.getColor(context, R.color.chart_axis_color)
+                    axisLineWidth = 1f
                 }
 
                 // Configurar leyenda
@@ -335,106 +377,6 @@ class MultiChartAdapter(
             }
         }
 
-        private fun createLineDataSet(
-            entries: List<Entry>,
-            label: String,
-            color: Int,
-            unit: String
-        ): LineDataSet {
-            return LineDataSet(entries, "$label ($unit)").apply {
-                this.color = color
-                setCircleColor(color)
-                lineWidth = 2.5f
-                circleRadius = 3f
-                setDrawCircleHole(false)
-                setDrawValues(false)
-                mode = LineDataSet.Mode.CUBIC_BEZIER
-                cubicIntensity = 0.2f
-                setDrawFilled(false)
-                setDrawHighlightIndicators(true)
-                highLightColor = color
-                highlightLineWidth = 1.5f
-            }
-        }
-
-        private fun setupIndependentScales(chart: LineChart, dataSets: List<LineDataSet>, parameters: List<ChartParameter>) {
-            if (dataSets.size < 2) return
-            
-            // Calcular rangos para cada dataset
-            val scales = dataSets.mapIndexed { index, dataSet ->
-                val values = (0 until dataSet.entryCount).map { dataSet.getEntryForIndex(it).y }
-                val min = values.minOrNull() ?: 0f
-                val max = values.maxOrNull() ?: 0f
-                val padding = (max - min) * 0.1f // 10% de padding
-                
-                ScaleInfo(
-                    min = min - padding,
-                    max = max + padding,
-                    parameter = parameters[index]
-                )
-            }
-            
-            // Configurar eje izquierdo con el primer parámetro
-            chart.axisLeft.apply {
-                val firstScale = scales[0]
-                axisMinimum = firstScale.min
-                axisMaximum = firstScale.max
-                setLabelCount(6, true)
-                textColor = firstScale.parameter.color
-                setDrawGridLines(true)
-            }
-            
-            // Configurar eje derecho con el segundo parámetro (si existe)
-            if (scales.size >= 2) {
-                chart.axisRight.apply {
-                    isEnabled = true
-                    val secondScale = scales[1]
-                    axisMinimum = secondScale.min
-                    axisMaximum = secondScale.max
-                    setLabelCount(6, true)
-                    textColor = secondScale.parameter.color
-                    setDrawGridLines(false) // No líneas de cuadrícula para eje derecho
-                }
-            }
-            
-            // Para más de 2 parámetros, usar colores y estilos diferentes
-            if (scales.size > 2) {
-                Log.w("MultiChartAdapter", "Gráfico con ${scales.size} parámetros - usando escalas automáticas")
-                
-                // Configurar estilos de línea diferentes para distinguir parámetros
-                dataSets.forEachIndexed { index, dataSet ->
-                    when (index) {
-                        0 -> {
-                            // Primer parámetro: línea sólida, eje izquierdo
-                            dataSet.lineWidth = 3f
-                            dataSet.setDrawCircles(false)
-                            dataSet.axisDependency = YAxis.AxisDependency.LEFT
-                        }
-                        1 -> {
-                            // Segundo parámetro: línea sólida, eje derecho
-                            dataSet.lineWidth = 3f
-                            dataSet.setDrawCircles(false)
-                            dataSet.axisDependency = YAxis.AxisDependency.RIGHT
-                        }
-                        2 -> {
-                            // Tercer parámetro: línea punteada, eje derecho
-                            dataSet.lineWidth = 2f
-                            dataSet.enableDashedLine(10f, 5f, 0f)
-                            dataSet.setDrawCircles(false)
-                            dataSet.axisDependency = YAxis.AxisDependency.RIGHT
-                        }
-                        3 -> {
-                            // Cuarto parámetro: línea con puntos, eje derecho
-                            dataSet.lineWidth = 2f
-                            dataSet.setDrawCircles(true)
-                            dataSet.circleRadius = 4f
-                            dataSet.axisDependency = YAxis.AxisDependency.RIGHT
-                        }
-                    }
-                }
-            }
-        }
-
         private fun updateStats(dataSet: LineDataSet?, unit: String) {
             if (dataSet == null || dataSet.entryCount == 0) {
                 currentValue.text = "--"
@@ -444,7 +386,11 @@ class MultiChartAdapter(
                 return
             }
 
-            val values = (0 until dataSet.entryCount).map { dataSet.getEntryForIndex(it).y }
+            val values = (0 until dataSet.entryCount).map { index ->
+                val entry = dataSet.getEntryForIndex(index)
+                val raw = (entry.data as? Number)?.toFloat()
+                raw ?: entry.y
+            }
             val min = values.minOrNull() ?: 0f
             val max = values.maxOrNull() ?: 0f
             val avg = values.average().toFloat()
@@ -476,9 +422,8 @@ class MultiChartAdapter(
     }
 }
 
-private data class ScaleInfo(
-    val min: Float,
-    val max: Float,
-    val parameter: ChartParameter
+private data class SeriesData(
+    val parameter: ChartParameter,
+    val dataSet: LineDataSet
 )
 

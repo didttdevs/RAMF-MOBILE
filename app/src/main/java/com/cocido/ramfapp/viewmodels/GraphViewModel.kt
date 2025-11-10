@@ -9,6 +9,7 @@ import com.cocido.ramfapp.models.WeatherData
 import com.cocido.ramfapp.models.ChartsPayload
 import com.cocido.ramfapp.common.Resource
 import com.cocido.ramfapp.repository.WeatherRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +37,8 @@ class GraphViewModel(private val repository: WeatherRepository) : ViewModel() {
     // Navegación al login cuando expira la sesión
     private val _navigateToLogin = MutableSharedFlow<Boolean>()
     val navigateToLogin: SharedFlow<Boolean> = _navigateToLogin.asSharedFlow()
+
+    private var weatherDataJob: Job? = null
 
     init {
         loadStations()
@@ -85,6 +88,11 @@ class GraphViewModel(private val repository: WeatherRepository) : ViewModel() {
                             isLoading = false,
                             errorMessage = null
                         )
+                        fetchLegacyWeatherData(
+                            stationId = currentState.currentStationId,
+                            from = from,
+                            to = to
+                        )
                     }
                     is Resource.Error -> {
                         _uiState.value = _uiState.value.copy(
@@ -122,6 +130,36 @@ class GraphViewModel(private val repository: WeatherRepository) : ViewModel() {
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
+    }
+
+    private fun fetchLegacyWeatherData(stationId: String, from: String, to: String) {
+        weatherDataJob?.cancel()
+        weatherDataJob = viewModelScope.launch {
+            repository.getWeatherDataTimeRange(
+                stationName = stationId,
+                from = from,
+                to = to
+            ).collect { resource ->
+                when (resource) {
+                    is Resource.Loading -> {
+                        // mantener indicador existente si charts todavía cargando
+                    }
+                    is Resource.Success -> {
+                        _uiState.value = _uiState.value.copy(
+                            weatherData = resource.data,
+                            errorMessage = null
+                        )
+                    }
+                    is Resource.Error -> {
+                        // Registrar error pero sin bloquear exportación con charts
+                        Log.w("GraphViewModel", "Error cargando datos legacy: ${resource.message}")
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = resource.message ?: "Error al obtener datos históricos"
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -47,3 +47,19 @@ data class ChartPoint(
     @SerializedName("Horas sol (h)") val horasSol: Double? = null,
     @SerializedName("Orientación (°)") val orientacion: Double? = null
 )
+
+/**
+ * Helper para obtener la lista de puntos según el grupo solicitado
+ */
+fun ChartsByGroup.getPoints(group: ChartDataGroup): List<ChartPoint>? {
+    return when (group) {
+        ChartDataGroup.TEMP_HUM -> tempHum
+        ChartDataGroup.RADIACION -> radiacion
+        ChartDataGroup.ENERGIA -> energia
+        ChartDataGroup.LLUVIA -> lluvia
+        ChartDataGroup.VIENTO -> viento
+        ChartDataGroup.DIRECCION -> direccion
+        ChartDataGroup.PRESION -> presion
+        ChartDataGroup.ET0 -> et0
+    }
+}

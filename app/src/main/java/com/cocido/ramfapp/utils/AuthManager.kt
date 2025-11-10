@@ -79,6 +79,7 @@ object AuthManager {
             // Debug: Verificar que el token se guardó correctamente
             Log.d("AuthManager", "Token saved: ${loginResponse.accessToken.take(20)}...")
             Log.d("AuthManager", "Token length: ${loginResponse.accessToken.length}")
+            Log.i("AuthManager", "Bearer token guardado: ${loginResponse.accessToken}")
 
         } catch (e: Exception) {
             Log.e("AuthManager", "Error saving user session", e)

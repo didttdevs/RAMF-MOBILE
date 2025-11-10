@@ -1,5 +1,6 @@
 package com.cocido.ramfapp.utils
 
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -8,12 +9,18 @@ import android.util.Log
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.cocido.ramfapp.BuildConfig
+import com.cocido.ramfapp.models.ChartDataGroup
+import com.cocido.ramfapp.models.ChartPoint
+import com.cocido.ramfapp.models.ChartsPayload
 import com.cocido.ramfapp.models.WeatherData
 import com.cocido.ramfapp.models.WeatherStation
 import com.cocido.ramfapp.models.WidgetData
+import com.cocido.ramfapp.models.getPoints
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -25,6 +32,46 @@ object ExportUtils {
 
     private const val TAG = "ExportUtils"
     private const val EXPORT_DIRECTORY = "RAF_Exports"
+    private val decimalFormat = DecimalFormat("0.####", DecimalFormatSymbols(Locale.US))
+
+    private data class SeriesDefinition(
+        val label: String,
+        val extractor: (ChartPoint) -> Double?
+    )
+
+    private val GROUP_SERIES_DEFINITIONS = mapOf(
+        ChartDataGroup.RADIACION to listOf(
+            SeriesDefinition("Radiación solar (W/m²)") { it.radiacionSolar }
+        ),
+        ChartDataGroup.ENERGIA to listOf(
+            SeriesDefinition("Panel solar (mV)") { it.panelSolar },
+            SeriesDefinition("Batería (mV)") { it.bateria }
+        ),
+        ChartDataGroup.LLUVIA to listOf(
+            SeriesDefinition("Precipitación (mm)") { it.precipitacion }
+        ),
+        ChartDataGroup.TEMP_HUM to listOf(
+            SeriesDefinition("Temp. aire (°C)") { it.temperatura },
+            SeriesDefinition("Humedad relativa (%)") { it.humedad },
+            SeriesDefinition("Punto de rocío (°C)") { it.puntoRocio },
+            SeriesDefinition("VPD (kPa)") { it.vpd },
+            SeriesDefinition("Delta T (°C)") { it.deltaT }
+        ),
+        ChartDataGroup.VIENTO to listOf(
+            SeriesDefinition("Vel. viento (m/s)") { it.velocidadViento },
+            SeriesDefinition("Ráfaga (m/s)") { it.rafaga }
+        ),
+        ChartDataGroup.DIRECCION to listOf(
+            SeriesDefinition("Dir. viento (°)") { it.direccionViento },
+            SeriesDefinition("Orientación (°)") { it.orientacion }
+        ),
+        ChartDataGroup.PRESION to listOf(
+            SeriesDefinition("Presión (hPa)") { it.presion }
+        ),
+        ChartDataGroup.ET0 to listOf(
+            SeriesDefinition("ET0 (mm)") { it.et0 }
+        )
+    )
     
     /**
      * Formatos de exportación soportados
@@ -42,6 +89,8 @@ object ExportUtils {
         data class Success(val file: File, val uri: Uri) : ExportResult()
         data class Error(val message: String, val exception: Exception? = null) : ExportResult()
     }
+
+    const val WHATSAPP_PACKAGE = "com.whatsapp"
 
     /**
      * Exporta datos meteorológicos a CSV
@@ -169,26 +218,100 @@ object ExportUtils {
     }
 
     /**
+     * Exporta los datos de gráficos combinados del backend a CSV (formato equivalente a la web).
+     */
+    fun exportChartsDataToCsv(
+        context: Context,
+        chartsPayload: ChartsPayload,
+        stationName: String,
+        dateRange: String? = null
+    ): ExportResult {
+        return try {
+            val fileName = generateFileName(
+                stationName = stationName,
+                dataType = "charts",
+                format = ExportFormat.CSV,
+                dateRange = dateRange,
+                useFriendlyName = true
+            )
+            val file = createExportFile(context, fileName)
+
+            FileWriter(file).use { writer ->
+                writer.append("group,serie,date,value\n")
+
+                ChartDataGroup.values().forEach { group ->
+                    val points = chartsPayload.charts.getPoints(group) ?: return@forEach
+                    val seriesDefinitions = GROUP_SERIES_DEFINITIONS[group] ?: return@forEach
+
+                    points.forEach { point ->
+                        seriesDefinitions.forEach { definition ->
+                            val value = definition.extractor(point) ?: return@forEach
+                            writer.append(
+                                "${group.name.lowercase()},${definition.label},${point.date},${formatValue(value)}\n"
+                            )
+                        }
+                    }
+                }
+            }
+
+            val uri = getFileUri(context, file)
+            Log.d(TAG, "Charts data exported successfully: ${file.absolutePath}")
+            ExportResult.Success(file, uri)
+
+        } catch (e: IOException) {
+            Log.e(TAG, "Error exporting charts data", e)
+            ExportResult.Error("Error al exportar datos: ${e.message}", e)
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error during charts export", e)
+            ExportResult.Error("Error inesperado: ${e.message}", e)
+        }
+    }
+
+    /**
      * Comparte un archivo mediante Intent
      */
     fun shareFile(
         context: Context,
         file: File,
-        title: String = "Compartir datos meteorológicos"
+        uri: Uri? = null,
+        title: String = "Compartir datos meteorológicos",
+        targetPackage: String? = null
     ) {
         try {
-            val uri = getFileUri(context, file)
+            val shareUri = uri ?: getFileUri(context, file)
 
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = ExportFormat.CSV.mimeType
-                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_STREAM, shareUri)
                 putExtra(Intent.EXTRA_SUBJECT, "Datos Meteorológicos RAF")
                 putExtra(Intent.EXTRA_TEXT, "Datos exportados desde RAF App")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                clipData = ClipData.newUri(context.contentResolver, file.name, shareUri)
+                targetPackage?.let { setPackage(it) }
             }
 
-            context.startActivity(Intent.createChooser(shareIntent, title))
-            Log.d(TAG, "Share intent created for file: ${file.name}")
+            targetPackage?.let {
+                context.grantUriPermission(
+                    it,
+                    shareUri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            }
+
+            val resolved = shareIntent.resolveActivity(context.packageManager)
+            if (targetPackage != null && resolved == null) {
+                Toast.makeText(context, "Aplicación no instalada", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            val chooser = Intent.createChooser(shareIntent, title).apply {
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            }
+
+            context.startActivity(chooser)
+            Log.d(TAG, "Share intent created for file: ${file.name} - targetPackage=$targetPackage")
 
         } catch (e: Exception) {
             Log.e(TAG, "Error sharing file", e)
@@ -256,8 +379,14 @@ object ExportUtils {
         stationName: String,
         dataType: String,
         format: ExportFormat,
-        dateRange: String? = null
+        dateRange: String? = null,
+        useFriendlyName: Boolean = false
     ): String {
+        if (useFriendlyName) {
+            val sanitizedName = stationName.replace(Regex("[\\\\/:*?\"<>|]"), "_")
+            return "$sanitizedName.${format.extension}"
+        }
+
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         val sanitizedStationName = stationName.replace(Regex("[^a-zA-Z0-9]"), "_")
         
@@ -314,6 +443,10 @@ object ExportUtils {
         if (!exportDir.exists()) return emptyList()
 
         return exportDir.listFiles()?.toList()?.sortedByDescending { it.lastModified() } ?: emptyList()
+    }
+
+    private fun formatValue(value: Double): String {
+        return decimalFormat.format(value)
     }
 
     /**
