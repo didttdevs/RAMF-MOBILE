@@ -109,13 +109,9 @@ class ChangePasswordDialogFragment : DialogFragment() {
                 }
                 is Resource.Error -> {
                     showLoading(false)
-                    // Mostrar mensaje de error más descriptivo
-                    val errorMessage = when {
-                        state.message?.contains("400") == true -> "La contraseña debe contener al menos 8 caracteres, una mayúscula, una minúscula y un número"
-                        state.message?.contains("401") == true -> "Contraseña actual incorrecta"
-                        state.message?.contains("403") == true -> "No tienes permisos para realizar esta acción"
-                        else -> state.message ?: "Error al cambiar la contraseña"
-                    }
+                    // El mensaje del Exception ya viene formateado desde ProfileRepository
+                    // con el mensaje específico del backend (Password not match, etc.)
+                    val errorMessage = state.message ?: "Error al cambiar la contraseña"
                     Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_LONG).show()
                 }
                 null -> {}
@@ -128,6 +124,13 @@ class ChangePasswordDialogFragment : DialogFragment() {
         
         val currentPassword = binding.etCurrentPassword.text.toString()
         val newPassword = binding.etNewPassword.text.toString()
+        
+        // Debug: Verificar que la contraseña no se está normalizando
+        android.util.Log.d("ChangePassword", "Sending change password request")
+        android.util.Log.d("ChangePassword", "Current password length: ${currentPassword.length}, has uppercase: ${currentPassword.any { it.isUpperCase() }}, preview: '${currentPassword.take(3)}***'")
+        android.util.Log.d("ChangePassword", "New password length: ${newPassword.length}, has uppercase: ${newPassword.any { it.isUpperCase() }}, first char: '${newPassword.firstOrNull()}', preview: '${newPassword.take(3)}***'")
+        android.util.Log.d("ChangePassword", "New password matches validation: ${isValidPassword(newPassword)}")
+        android.util.Log.d("ChangePassword", "Passwords are different: ${currentPassword != newPassword}")
         
         val changePasswordRequest = ChangePasswordRequest(
             password = currentPassword,

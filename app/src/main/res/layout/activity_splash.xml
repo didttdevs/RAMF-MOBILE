@@ -10,71 +10,57 @@
     <!-- Logo Container con Material Design Card -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/logoCard"
-        android:layout_width="180dp"
-        android:layout_height="180dp"
-        android:layout_marginTop="120dp"
-        app:cardBackgroundColor="@android:color/white"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="12dp"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="20dp"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
         app:cardPreventCornerOverlap="false"
-        app:strokeWidth="0dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginVertical="200dp"
+        app:strokeWidth="0dp">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:padding="24dp">
+            android:padding="20dp">
 
-            <!-- Logo RAMF -->
             <ImageView
-                android:id="@+id/logoImageView"
-                android:layout_width="120dp"
-                android:layout_height="120dp"
-                android:src="@drawable/lg_ramf"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:scaleType="centerInside"
+                android:src="@drawable/lg_ramf"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@color/white" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
     </com.google.android.material.card.MaterialCardView>
 
     <!-- Título principal -->
-    <TextView
-        android:id="@+id/titleTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="RAMF"
-        android:textColor="@android:color/white"
-        android:textSize="32sp"
-        android:textStyle="bold"
-        android:fontFamily="sans-serif-medium"
-        android:letterSpacing="0.02"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/logoCard" />
 
     <!-- Subtítulo -->
     <TextView
         android:id="@+id/subtitleTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Red Agrometeorológica de Formosa"
-        android:textColor="@android:color/white"
-        android:textSize="16sp"
         android:alpha="0.9"
         android:fontFamily="sans-serif"
         android:gravity="center"
         android:letterSpacing="0.01"
+        android:text="Red Agrometeorológica de Formosa"
+        android:textColor="@android:color/white"
+        android:textSize="22sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/titleTextView" />
+        app:layout_constraintTop_toBottomOf="@+id/logoCard"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <!-- Indicador de carga Material Design 3 -->
     <com.google.android.material.progressindicator.CircularProgressIndicator
@@ -88,8 +74,9 @@
         app:trackColor="#40FFFFFF"
         app:trackThickness="3dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/subtitleTextView" />
+        android:layout_marginBottom="50dp"
+        app:layout_constraintBottom_toTopOf="@+id/decorativeLine"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <!-- Mensaje de carga -->
     <TextView

@@ -48,13 +48,23 @@ cd RAF-app
 2. Colocar el archivo en la carpeta `app/`
 3. Verificar que el `package_name` sea `com.cocido.ramfapp`
 
-### 3. Compilar el proyecto
+### 3. Configurar la clave de Google Maps
+
+1. Copia `local.properties.example` a `local.properties` (este archivo está excluido del repositorio).  
+2. Añade la clave correspondiente según el entorno:
+   ```
+   MAPS_API_KEY=tu_clave_de_maps
+   ```
+   - También puedes definir la variable de entorno `MAPS_API_KEY` cuando generes builds automatizados.
+3. La app leerá este valor y lo inyectará en el `AndroidManifest.xml` mediante `manifestPlaceholders`.
+
+### 4. Compilar el proyecto
 
 ```bash
 ./gradlew build
 ```
 
-### 4. Ejecutar la aplicación
+### 5. Ejecutar la aplicación
 
 ```bash
 ./gradlew installDebug

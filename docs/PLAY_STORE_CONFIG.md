@@ -130,6 +130,12 @@ Para más información: https://ramf.formosa.gob.ar
 - **Cámara**: Para reportes con fotos
 - **Almacenamiento**: Para exportar datos
 
+### 3.3 Clave Google Maps
+- **Debug**: paquete `com.cocido.ramfapp.debug` + SHA-1 del keystore `~/.android/debug.keystore`.
+- **Release**: paquete `com.cocido.ramfapp` + SHA-1 del keystore `release-keystore.jks` (alias `ramf-app`).
+- **Restricciones de API**: `Maps SDK for Android` (sumar otras APIs según uso).
+- **Distribución**: copiar `local.properties.example` a `local.properties`, definir `MAPS_API_KEY` o exportarlo como variable de entorno; el build lo inyecta vía `manifestPlaceholders`.
+
 ## 4. Configuración de Target SDK
 
 ### 4.1 Versiones

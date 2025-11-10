@@ -5,23 +5,45 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/formosa_gradient_professional"
     tools:context=".ui.activities.LoginActivity">
+
+    <!-- GIF animado de fondo -->
+    <ImageView
+        android:id="@+id/backgroundGif"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Overlay oscuro para mejorar legibilidad -->
+    <View
+        android:id="@+id/darkOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#40000000"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <!-- Logo Container -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/logoCard"
-        android:layout_width="160dp"
-        android:layout_height="160dp"
-        android:layout_marginTop="80dp"
-        app:cardBackgroundColor="@android:color/white"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="20dp"
+        app:cardBackgroundColor="@android:color/transparent"
         app:cardCornerRadius="20dp"
-        app:cardElevation="8dp"
+        app:cardElevation="0dp"
         app:cardPreventCornerOverlap="false"
-        app:strokeWidth="0dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:strokeWidth="0dp">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
@@ -29,10 +51,11 @@
             android:padding="20dp">
 
             <ImageView
-                android:layout_width="120dp"
-                android:layout_height="120dp"
-                android:src="@drawable/lg_ramf"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:scaleType="centerInside"
+                android:src="@drawable/lg_ramf"
+                android:tint="@color/white"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -43,53 +66,25 @@
     </com.google.android.material.card.MaterialCardView>
 
     <!-- Título -->
-    <TextView
-        android:id="@+id/titleTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:text="RAMF"
-        android:textColor="@android:color/white"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:fontFamily="sans-serif-medium"
-        android:letterSpacing="0.02"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/logoCard" />
 
     <!-- Subtítulo -->
-    <TextView
-        android:id="@+id/subtitleTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Red Agrometeorológica de Formosa"
-        android:textColor="@android:color/white"
-        android:textSize="14sp"
-        android:alpha="0.9"
-        android:fontFamily="sans-serif"
-        android:gravity="center"
-        android:letterSpacing="0.01"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/titleTextView" />
 
     <!-- Card de formulario de login -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/loginCard"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="32dp"
         android:layout_marginTop="40dp"
-        app:cardBackgroundColor="@android:color/white"
+        app:cardBackgroundColor="@android:color/transparent"
         app:cardCornerRadius="16dp"
-        app:cardElevation="8dp"
+        app:cardElevation="0dp"
         app:cardPreventCornerOverlap="false"
-        app:strokeWidth="0dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/subtitleTextView">
+        app:layout_constraintTop_toBottomOf="@+id/logoCard"
+        app:strokeWidth="0dp"
+        tools:layout_editor_absoluteY="368dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -106,20 +101,20 @@
                 android:layout_marginBottom="16dp"
                 android:hint="Usuario"
                 app:boxBackgroundColor="@android:color/white"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusBottomEnd="12dp"
-                app:hintTextColor="@color/formosa_blue_primary"
-                app:boxStrokeColor="@color/formosa_blue_accent">
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxStrokeColor="@color/formosa_blue_accent"
+                app:hintTextColor="@color/formosa_blue_primary">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etUsername"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textPersonName"
-                    android:textSize="16sp"
-                    android:textColor="@color/text_primary_dark" />
+                    android:textColor="@color/text_primary_dark"
+                    android:textSize="16sp" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -132,22 +127,22 @@
                 android:layout_marginBottom="16dp"
                 android:hint="Contraseña"
                 app:boxBackgroundColor="@android:color/white"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusBottomEnd="12dp"
-                app:hintTextColor="@color/formosa_blue_primary"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusTopStart="12dp"
                 app:boxStrokeColor="@color/formosa_blue_accent"
                 app:endIconMode="password_toggle"
-                app:endIconTint="@color/formosa_blue_accent">
+                app:endIconTint="@color/formosa_blue_accent"
+                app:hintTextColor="@color/formosa_blue_primary">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etPassword"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textPassword"
-                    android:textSize="16sp"
-                    android:textColor="@color/text_primary_dark" />
+                    android:textColor="@color/text_primary_dark"
+                    android:textSize="16sp" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -158,13 +153,13 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
                 android:layout_marginBottom="24dp"
-                android:text="¿Olvidaste tu contraseña?"
-                android:textColor="@color/formosa_blue_accent"
-                android:textSize="14sp"
-                android:fontFamily="sans-serif"
+                android:background="?android:attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
-                android:background="?android:attr/selectableItemBackground" />
+                android:fontFamily="sans-serif"
+                android:text="¿Olvidaste tu contraseña?"
+                android:textColor="@color/white"
+                android:textSize="14sp" />
 
             <!-- Botón de login -->
             <com.google.android.material.button.MaterialButton
@@ -172,14 +167,13 @@
                 style="@style/Widget.MaterialComponents.Button"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:layout_marginBottom="16dp"
-                android:text="Iniciar Sesión"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@android:color/white"
                 android:fontFamily="sans-serif-medium"
                 android:gravity="center"
+                android:text="Iniciar Sesión"
                 android:textAlignment="center"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
                 app:backgroundTint="@color/formosa_blue_accent"
                 app:cornerRadius="12dp"
                 app:rippleColor="@color/formosa_blue_light"
@@ -197,8 +191,8 @@
                     android:layout_width="0dp"
                     android:layout_height="1dp"
                     android:layout_weight="1"
-                    android:background="@color/text_secondary_gray"
-                    android:alpha="0.3" />
+                    android:alpha="0.3"
+                    android:background="@color/text_secondary_gray" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -212,8 +206,8 @@
                     android:layout_width="0dp"
                     android:layout_height="1dp"
                     android:layout_weight="1"
-                    android:background="@color/text_secondary_gray"
-                    android:alpha="0.3" />
+                    android:alpha="0.3"
+                    android:background="@color/text_secondary_gray" />
 
             </LinearLayout>
 
@@ -224,15 +218,16 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginBottom="16dp"
-                android:text="Continuar con Google"
-                android:textSize="16sp"
-                android:fontFamily="sans-serif-medium"
+                android:backgroundTint="@color/white"
                 android:drawableStart="@drawable/ic_google"
                 android:drawablePadding="12dp"
-                app:strokeColor="@color/formosa_blue_accent"
-                app:strokeWidth="1dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="Continuar con Google"
+                android:textSize="16sp"
+                app:cornerRadius="12dp"
                 app:iconTint="@color/formosa_blue_primary"
-                app:cornerRadius="12dp" />
+                app:strokeColor="@color/formosa_blue_accent"
+                app:strokeWidth="1dp" />
 
         </LinearLayout>
 
@@ -244,14 +239,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:fontFamily="sans-serif"
+        android:padding="8dp"
         android:text="¿No tienes cuenta? Crear Cuenta"
         android:textColor="@android:color/white"
         android:textSize="16sp"
-        android:fontFamily="sans-serif"
-        android:clickable="true"
-        android:focusable="true"
-        android:background="?android:attr/selectableItemBackground"
-        android:padding="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/loginCard" />
@@ -262,13 +257,28 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
+        android:alpha="0.6"
+        android:fontFamily="sans-serif"
         android:text="v1.5.0"
         android:textColor="@android:color/white"
         android:textSize="12sp"
-        android:alpha="0.6"
-        android:fontFamily="sans-serif"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Botón de configuración (engranaje) -->
+    <ImageView
+        android:id="@+id/btnSettings"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginBottom="24dp"
+        android:src="@drawable/ic_settings_white"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        android:alpha="0.6"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

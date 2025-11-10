@@ -1,9 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.google.services)
     id("kotlin-parcelize")
 }
+
+val localProperties = Properties().apply {
+    val propertiesFile = rootProject.file("local.properties")
+    if (propertiesFile.exists()) {
+        propertiesFile.inputStream().use { load(it) }
+    }
+}
+
+val mapsApiKey: String = System.getenv("MAPS_API_KEY")
+    ?: localProperties.getProperty("MAPS_API_KEY")
+    ?: ""
 
 android {
     namespace = "com.cocido.ramfapp"
@@ -23,6 +36,8 @@ android {
         
         // Recursos configurables
         resourceConfigurations.addAll(listOf("es", "en"))  // Solo español e inglés
+
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     // Configuración de firmado (signing)

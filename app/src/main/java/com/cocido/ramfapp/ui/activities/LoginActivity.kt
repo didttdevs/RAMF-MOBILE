@@ -1,12 +1,15 @@
 package com.cocido.ramfapp.ui.activities
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.TextView
+import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,6 +22,7 @@ import com.cocido.ramfapp.models.LoginResponse
 import com.cocido.ramfapp.models.User
 import com.cocido.ramfapp.models.CreateProfileRequest
 import com.cocido.ramfapp.network.RetrofitClient
+import com.cocido.ramfapp.ui.dialogs.LoginSettingsDialogFragment
 import com.cocido.ramfapp.utils.AuthManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
@@ -34,6 +38,8 @@ class LoginActivity : BaseActivity() {
 
     companion object {
         private const val TAG = "LoginActivity"
+        private const val PREFS_NAME = "LoginPrefs"
+        private const val KEY_USE_V2_LAYOUT = "use_v2_layout"
     }
     
     override fun requiresAuthentication(): Boolean {
@@ -46,7 +52,10 @@ class LoginActivity : BaseActivity() {
     private lateinit var btnLogin: Button
     private lateinit var btnGoogle: MaterialButton
     private lateinit var tvRegisterLink: TextView
+    private lateinit var btnSettings: ImageView
     private lateinit var googleSignInClient: com.google.android.gms.auth.api.signin.GoogleSignInClient
+    private lateinit var sharedPreferences: SharedPreferences
+    private var isUsingV2Layout = true
 
     // Activity Result Launcher para Google Sign-In
     private val googleSignInLauncher = registerForActivityResult(
@@ -57,18 +66,22 @@ class LoginActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_login)
-
+        
+        // Inicializar SharedPreferences
+        sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        
+        // Cargar preferencia de layout
+        isUsingV2Layout = sharedPreferences.getBoolean(KEY_USE_V2_LAYOUT, true)
+        
+        // Cargar el layout según la preferencia
+        loadLayout()
+        
         AuthManager.initialize(this)
         
         // Verificar si viene de sesión expirada
         checkSessionExpired()
 
-        etUsername = findViewById(R.id.etUsername)
-        etPassword = findViewById(R.id.etPassword)
-        btnLogin = findViewById(R.id.btnLogin)
-        btnGoogle = findViewById(R.id.btnGoogle)
-        tvRegisterLink = findViewById(R.id.tvRegisterLink)
+        initViews()
 
         // Configura el cliente de Google Sign-In
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -78,8 +91,31 @@ class LoginActivity : BaseActivity() {
             .build()
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
+        setupListeners()
+    }
+    
+    private fun loadLayout() {
+        if (isUsingV2Layout) {
+            setContentView(R.layout.activity_login)
+            // Cargar GIF animado de fondo solo para v2
+            loadBackgroundGif()
+        } else {
+            setContentView(R.layout.activity_login_v1)
+        }
+    }
+    
+    private fun initViews() {
+        etUsername = findViewById(R.id.etUsername)
+        etPassword = findViewById(R.id.etPassword)
+        btnLogin = findViewById(R.id.btnLogin)
+        btnGoogle = findViewById(R.id.btnGoogle)
+        tvRegisterLink = findViewById(R.id.tvRegisterLink)
+        btnSettings = findViewById(R.id.btnSettings)
+    }
+    
+    private fun setupListeners() {
         btnLogin.setOnClickListener {
-            val username = etUsername.text.toString().trim()
+            val username = etUsername.text.toString().trim().lowercase()
             val password = etPassword.text.toString().trim()
 
             if (username.isEmpty() || password.isEmpty()) {
@@ -100,6 +136,43 @@ class LoginActivity : BaseActivity() {
             goToRegisterActivity()
         }
         
+        // Agrega el evento para cambiar layout
+        btnSettings.setOnClickListener {
+            showSettingsDialog()
+        }
+    }
+    
+    private fun showSettingsDialog() {
+        val dialog = LoginSettingsDialogFragment.newInstance(isUsingV2Layout) { selectedVersion ->
+            // Aplicar el nuevo layout
+            if (selectedVersion != isUsingV2Layout) {
+                isUsingV2Layout = selectedVersion
+                
+                // Guardar preferencia
+                sharedPreferences.edit()
+                    .putBoolean(KEY_USE_V2_LAYOUT, isUsingV2Layout)
+                    .apply()
+                
+                // Recargar activity con nuevo layout
+                finish()
+                startActivity(intent)
+            }
+        }
+        dialog.show(supportFragmentManager, "LoginSettingsDialog")
+    }
+    
+    private fun loadBackgroundGif() {
+        try {
+            val backgroundGif = findViewById<ImageView>(R.id.backgroundGif)
+            Glide.with(this)
+                .asGif()
+                .load(R.drawable.anim_baniado)
+                .override(1920, 1080)  // Forzar alta resolución
+                .fitCenter()
+                .into(backgroundGif)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading background GIF", e)
+        }
     }
     
     private fun checkSessionExpired() {
@@ -120,22 +193,48 @@ class LoginActivity : BaseActivity() {
             try {
                 val response = RetrofitClient.authService.login(loginRequest)
                 
-                if (response.isSuccessful) {
+                // El backend retorna 202 Accepted en vez de 200 OK
+                if (response.code() == 202) {
                     val loginResponse = response.body()
                     if (loginResponse != null) {
+                        // Validar que el token no esté vacío
+                        if (loginResponse.accessToken.isBlank()) {
+                            Log.e("LoginActivity", "Login response received but accessToken is empty")
+                            Toast.makeText(this@LoginActivity, "Error: Token de acceso vacío", Toast.LENGTH_LONG).show()
+                            return@launch
+                        }
+                        
+                        Log.d("LoginActivity", "Login successful, token length: ${loginResponse.accessToken.length}")
+                        Log.d("LoginActivity", "Token preview: ${loginResponse.accessToken.take(20)}...")
+                        
                         // Guardar sesión del usuario
                         AuthManager.saveUserSession(loginResponse.user, loginResponse)
+                        
+                        // Verificar que el token se guardó correctamente
+                        val savedToken = AuthManager.getAccessToken()
+                        if (savedToken.isNullOrBlank()) {
+                            Log.e("LoginActivity", "Token not saved correctly after login")
+                            Toast.makeText(this@LoginActivity, "Error al guardar sesión", Toast.LENGTH_LONG).show()
+                            return@launch
+                        }
 
-                        // Obtener datos completos del usuario desde /api/auth/me
+                        // Obtener datos completos del usuario desde /api/auth/me (opcional, no bloqueante)
                         lifecycleScope.launch {
-                            val freshUser = AuthManager.fetchAndUpdateCurrentUser()
-                            if (freshUser != null) {
+                            try {
+                                val freshUser = AuthManager.fetchAndUpdateCurrentUser()
+                                if (freshUser != null) {
+                                    Log.d("LoginActivity", "User data refreshed successfully")
+                                }
+                            } catch (e: Exception) {
+                                Log.w("LoginActivity", "Failed to fetch user data, but login succeeded: ${e.message}")
+                                // No bloquear el login si falla /auth/me
                             }
                         }
 
                         Toast.makeText(this@LoginActivity, "Login exitoso", Toast.LENGTH_SHORT).show()
                         goToMainActivity()
                     } else {
+                        Log.e("LoginActivity", "Login response body is null")
                         Toast.makeText(this@LoginActivity, "Error en login: Respuesta inválida", Toast.LENGTH_LONG).show()
                     }
                 } else {
@@ -211,34 +310,22 @@ class LoginActivity : BaseActivity() {
     private fun performGoogleLogin(account: GoogleSignInAccount) {
         Log.d(TAG, "performGoogleLogin: Starting Google login for email: ${account.email}")
         
-        // Crear el nombre completo combinando firstName y lastName
-        val fullName = buildString {
-            account.givenName?.let { append(it) }
-            if (!account.givenName.isNullOrEmpty() && !account.familyName.isNullOrEmpty()) {
-                append(" ")
-            }
-            account.familyName?.let { append(it) }
-        }.ifEmpty { account.displayName ?: "" }
+        // El backend solo espera el idToken, extrae el resto del payload del token
+        val idToken = account.idToken
+        if (idToken.isNullOrEmpty()) {
+            Toast.makeText(this@LoginActivity, "Error: No se obtuvo token de Google", Toast.LENGTH_LONG).show()
+            return
+        }
 
-        // Crear el body con los datos de Google que necesita el backend
-        val googleToken = mapOf(
-            "email" to (account.email ?: ""),
-            "name" to fullName,  // Enviar nombre completo aquí
-            "firstName" to (account.givenName ?: ""),
-            "lastName" to (account.familyName ?: ""),
-            "avatar" to (account.photoUrl?.toString() ?: ""),
-            // FORMATO 1: Usar google_id (como en los ejemplos de Postman)
-            "google_id" to (account.id ?: ""),
-            // FORMATO 2: Usar idToken (como está actualmente)
-            "idToken" to (account.idToken ?: "")
-        )
-        
+        // Enviar SOLO el idToken como espera el backend
+        val googleToken = mapOf("idToken" to idToken)
 
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.authService.googleLogin(googleToken)
                 
-                if (response.isSuccessful) {
+                // El backend retorna 202 Accepted en vez de 200 OK
+                if (response.code() == 202) {
                     val loginResponse = response.body()
                     if (loginResponse != null) {
                         Log.d(TAG, "Google login successful for user: ${loginResponse.user.email}")
@@ -249,17 +336,8 @@ class LoginActivity : BaseActivity() {
                         Log.d(TAG, "  lastName: ${loginResponse.user.lastName}")
                         Log.d(TAG, "  avatar: ${loginResponse.user.avatar}")
 
-                        // Sobrescribir el nombre con el nombre completo de Google
-                        // ya que el backend no lo guarda correctamente
-                        val correctedUser = loginResponse.user.copy(
-                            name = account.givenName ?: loginResponse.user.name,
-                            lastName = account.familyName ?: loginResponse.user.lastName
-                        )
-
-                        Log.d(TAG, "Corrected user with Google data: name='$fullName'")
-
-                        // Guardar sesión del usuario con datos corregidos
-                        AuthManager.saveUserSession(correctedUser, loginResponse)
+                        // Guardar sesión del usuario (el backend ya extrajo los datos del idToken)
+                        AuthManager.saveUserSession(loginResponse.user, loginResponse)
 
                         // Obtener datos completos del usuario desde /api/auth/me
                         lifecycleScope.launch {

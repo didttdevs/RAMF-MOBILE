@@ -30,9 +30,10 @@ interface AuthService {
     
     /**
      * Refrescar token de acceso
+     * El backend espera el refreshToken en el body, no en el header
      */
-    @POST("auth/refresh")
-    suspend fun refreshToken(@Header("Authorization") token: String): Response<ApiResponse<LoginResponse>>
+    @POST("auth/refresh-token")
+    suspend fun refreshToken(@Body body: Map<String, String>): Response<ApiResponse<LoginResponse>>
     
     /**
      * Iniciar sesión con Google
@@ -54,9 +55,12 @@ interface AuthService {
     
     /**
      * Cambiar contraseña
+     * El token se agrega automáticamente por el interceptor de RetrofitClient
      */
-    @POST("auth/change-password")
-    suspend fun changePassword(@Body request: ChangePasswordRequest): Response<ApiResponse<Void>>
+    @PATCH("auth/change-password")
+    suspend fun changePassword(
+        @Body request: ChangePasswordRequest
+    ): Response<ApiResponse<Void>>
     
     /**
      * Resetear contraseña con token
@@ -66,9 +70,10 @@ interface AuthService {
     
     /**
      * Obtener información del usuario autenticado actual
+     * El token se agrega automáticamente por el interceptor de RetrofitClient
      */
     @GET("auth/me")
-    suspend fun getCurrentUser(@Header("Authorization") token: String): Response<User>
+    suspend fun getCurrentUser(): Response<User>
 
     /**
      * Obtener perfil del usuario actual (alternativo)
@@ -94,15 +99,6 @@ interface AuthService {
         @Header("Authorization") token: String,
         @Part avatar: MultipartBody.Part
     ): Response<ApiResponse<Map<String, String>>>
-    
-    /**
-     * Cambiar contraseña del usuario (requiere autenticación)
-     */
-    @PUT("auth/password")
-    suspend fun changePassword(
-        @Header("Authorization") token: String,
-        @Body passwordData: Map<String, String>
-    ): Response<ApiResponse<Void>>
     
     /**
      * Eliminar cuenta del usuario

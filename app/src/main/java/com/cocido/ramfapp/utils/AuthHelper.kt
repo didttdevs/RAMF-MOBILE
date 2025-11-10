@@ -55,9 +55,10 @@ object AuthHelper {
                 try {
                     val refreshToken = AuthManager.getRefreshToken()
                     if (refreshToken != null) {
-                        val response = RetrofitClient.authService.refreshToken("Bearer $refreshToken")
+                        val response = RetrofitClient.authService.refreshToken(mapOf("refreshToken" to refreshToken))
                         
-                        if (response.isSuccessful) {
+                        // El backend retorna 202 Accepted en vez de 200 OK
+                        if (response.code() == 202) {
                             val apiResponse = response.body()
                             if (apiResponse?.success == true && apiResponse.data != null) {
                                 val loginResponse = apiResponse.data

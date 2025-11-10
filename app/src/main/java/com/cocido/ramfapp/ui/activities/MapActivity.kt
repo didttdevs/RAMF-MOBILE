@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -25,6 +26,11 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.material.card.MaterialCardView
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 class MapActivity : BaseActivity(), OnMapReadyCallback {
     
@@ -34,25 +40,47 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
 
     private lateinit var btnBack: ImageButton
     private lateinit var btnNotifications: ImageButton
-    private lateinit var filterContainer: LinearLayout
-    private lateinit var tvSelectedParameter: TextView
+    private lateinit var stationInfoCard: MaterialCardView
+    private lateinit var temperatureContainer: LinearLayout
+    private lateinit var currentConditionsContainer: View
+    private lateinit var precipitationContainer: View
+    private lateinit var tvStationName: TextView
+    private lateinit var tvStationUpdated: TextView
+    private lateinit var tvStationStatus: TextView
+    private lateinit var tvTempCurrent: TextView
+    private lateinit var tvTempMax: TextView
+    private lateinit var tvTempMin: TextView
+    private lateinit var tvHumidity: TextView
+    private lateinit var tvDewPoint: TextView
+    private lateinit var tvPressure: TextView
+    private lateinit var tvWindSpeed: TextView
+    private lateinit var tvWindDirection: TextView
+    private lateinit var tvSolarRadiation: TextView
+    private lateinit var tvRain1h: TextView
+    private lateinit var tvRainToday: TextView
+    private lateinit var tvRain24h: TextView
+    private lateinit var tvRain48h: TextView
+    private lateinit var tvRain7d: TextView
+    private lateinit var btnCloseStationInfo: ImageButton
     
     private lateinit var mMap: GoogleMap
     private lateinit var mapFragment: SupportMapFragment
     private val viewModel: WeatherStationViewModel by viewModels()
     
     private var weatherStations: List<WeatherStation> = listOf()
-    private var selectedParameter = "temperatura"
     private val stationMarkers = mutableMapOf<String, Marker>()
     private val stationWidgetData = mutableMapOf<String, WidgetData>()
+    private val weatherStationMap = mutableMapOf<String, WeatherStation>()
+    private var selectedStationId: String? = null
+    private var highlightedStationId: String? = null
     
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
         private const val TAG = "MapActivity"
         
         // Coordenadas por defecto (Argentina)
-        private val DEFAULT_LOCATION = LatLng(-34.6118, -58.3960) // Buenos Aires
-        private const val DEFAULT_ZOOM = 6f
+        private val FORMOSA_CENTER = LatLng(-24.6000, -60.1000) // Centro aproximado provincia
+        private const val FIXED_ZOOM_FORMOSA = 6.8f
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,8 +102,29 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
     private fun initViews() {
         btnBack = findViewById(R.id.btnBack)
         btnNotifications = findViewById(R.id.btnNotifications)
-        filterContainer = findViewById(R.id.filterContainer)
-        tvSelectedParameter = findViewById(R.id.tvSelectedParameter)
+        stationInfoCard = findViewById(R.id.stationInfoCard)
+        temperatureContainer = findViewById(R.id.temperatureContainer)
+        currentConditionsContainer = findViewById(R.id.currentConditionsContainer)
+        precipitationContainer = findViewById(R.id.precipitationContainer)
+        tvStationName = findViewById(R.id.tvStationName)
+        tvStationUpdated = findViewById(R.id.tvStationUpdated)
+        tvStationStatus = findViewById(R.id.tvStationStatus)
+        tvTempCurrent = findViewById(R.id.tvTempCurrent)
+        tvTempMax = findViewById(R.id.tvTempMax)
+        tvTempMin = findViewById(R.id.tvTempMin)
+        tvHumidity = findViewById(R.id.tvHumidity)
+        tvDewPoint = findViewById(R.id.tvDewPoint)
+        tvPressure = findViewById(R.id.tvPressure)
+        tvWindSpeed = findViewById(R.id.tvWindSpeed)
+        tvWindDirection = findViewById(R.id.tvWindDirection)
+        tvSolarRadiation = findViewById(R.id.tvSolarRadiation)
+        tvRain1h = findViewById(R.id.tvRain1h)
+        tvRainToday = findViewById(R.id.tvRainToday)
+        tvRain24h = findViewById(R.id.tvRain24h)
+        tvRain48h = findViewById(R.id.tvRain48h)
+        tvRain7d = findViewById(R.id.tvRain7d)
+        btnCloseStationInfo = findViewById(R.id.btnCloseStationInfo)
+        stationInfoCard.visibility = View.GONE
     }
 
     private fun setupListeners() {
@@ -87,8 +136,8 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
             Toast.makeText(this, "Notificaciones - En desarrollo", Toast.LENGTH_SHORT).show()
         }
 
-        filterContainer.setOnClickListener {
-            showParameterSelectionDialog()
+        btnCloseStationInfo.setOnClickListener {
+            hideStationInfoCard()
         }
     }
     
@@ -97,8 +146,41 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
             viewModel.weatherStations.collect { stationsState ->
                 if (stationsState.hasData) {
                     weatherStations = stationsState.data!!
+                    weatherStationMap.clear()
+                    weatherStations.forEach { station ->
+                        weatherStationMap[station.id] = station
+                    }
                     addMarkersToMap()
-                    loadWidgetDataForStations()
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            viewModel.widgetData.collect { widgetState ->
+                when {
+                    widgetState.isLoading -> {
+                        if (selectedStationId != null) {
+                            showStationLoading()
+                        }
+                    }
+                    widgetState.hasData -> {
+                        val data = widgetState.data!!
+                        val stationId = findStationIdForWidgetData(data)
+                        if (stationId != null) {
+                            stationWidgetData[stationId] = data
+                            updateMarkerForStation(stationId)
+                            if (selectedStationId == stationId) {
+                                weatherStationMap[stationId]?.let { station ->
+                                    showStationData(station, data)
+                                }
+                            }
+                        }
+                    }
+                    widgetState.error != null -> {
+                        if (selectedStationId != null) {
+                            showStationError(widgetState.error)
+                        }
+                    }
                 }
             }
         }
@@ -113,43 +195,19 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
         }
     }
 
-    private fun showParameterSelectionDialog() {
-        val parameters = arrayOf(
-            "Temperatura del aire",
-            "Humedad relativa", 
-            "Velocidad del viento",
-            "Precipitación",
-            "Radiación solar",
-            "Humedad del suelo"
-        )
-        
-        val parameterKeys = arrayOf(
-            "temperatura",
-            "humedad",
-            "viento",
-            "precipitacion",
-            "radiacion",
-            "humedad_suelo"
-        )
-
-        val builder = androidx.appcompat.app.AlertDialog.Builder(this)
-        builder.setTitle("Seleccionar Parámetro")
-        builder.setItems(parameters) { dialog, which ->
-            tvSelectedParameter.text = parameters[which]
-            selectedParameter = parameterKeys[which]
-            updateMarkersWithParameter(selectedParameter)
-            dialog.dismiss()
-        }
-        builder.show()
-    }
-
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         
         // Configurar el mapa
-        mMap.uiSettings.isZoomControlsEnabled = true
-        mMap.uiSettings.isCompassEnabled = true
-        mMap.uiSettings.isMyLocationButtonEnabled = true
+        mMap.uiSettings.apply {
+            isZoomControlsEnabled = false
+            isCompassEnabled = false
+            isMyLocationButtonEnabled = false
+            isScrollGesturesEnabled = false
+            isZoomGesturesEnabled = false
+            isTiltGesturesEnabled = false
+            isRotateGesturesEnabled = false
+        }
         
         // Solicitar permisos de ubicación
         if (checkLocationPermission()) {
@@ -159,7 +217,14 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
         }
         
         // Configurar la cámara inicial
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(DEFAULT_LOCATION, DEFAULT_ZOOM))
+        mMap.setOnMapLoadedCallback {
+            mMap.moveCamera(
+                CameraUpdateFactory.newLatLngZoom(
+                    FORMOSA_CENTER,
+                    FIXED_ZOOM_FORMOSA
+                )
+            )
+        }
         
         // Configurar listener para marcadores
         mMap.setOnMarkerClickListener { marker ->
@@ -177,32 +242,17 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
         viewModel.fetchWeatherStations()
     }
     
-    private fun loadWidgetDataForStations() {
-        weatherStations.forEach { station ->
-            viewModel.fetchWidgetData(station.id)
-        }
-        
-        // Observar los datos del widget para cada estación
-        lifecycleScope.launch {
-            viewModel.widgetData.collect { widgetState ->
-                if (widgetState.hasData) {
-                    val data = widgetState.data!!
-                    // Encontrar a qué estación pertenecen estos datos
-                    val stationId = findStationIdForWidgetData(data)
-                    if (stationId != null) {
-                        stationWidgetData[stationId] = data
-                        updateMarkerForStation(stationId)
-                    }
-                }
+    private fun findStationIdForWidgetData(widgetData: WidgetData): String? {
+        widgetData.stationName?.let { widgetName ->
+            val normalizedWidgetName = widgetName.trim().lowercase(Locale.getDefault())
+            val matchByName = weatherStations.firstOrNull { station ->
+                station.name?.trim()?.lowercase(Locale.getDefault()) == normalizedWidgetName
+            }
+            if (matchByName != null) {
+                return matchByName.id
             }
         }
-    }
-    
-    private fun findStationIdForWidgetData(widgetData: WidgetData): String? {
-        // En este caso, como el ViewModel maneja una estación a la vez,
-        // necesitamos asociar los datos con la estación correcta
-        // Por simplicidad, asumimos que los datos corresponden a la última estación consultada
-        return weatherStations.firstOrNull()?.id
+        return selectedStationId ?: weatherStations.firstOrNull()?.id
     }
     
     private fun addMarkersToMap() {
@@ -221,104 +271,150 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
                     .position(latLng)
                     .title(station.name ?: "Estación Desconocida")
                     .snippet(getMarkerSnippet(station.id))
-                
-                // Personalizar el ícono según el parámetro seleccionado
-                setMarkerIcon(markerOptions, station.id)
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
                 
                 val marker = mMap.addMarker(markerOptions)
                 marker?.let {
+                    it.tag = station.id
                     stationMarkers[station.id] = it
                 }
             }
+        }
+
+        highlightedStationId?.let { selectedId ->
+            stationMarkers[selectedId]?.setIcon(
+                BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE)
+            )
         }
     }
     
     private fun getMarkerSnippet(stationId: String): String {
         val widgetData = stationWidgetData[stationId]
         if (widgetData != null) {
-            return when (selectedParameter) {
-                "temperatura" -> "${String.format("%.1f", widgetData.temperature)}°C"
-                "humedad" -> "${String.format("%.1f", widgetData.relativeHumidity)}%"
-                "viento" -> "${String.format("%.1f", widgetData.windSpeed)} m/s"
-                "precipitacion" -> "${String.format("%.1f", widgetData.rainLastHour)} mm"
-                "radiacion" -> "${String.format("%.0f", widgetData.solarRadiation)} W/m²"
-                else -> "Datos no disponibles"
-            }
+            val temperature = widgetData.getFormattedTemperature()
+            val humidity = widgetData.getFormattedHumidity()
+            return "$temperature · Humedad $humidity"
         }
-        return "Cargando datos..."
-    }
-    
-    private fun setMarkerIcon(markerOptions: MarkerOptions, stationId: String) {
-        val widgetData = stationWidgetData[stationId]
-        if (widgetData != null) {
-            when (selectedParameter) {
-                "temperatura" -> {
-                    val temp = widgetData.temperature
-                    val hue = when {
-                        temp < 0 -> BitmapDescriptorFactory.HUE_CYAN
-                        temp < 15 -> BitmapDescriptorFactory.HUE_BLUE
-                        temp < 25 -> BitmapDescriptorFactory.HUE_GREEN
-                        temp < 35 -> BitmapDescriptorFactory.HUE_YELLOW
-                        else -> BitmapDescriptorFactory.HUE_RED
-                    }
-                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(hue))
-                }
-                "humedad" -> {
-                    val humidity = widgetData.relativeHumidity
-                    val hue = when {
-                        humidity < 30 -> BitmapDescriptorFactory.HUE_RED
-                        humidity < 60 -> BitmapDescriptorFactory.HUE_YELLOW
-                        humidity < 80 -> BitmapDescriptorFactory.HUE_GREEN
-                        else -> BitmapDescriptorFactory.HUE_BLUE
-                    }
-                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(hue))
-                }
-                else -> markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
-            }
-        } else {
-            markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
-        }
-    }
-    
-    private fun updateMarkersWithParameter(parameter: String) {
-        stationMarkers.forEach { (stationId, marker) ->
-            marker.snippet = getMarkerSnippet(stationId)
-            
-            // Recrear el marcador con el nuevo ícono
-            val position = marker.position
-            val title = marker.title
-            marker.remove()
-            
-            val markerOptions = MarkerOptions()
-                .position(position)
-                .title(title)
-                .snippet(getMarkerSnippet(stationId))
-            
-            setMarkerIcon(markerOptions, stationId)
-            
-            val newMarker = mMap.addMarker(markerOptions)
-            newMarker?.let {
-                stationMarkers[stationId] = it
-            }
-        }
+        return "Toca para ver detalles"
     }
     
     private fun updateMarkerForStation(stationId: String) {
         val marker = stationMarkers[stationId]
-        if (marker != null) {
-            marker.snippet = getMarkerSnippet(stationId)
+        marker?.snippet = getMarkerSnippet(stationId)
+    }
+
+    private fun updateMarkerSelection(newSelectedId: String?) {
+        if (highlightedStationId == newSelectedId) return
+
+        highlightedStationId?.let { previousId ->
+            stationMarkers[previousId]?.setIcon(
+                BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+            )
+        }
+
+        highlightedStationId = newSelectedId
+
+        highlightedStationId?.let { currentId ->
+            stationMarkers[currentId]?.setIcon(
+                BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE)
+            )
+        }
+    }
+
+    private fun showStationBaseInfo(station: WeatherStation) {
+        stationInfoCard.visibility = View.VISIBLE
+        tvStationName.text = station.name ?: station.id
+        tvStationUpdated.text = "Actualizado: --"
+        showStationLoading()
+    }
+
+    private fun showStationLoading() {
+        stationInfoCard.visibility = View.VISIBLE
+        tvStationStatus.visibility = View.VISIBLE
+        tvStationStatus.text = "Cargando datos..."
+        temperatureContainer.visibility = View.GONE
+        currentConditionsContainer.visibility = View.GONE
+        precipitationContainer.visibility = View.GONE
+    }
+
+    private fun showStationData(station: WeatherStation, widgetData: WidgetData) {
+        stationInfoCard.visibility = View.VISIBLE
+        tvStationName.text = station.name ?: widgetData.stationName ?: station.id
+        tvStationUpdated.text = "Actualizado: ${formatTimestamp(widgetData.lastUpdate ?: widgetData.timestamp)}"
+        tvStationStatus.visibility = View.GONE
+        temperatureContainer.visibility = View.VISIBLE
+        currentConditionsContainer.visibility = View.VISIBLE
+        precipitationContainer.visibility = View.VISIBLE
+
+        tvTempCurrent.text = widgetData.getFormattedTemperature()
+        tvTempMax.text = widgetData.getFormattedMaxTemperature()
+        tvTempMin.text = widgetData.getFormattedMinTemperature()
+        tvHumidity.text = widgetData.getFormattedHumidity()
+        tvDewPoint.text = widgetData.getFormattedDewPoint()
+        tvPressure.text = widgetData.getFormattedPressure()
+        tvWindSpeed.text = widgetData.getFormattedWindSpeed()
+        tvWindDirection.text = widgetData.getWindDirectionText()
+        tvSolarRadiation.text = widgetData.getFormattedSolarRadiation()
+        tvRain1h.text = widgetData.getFormattedRainLastHour()
+        tvRainToday.text = widgetData.getFormattedRainToday()
+        tvRain24h.text = widgetData.getFormattedRain24h()
+        tvRain48h.text = widgetData.getFormattedRain48h()
+        tvRain7d.text = widgetData.getFormattedRain7d()
+    }
+
+    private fun showStationError(message: String?) {
+        stationInfoCard.visibility = View.VISIBLE
+        tvStationStatus.visibility = View.VISIBLE
+        tvStationStatus.text = message ?: "No se pudieron cargar los datos"
+        temperatureContainer.visibility = View.GONE
+        currentConditionsContainer.visibility = View.GONE
+        precipitationContainer.visibility = View.GONE
+        tvStationUpdated.text = "Actualizado: --"
+    }
+
+    private fun hideStationInfoCard() {
+        stationInfoCard.visibility = View.GONE
+        selectedStationId = null
+        updateMarkerSelection(null)
+    }
+
+    private fun formatTimestamp(rawTimestamp: String?): String {
+        if (rawTimestamp.isNullOrBlank()) {
+            return "Sin datos"
+        }
+        return try {
+            val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
+            val date = parser.parse(rawTimestamp)
+            val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            formatter.timeZone = TimeZone.getDefault()
+            date?.let { formatter.format(it) } ?: "Sin datos"
+        } catch (ex: Exception) {
+            Log.e(TAG, "Error al formatear fecha: ${ex.message}")
+            "Sin datos"
         }
     }
     
     private fun showStationInfo(marker: Marker) {
-        val stationName = marker.title ?: "Estación Desconocida"
-        val stationData = marker.snippet ?: "Sin datos"
-        
-        Toast.makeText(
-            this,
-            "$stationName\n$stationData",
-            Toast.LENGTH_SHORT
-        ).show()
+        val stationEntry = stationMarkers.entries.firstOrNull { it.value == marker }
+        val stationId = stationEntry?.key
+        if (stationId != null) {
+            val station = weatherStationMap[stationId] ?: weatherStations.firstOrNull { it.id == stationId }
+            if (station != null) {
+                selectedStationId = stationId
+                updateMarkerSelection(stationId)
+                showStationBaseInfo(station)
+                stationWidgetData[stationId]?.let { cachedData ->
+                    showStationData(station, cachedData)
+                }
+                viewModel.fetchWidgetData(stationId)
+            } else {
+                Toast.makeText(this, "Estación no encontrada", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(this, "Estación no encontrada", Toast.LENGTH_SHORT).show()
+        }
     }
     
     private fun checkLocationPermission(): Boolean {
