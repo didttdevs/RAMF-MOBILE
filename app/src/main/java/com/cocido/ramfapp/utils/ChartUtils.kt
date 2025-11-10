@@ -152,7 +152,7 @@ object ChartUtils {
     
     fun createTimeFormatter(): ValueFormatter {
         return object : ValueFormatter() {
-            private val timeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+            private val timeFormatter = SimpleDateFormat("dd-MM HH:mm", Locale.getDefault())
 
             override fun getFormattedValue(value: Float): String {
                 return try {

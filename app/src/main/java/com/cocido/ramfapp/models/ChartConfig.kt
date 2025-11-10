@@ -8,7 +8,8 @@ data class ChartConfig(
     val title: String,
     val parameters: List<ChartParameter>,
     val category: ChartCategory,
-    val description: String? = null
+    val description: String? = null,
+    val axes: List<ChartAxisConfig> = emptyList()
 )
 
 /**
@@ -24,7 +25,24 @@ data class ChartParameter(
     val sourceGroup: ChartDataGroup? = null,
     val valueKey: ChartValueKey? = null,
     val seriesOptions: SeriesOptions = SeriesOptions(),
-    val scaleFactor: Double = 1.0
+    val scaleFactor: Double = 1.0,
+    val axisId: String? = null
+)
+
+data class ChartAxisConfig(
+    val id: String,
+    val position: AxisPosition,
+    val label: String,
+    val unit: String,
+    val color: Int,
+    val min: Double? = null,
+    val max: Double? = null,
+    val labelCount: Int? = null,
+    val labelValues: List<Double>? = null,
+    val formatPattern: String = "#0.##",
+    val scaleFactor: Double = 1.0,
+    val forceZeroInRange: Boolean = false,
+    val overlayPriority: Int = 0
 )
 
 /**

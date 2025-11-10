@@ -1,6 +1,7 @@
 package com.cocido.ramfapp.utils
 
 import android.graphics.Color
+import com.cocido.ramfapp.models.ChartAxisConfig
 import com.cocido.ramfapp.models.ChartCategory
 import com.cocido.ramfapp.models.ChartConfig
 import com.cocido.ramfapp.models.ChartDataGroup
@@ -28,6 +29,17 @@ object ChartConfigFactory {
     private val COLOR_PRECIPITATION = Color.rgb(255, 171, 64)
     private val COLOR_PRESSURE = Color.rgb(96, 125, 139)
     private val COLOR_ET0 = Color.rgb(55, 71, 79)
+
+    private const val AXIS_TEMPERATURE = "axis_temperature"
+    private const val AXIS_HUMIDITY = "axis_humidity"
+    private const val AXIS_RADIATION = "axis_radiation"
+    private const val AXIS_VPD = "axis_vpd"
+    private const val AXIS_PRECIPITATION = "axis_precipitation"
+    private const val AXIS_DELTA_T = "axis_delta_t"
+    private const val AXIS_WIND_SPEED = "axis_wind_speed"
+    private const val AXIS_WIND_DIRECTION = "axis_wind_direction"
+    private const val AXIS_ET0 = "axis_et0"
+    private const val AXIS_PRESSURE = "axis_pressure"
 
     fun getAllCharts(): List<ChartConfig> {
         return listOf(
@@ -73,6 +85,7 @@ object ChartConfigFactory {
                     unit = "%",
                     color = COLOR_HUMIDITY,
                     axisPosition = AxisPosition.RIGHT,
+                    axisId = AXIS_HUMIDITY,
                     sourceGroup = ChartDataGroup.TEMP_HUM,
                     valueKey = ChartValueKey.HUMEDAD,
                     seriesOptions = SeriesOptions(
@@ -86,6 +99,7 @@ object ChartConfigFactory {
                     unit = "°C",
                     color = COLOR_TEMPERATURE,
                     axisPosition = AxisPosition.LEFT,
+                    axisId = AXIS_TEMPERATURE,
                     sourceGroup = ChartDataGroup.TEMP_HUM,
                     valueKey = ChartValueKey.TEMPERATURA,
                     seriesOptions = SeriesOptions(
@@ -99,6 +113,7 @@ object ChartConfigFactory {
                     unit = "W/m²",
                     color = COLOR_RADIATION,
                     axisPosition = AxisPosition.RIGHT,
+                    axisId = AXIS_RADIATION,
                     sourceGroup = ChartDataGroup.RADIACION,
                     valueKey = ChartValueKey.RADIACION_SOLAR,
                     seriesOptions = SeriesOptions(
@@ -115,6 +130,7 @@ object ChartConfigFactory {
                     unit = "kPa",
                     color = COLOR_VPD,
                     axisPosition = AxisPosition.RIGHT,
+                    axisId = AXIS_VPD,
                     sourceGroup = ChartDataGroup.TEMP_HUM,
                     valueKey = ChartValueKey.VPD,
                     seriesOptions = SeriesOptions(
@@ -123,6 +139,62 @@ object ChartConfigFactory {
                         dashedIntervals = floatArrayOf(12f, 6f)
                     ),
                     scaleFactor = 18.0
+                )
+            ),
+            axes = listOf(
+                ChartAxisConfig(
+                    id = AXIS_TEMPERATURE,
+                    position = AxisPosition.LEFT,
+                    label = "Temperatura",
+                    unit = "°C",
+                    color = COLOR_TEMPERATURE,
+                    min = 0.0,
+                    labelCount = 7,
+                    formatPattern = "#0.0",
+                    scaleFactor = 1.0,
+                    forceZeroInRange = true
+                ),
+                ChartAxisConfig(
+                    id = AXIS_HUMIDITY,
+                    position = AxisPosition.RIGHT,
+                    label = "Humedad relativa",
+                    unit = "%",
+                    color = COLOR_HUMIDITY,
+                    min = 0.0,
+                    max = 100.0,
+                    labelCount = 5,
+                    formatPattern = "#0",
+                    scaleFactor = 1.0,
+                    forceZeroInRange = true,
+                    overlayPriority = 0
+                ),
+                ChartAxisConfig(
+                    id = AXIS_RADIATION,
+                    position = AxisPosition.RIGHT,
+                    label = "Radiación solar",
+                    unit = "W/m²",
+                    color = COLOR_RADIATION,
+                    min = 0.0,
+                    max = 1400.0,
+                    labelCount = 6,
+                    formatPattern = "#0",
+                    scaleFactor = 0.075,
+                    forceZeroInRange = true,
+                    overlayPriority = 1
+                ),
+                ChartAxisConfig(
+                    id = AXIS_VPD,
+                    position = AxisPosition.RIGHT,
+                    label = "VPD",
+                    unit = "kPa",
+                    color = COLOR_VPD,
+                    min = 0.0,
+                    max = 2.2,
+                    labelValues = listOf(0.0, 0.55, 1.1, 1.65, 2.2),
+                    formatPattern = "#0.00",
+                    scaleFactor = 18.0,
+                    forceZeroInRange = true,
+                    overlayPriority = 2
                 )
             )
         )
@@ -141,6 +213,7 @@ object ChartConfigFactory {
                     unit = "W/m²",
                     color = COLOR_RADIATION,
                     axisPosition = AxisPosition.LEFT,
+                    axisId = AXIS_RADIATION,
                     sourceGroup = ChartDataGroup.RADIACION,
                     valueKey = ChartValueKey.RADIACION_SOLAR,
                     seriesOptions = SeriesOptions(
@@ -149,6 +222,21 @@ object ChartConfigFactory {
                         fillAlpha = 32,
                         fillColorOverride = COLOR_RADIATION
                     )
+                )
+            ),
+            axes = listOf(
+                ChartAxisConfig(
+                    id = AXIS_RADIATION,
+                    position = AxisPosition.LEFT,
+                    label = "Radiación solar",
+                    unit = "W/m²",
+                    color = COLOR_RADIATION,
+                    min = 0.0,
+                    max = 1400.0,
+                    labelCount = 6,
+                    formatPattern = "#0",
+                    scaleFactor = 1.0,
+                    forceZeroInRange = true
                 )
             )
         )
@@ -167,6 +255,7 @@ object ChartConfigFactory {
                     unit = "mm",
                     color = COLOR_PRECIPITATION,
                     axisPosition = AxisPosition.LEFT,
+                    axisId = AXIS_PRECIPITATION,
                     sourceGroup = ChartDataGroup.LLUVIA,
                     valueKey = ChartValueKey.PRECIPITACION,
                     seriesOptions = SeriesOptions(
@@ -180,6 +269,7 @@ object ChartConfigFactory {
                     unit = "%",
                     color = COLOR_HUMIDITY,
                     axisPosition = AxisPosition.RIGHT,
+                    axisId = AXIS_HUMIDITY,
                     sourceGroup = ChartDataGroup.TEMP_HUM,
                     valueKey = ChartValueKey.HUMEDAD,
                     seriesOptions = SeriesOptions(
@@ -194,6 +284,7 @@ object ChartConfigFactory {
                     unit = "°C",
                     color = COLOR_DELTA_T,
                     axisPosition = AxisPosition.RIGHT,
+                    axisId = AXIS_DELTA_T,
                     sourceGroup = ChartDataGroup.TEMP_HUM,
                     valueKey = ChartValueKey.DELTA_T,
                     seriesOptions = SeriesOptions(
@@ -201,6 +292,48 @@ object ChartConfigFactory {
                         lineWidth = 2.4f
                     ),
                     scaleFactor = 10.0
+                )
+            ),
+            axes = listOf(
+                ChartAxisConfig(
+                    id = AXIS_PRECIPITATION,
+                    position = AxisPosition.LEFT,
+                    label = "Precipitación",
+                    unit = "mm",
+                    color = COLOR_PRECIPITATION,
+                    min = 0.0,
+                    labelCount = 6,
+                    formatPattern = "#0.0",
+                    scaleFactor = 1.0,
+                    forceZeroInRange = true
+                ),
+                ChartAxisConfig(
+                    id = AXIS_HUMIDITY,
+                    position = AxisPosition.RIGHT,
+                    label = "Humedad relativa",
+                    unit = "%",
+                    color = COLOR_HUMIDITY,
+                    min = 0.0,
+                    max = 100.0,
+                    labelCount = 5,
+                    formatPattern = "#0",
+                    scaleFactor = 1.0,
+                    forceZeroInRange = true,
+                    overlayPriority = 0
+                ),
+                ChartAxisConfig(
+                    id = AXIS_DELTA_T,
+                    position = AxisPosition.RIGHT,
+                    label = "Delta T",
+                    unit = "°C",
+                    color = COLOR_DELTA_T,
+                    min = -10.0,
+                    max = 15.0,
+                    labelCount = 6,
+                    formatPattern = "#0.0",
+                    scaleFactor = 10.0,
+                    forceZeroInRange = false,
+                    overlayPriority = 1
                 )
             )
         )
@@ -219,6 +352,7 @@ object ChartConfigFactory {
                     unit = "m/s",
                     color = COLOR_WIND_SPEED,
                     axisPosition = AxisPosition.LEFT,
+                    axisId = AXIS_WIND_SPEED,
                     sourceGroup = ChartDataGroup.VIENTO,
                     valueKey = ChartValueKey.VELOCIDAD_VIENTO,
                     seriesOptions = SeriesOptions(
@@ -232,6 +366,7 @@ object ChartConfigFactory {
                     unit = "m/s",
                     color = COLOR_WIND_GUST,
                     axisPosition = AxisPosition.LEFT,
+                    axisId = AXIS_WIND_SPEED,
                     sourceGroup = ChartDataGroup.VIENTO,
                     valueKey = ChartValueKey.RAFAGA_VIENTO,
                     seriesOptions = SeriesOptions(
@@ -246,12 +381,41 @@ object ChartConfigFactory {
                     unit = "°",
                     color = COLOR_WIND_DIRECTION,
                     axisPosition = AxisPosition.RIGHT,
+                    axisId = AXIS_WIND_DIRECTION,
                     sourceGroup = ChartDataGroup.DIRECCION,
                     valueKey = ChartValueKey.DIRECCION_VIENTO,
                     seriesOptions = SeriesOptions(
                         style = SeriesStyle.LINE,
                         lineWidth = 2.2f
                     )
+                )
+            ),
+            axes = listOf(
+                ChartAxisConfig(
+                    id = AXIS_WIND_SPEED,
+                    position = AxisPosition.LEFT,
+                    label = "Velocidad / Ráfaga",
+                    unit = "m/s",
+                    color = COLOR_WIND_SPEED,
+                    min = 0.0,
+                    max = 30.0,
+                    labelCount = 6,
+                    formatPattern = "#0.0",
+                    scaleFactor = 1.0,
+                    forceZeroInRange = true
+                ),
+                ChartAxisConfig(
+                    id = AXIS_WIND_DIRECTION,
+                    position = AxisPosition.RIGHT,
+                    label = "Dirección del viento",
+                    unit = "°",
+                    color = COLOR_WIND_DIRECTION,
+                    min = 0.0,
+                    max = 360.0,
+                    labelCount = 5,
+                    formatPattern = "#0",
+                    scaleFactor = 1.0,
+                    forceZeroInRange = true
                 )
             )
         )
@@ -270,12 +434,27 @@ object ChartConfigFactory {
                     unit = "mm",
                     color = COLOR_ET0,
                     axisPosition = AxisPosition.LEFT,
+                    axisId = AXIS_ET0,
                     sourceGroup = ChartDataGroup.ET0,
                     valueKey = ChartValueKey.ET0,
                     seriesOptions = SeriesOptions(
                         style = SeriesStyle.LINE,
                         lineWidth = 3f
                     )
+                )
+            ),
+            axes = listOf(
+                ChartAxisConfig(
+                    id = AXIS_ET0,
+                    position = AxisPosition.LEFT,
+                    label = "ET0",
+                    unit = "mm",
+                    color = COLOR_ET0,
+                    min = 0.0,
+                    labelCount = 6,
+                    formatPattern = "#0.00",
+                    scaleFactor = 1.0,
+                    forceZeroInRange = true
                 )
             )
         )
@@ -294,12 +473,28 @@ object ChartConfigFactory {
                     unit = "hPa",
                     color = COLOR_PRESSURE,
                     axisPosition = AxisPosition.LEFT,
+                    axisId = AXIS_PRESSURE,
                     sourceGroup = ChartDataGroup.PRESION,
                     valueKey = ChartValueKey.PRESION,
                     seriesOptions = SeriesOptions(
                         style = SeriesStyle.LINE,
                         lineWidth = 3f
                     )
+                )
+            ),
+            axes = listOf(
+                ChartAxisConfig(
+                    id = AXIS_PRESSURE,
+                    position = AxisPosition.LEFT,
+                    label = "Presión atmosférica",
+                    unit = "hPa",
+                    color = COLOR_PRESSURE,
+                    min = 940.0,
+                    max = 1050.0,
+                    labelCount = 6,
+                    formatPattern = "#0.0",
+                    scaleFactor = 1.0,
+                    forceZeroInRange = false
                 )
             )
         )
