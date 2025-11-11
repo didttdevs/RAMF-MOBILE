@@ -157,7 +157,7 @@ object ChartConfigFactory {
                 ChartAxisConfig(
                     id = AXIS_HUMIDITY,
                     position = AxisPosition.RIGHT,
-                    label = "Humedad relativa",
+                    label = "Humedad",
                     unit = "%",
                     color = COLOR_HUMIDITY,
                     min = 0.0,
@@ -166,12 +166,12 @@ object ChartConfigFactory {
                     formatPattern = "#0",
                     scaleFactor = 1.0,
                     forceZeroInRange = true,
-                    overlayPriority = 0
+                    overlayPriority = 2
                 ),
                 ChartAxisConfig(
                     id = AXIS_RADIATION,
                     position = AxisPosition.RIGHT,
-                    label = "Radiación solar",
+                    label = "Radiación",
                     unit = "W/m²",
                     color = COLOR_RADIATION,
                     min = 0.0,
@@ -180,7 +180,7 @@ object ChartConfigFactory {
                     formatPattern = "#0",
                     scaleFactor = 0.075,
                     forceZeroInRange = true,
-                    overlayPriority = 1
+                    overlayPriority = 0
                 ),
                 ChartAxisConfig(
                     id = AXIS_VPD,
@@ -194,7 +194,7 @@ object ChartConfigFactory {
                     formatPattern = "#0.00",
                     scaleFactor = 18.0,
                     forceZeroInRange = true,
-                    overlayPriority = 2
+                    overlayPriority = 1
                 )
             )
         )

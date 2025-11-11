@@ -26,59 +26,6 @@
             app:navigationIconTint="@android:color/white"
             app:layout_scrollFlags="scroll|enterAlways" />
 
-        <!-- Selector de tipo de vista y filtros de categoría -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@color/formosa_blue_light"
-            android:padding="12dp">
-
-            <!-- Dropdown de selección de gráficos - Material Components -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/chartSelectorLayout"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Seleccionar tipo de gráfico"
-                app:boxBackgroundColor="@android:color/white"
-                app:boxCornerRadiusBottomEnd="16dp"
-                app:boxCornerRadiusBottomStart="16dp"
-                app:boxCornerRadiusTopEnd="16dp"
-                app:boxCornerRadiusTopStart="16dp"
-                app:boxStrokeColor="@color/formosa_blue_primary"
-                app:boxStrokeWidth="2dp"
-                app:endIconMode="dropdown_menu"
-                app:startIconDrawable="@drawable/ic_chart_line"
-                app:startIconTint="@color/formosa_blue_primary"
-                app:hintTextColor="@color/formosa_blue_primary"
-                app:endIconTint="@color/formosa_blue_primary"
-                app:helperText="Elige qué gráficos mostrar"
-                app:helperTextTextColor="@color/text_secondary_gray"
-                android:layout_marginBottom="16dp">
-
-                <AutoCompleteTextView
-                    android:id="@+id/chartSelectorDropdown"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:minHeight="56dp"
-                    android:gravity="center_vertical"
-                    android:text="Todos los gráficos"
-                    android:textColor="@color/text_primary_dark"
-                    android:textSize="16sp"
-                    android:fontFamily="sans-serif-medium"
-                    android:singleLine="true"
-                    android:ellipsize="end" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-
-
-        </LinearLayout>
-
     </com.google.android.material.appbar.AppBarLayout>
 
     <!-- Container principal para evitar superposición -->

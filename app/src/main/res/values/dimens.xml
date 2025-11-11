@@ -3,6 +3,7 @@
     <!-- Dot indicator dimensions -->
     <dimen name="dot_size">8dp</dimen>
     <dimen name="dot_spacing">8dp</dimen>
+    <dimen name="chart_card_height">420dp</dimen>
 </resources>
 
 

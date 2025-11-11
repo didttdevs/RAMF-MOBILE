@@ -222,16 +222,21 @@
                 <!-- Botón de registro -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRegister"
+                    style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
                     android:layout_marginBottom="16dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
                     android:text="Crear Cuenta"
+                    android:textAlignment="center"
+                    android:textColor="@android:color/white"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    android:fontFamily="sans-serif-medium"
-                    app:backgroundTint="@color/formosa_blue_primary"
+                    app:backgroundTint="@color/formosa_blue_accent"
                     app:cornerRadius="12dp"
-                    app:rippleColor="@color/formosa_blue_light" />
+                    app:rippleColor="@color/formosa_blue_light"
+                    app:strokeWidth="0dp" />
 
             </LinearLayout>
 

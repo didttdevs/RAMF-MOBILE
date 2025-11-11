@@ -2,10 +2,10 @@ package com.cocido.ramfapp.ui.activities
 
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.widget.ArrayAdapter
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -13,9 +13,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.cocido.ramfapp.R
 import com.cocido.ramfapp.databinding.ActivityFullScreenChartsBinding
-import com.cocido.ramfapp.models.ChartCategory
 import com.cocido.ramfapp.models.ChartConfig
 import com.cocido.ramfapp.repository.WeatherRepository
 import com.cocido.ramfapp.ui.adapters.MultiChartAdapter
@@ -48,7 +50,6 @@ class FullScreenChartsActivity : BaseActivity() {
     }
     
     private var currentCharts: List<ChartConfig> = emptyList()
-    private var selectedCategory: ChartCategory = ChartCategory.ALL
     private lateinit var createDocumentLauncher: ActivityResultLauncher<String>
     
     companion object {
@@ -63,16 +64,28 @@ class FullScreenChartsActivity : BaseActivity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         binding = ActivityFullScreenChartsBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
+        enterImmersiveMode()
+
         setupToolbar()
-        setupChartSelector()
         setupRecyclerView()
         setupExportButton()
         setupCreateDocumentLauncher()
         observeViewModel()
         loadInitialData()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        enterImmersiveMode()
+    }
+
+    override fun onDestroy() {
+        exitImmersiveMode()
+        super.onDestroy()
     }
     
     private fun setupToolbar() {
@@ -87,29 +100,22 @@ class FullScreenChartsActivity : BaseActivity() {
             onBackPressed()
         }
     }
-    
-    private fun setupChartSelector() {
-        val chartTypes = arrayOf(
-            "Todos",
-            "Temp/Humedad",
-            "Radiación",
-            "Precipitación",
-            "Viento",
-            "Evapotranspiración",
-            "Presión"
-        )
-        
-        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, chartTypes)
-        binding.chartSelectorDropdown.setAdapter(adapter)
-        binding.chartSelectorDropdown.setText(chartTypes[0], false)
-        
-        binding.chartSelectorDropdown.setOnItemClickListener { _, _, position, _ ->
-            val selectedType = chartTypes[position]
-            Log.d(TAG, "Chart type selected: $selectedType")
-            updateChartsForType(selectedType)
+
+    private fun enterImmersiveMode() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, binding.root).apply {
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            hide(WindowInsetsCompat.Type.systemBars())
         }
     }
-    
+
+    private fun exitImmersiveMode() {
+        if (!::binding.isInitialized) return
+        WindowInsetsControllerCompat(window, binding.root).apply {
+            show(WindowInsetsCompat.Type.systemBars())
+        }
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+    }
     
     private fun setupRecyclerView() {
         currentCharts = ChartConfigFactory.getAllCharts()
@@ -222,16 +228,6 @@ class FullScreenChartsActivity : BaseActivity() {
         }
     }
     
-    private fun updateChartsForType(type: String) {
-        currentCharts = ChartConfigFactory.getChartsByType(type)
-        multiChartAdapter.updateCharts(currentCharts)
-        Log.d(TAG, "📊 Updated charts for TYPE '$type':")
-        currentCharts.forEach { chart ->
-            Log.d(TAG, "   - ${chart.title} (${chart.category})")
-        }
-    }
-    
-    
     private fun showChartOptions(chartConfig: ChartConfig) {
         Snackbar.make(
             binding.root,
@@ -245,7 +241,7 @@ class FullScreenChartsActivity : BaseActivity() {
         val uiState = viewModel.uiState.value
         val chartsData = uiState.chartsData
         val weatherData = uiState.weatherData
-
+        
         lifecycleScope.launch {
             try {
                 val result = when {
@@ -256,11 +252,11 @@ class FullScreenChartsActivity : BaseActivity() {
                         dateRange = uiState.dateRangeLabel
                     )
                     weatherData.isNotEmpty() -> ExportUtils.exportWeatherDataToCsv(
-                        context = this@FullScreenChartsActivity,
-                        weatherData = weatherData,
-                        stationName = stationName,
+                    context = this@FullScreenChartsActivity,
+                    weatherData = weatherData,
+                    stationName = stationName,
                         dateRange = uiState.dateRangeLabel
-                    )
+                )
                     else -> {
                         Snackbar.make(
                             binding.root,
@@ -270,7 +266,7 @@ class FullScreenChartsActivity : BaseActivity() {
                         return@launch
                     }
                 }
-
+                
                 when (result) {
                     is ExportUtils.ExportResult.Success -> {
                         pendingExportFile = result.file

@@ -2,6 +2,7 @@ package com.cocido.ramfapp.ui.adapters
 
 import android.graphics.Color
 import android.util.Log
+import android.view.MotionEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,6 +24,8 @@ import com.cocido.ramfapp.models.getPoints
 import com.cocido.ramfapp.utils.ChartUtils
 import com.cocido.ramfapp.ui.views.AxisOverlayEntry
 import com.cocido.ramfapp.ui.views.ChartAxisOverlayView
+import com.cocido.ramfapp.ui.views.ChartMultiValueMarker
+import com.cocido.ramfapp.ui.views.MarkerSeriesInfo
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.Description
 import com.github.mikephil.charting.components.Legend
@@ -32,6 +35,8 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
+import com.github.mikephil.charting.listener.ChartTouchListener.ChartGesture
+import com.github.mikephil.charting.listener.OnChartGestureListener
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -159,6 +164,13 @@ class MultiChartAdapter(
             renderChart(chartConfig, seriesData)
         }
 
+        private fun clearHighlights() {
+            if (!lineChart.isEmpty && lineChart.highlighted != null) {
+                lineChart.highlightValue(null, false)
+                lineChart.invalidate()
+            }
+        }
+
         private fun mapEntriesForParameter(
             chartConfig: ChartConfig,
             parameter: ChartParameter,
@@ -223,6 +235,12 @@ class MultiChartAdapter(
             lineChart.data = lineData
             lineChart.notifyDataSetChanged()
 
+            val markerInfo = buildMarkerSeriesInfo(seriesData)
+            val marker = (lineChart.marker as? ChartMultiValueMarker)
+                ?: ChartMultiValueMarker(lineChart.context).also { lineChart.marker = it }
+            marker.updateSeries(markerInfo)
+            lineChart.setDrawMarkers(true)
+
             configureXAxis(lineChart, seriesData)
 
             val overlayEntries = configureAxes(lineChart, chartConfig, seriesData)
@@ -239,6 +257,26 @@ class MultiChartAdapter(
             val primarySeries = seriesData.firstOrNull { it.parameter.axisPosition == AxisPosition.LEFT }
                 ?: seriesData.first()
             updateStats(primarySeries.dataSet, primarySeries.parameter.unit)
+        }
+
+        private fun buildMarkerSeriesInfo(seriesData: List<SeriesData>): List<MarkerSeriesInfo> {
+            return seriesData.map { series ->
+                val pattern = series.axisConfig?.formatPattern?.takeUnless { it.isBlank() } ?: "#0.##"
+                val formatter = DecimalFormat(pattern)
+                val scaleFactor = sequenceOf(
+                    series.axisConfig?.scaleFactor,
+                    series.parameter.scaleFactor
+                ).firstOrNull { it != null && it != 0.0 } ?: 1.0
+
+                MarkerSeriesInfo(
+                    dataSet = series.dataSet,
+                    label = series.parameter.label,
+                    unit = series.parameter.unit,
+                    color = series.parameter.color,
+                    formatter = formatter,
+                    scaleFactor = scaleFactor
+                )
+            }
         }
 
         private fun createLineDataSet(entries: List<Entry>, parameter: ChartParameter): LineDataSet {
@@ -306,24 +344,34 @@ class MultiChartAdapter(
 
             val leftConfigs = chartConfig.axes.filter { it.position == AxisPosition.LEFT }
             val rightConfigs = chartConfig.axes.filter { it.position == AxisPosition.RIGHT }
+            val sortedRightConfigs = rightConfigs.sortedBy { it.overlayPriority }
 
             applyAxisConfig(
                 chart = chart,
                 axis = chart.axisLeft,
                 config = leftConfigs.firstOrNull(),
                 series = leftSeries,
-                drawGridLines = true
+                drawGridLines = true,
+                suppressLabels = false
             )
+
+            val primaryRightAxisId = chartConfig.parameters.firstOrNull { it.axisPosition == AxisPosition.RIGHT }?.axisId
+            val primaryRightConfig = sortedRightConfigs.firstOrNull { it.id == primaryRightAxisId }
+                ?: sortedRightConfigs.firstOrNull()
+            val primaryRightSeries = primaryRightConfig?.let { config ->
+                rightSeries.filter { it.axisConfig?.id == config.id }
+            } ?: rightSeries
 
             applyAxisConfig(
                 chart = chart,
                 axis = chart.axisRight,
-                config = rightConfigs.firstOrNull(),
-                series = rightSeries,
-                drawGridLines = false
+                config = primaryRightConfig,
+                series = primaryRightSeries,
+                drawGridLines = false,
+                suppressLabels = primaryRightConfig != null
             )
 
-            return buildOverlayEntries(chartConfig, seriesData)
+            return buildOverlayEntries(sortedRightConfigs, seriesData)
         }
 
         private fun applyAxisConfig(
@@ -331,7 +379,8 @@ class MultiChartAdapter(
             axis: YAxis,
             config: ChartAxisConfig?,
             series: List<SeriesData>,
-            drawGridLines: Boolean
+            drawGridLines: Boolean,
+            suppressLabels: Boolean
         ) {
             if (config == null || series.isEmpty()) {
                 axis.isEnabled = series.isNotEmpty()
@@ -346,10 +395,11 @@ class MultiChartAdapter(
             val context = chart.context
 
             axis.isEnabled = true
-            axis.textColor = config.color
+            val textColor = ContextCompat.getColor(context, R.color.chart_text_color)
+            axis.textColor = textColor
             axis.textSize = 10f
-            axis.axisLineColor = config.color
-            axis.axisLineWidth = 1.5f
+            axis.axisLineColor = ContextCompat.getColor(context, R.color.chart_axis_color)
+            axis.axisLineWidth = 1.2f
             axis.setDrawAxisLine(true)
             axis.setDrawGridLines(drawGridLines)
             axis.gridColor = if (drawGridLines) {
@@ -383,6 +433,10 @@ class MultiChartAdapter(
             axis.axisMaximum = maxValue
 
             config.labelCount?.let { axis.setLabelCount(it, true) }
+            axis.setDrawLabels(!suppressLabels)
+            if (suppressLabels) {
+                axis.textColor = textColor
+            }
 
             val drawZeroLine = config.forceZeroInRange && minValue <= 0f && maxValue >= 0f
             axis.setDrawZeroLine(drawZeroLine)
@@ -393,18 +447,12 @@ class MultiChartAdapter(
         }
 
         private fun buildOverlayEntries(
-            chartConfig: ChartConfig,
+            orderedRightConfigs: List<ChartAxisConfig>,
             seriesData: List<SeriesData>
         ): List<AxisOverlayEntry> {
-            val rightAxes = chartConfig.axes.filter { it.position == AxisPosition.RIGHT }
-            if (rightAxes.size <= 1) {
-                return emptyList()
-            }
+            if (orderedRightConfigs.isEmpty()) return emptyList()
 
-            val primaryRightId = rightAxes.first().id
-
-            return rightAxes
-                .filter { it.id != primaryRightId }
+            return orderedRightConfigs
                 .mapNotNull { axisConfig ->
                     val associatedSeries = seriesData.filter { it.axisConfig?.id == axisConfig.id }
                     if (associatedSeries.isEmpty()) return@mapNotNull null
@@ -412,7 +460,6 @@ class MultiChartAdapter(
                     if (ticks.isEmpty()) return@mapNotNull null
                     AxisOverlayEntry(axisConfig, ticks, YAxis.AxisDependency.RIGHT)
                 }
-                .sortedBy { it.config.overlayPriority }
         }
 
         private fun resolveTicks(axisConfig: ChartAxisConfig, series: List<SeriesData>): List<Double> {
@@ -497,12 +544,18 @@ class MultiChartAdapter(
             val stepCount = (maxBucket - minBucket).toInt().coerceAtLeast(1)
             val labelCount = (stepCount + 1).coerceAtMost(12)
 
+            val range = (maxX - minX).coerceAtLeast(interval)
+            val padding = (interval * 0.15).coerceAtMost(range * 0.1)
+            val axisMin = (minX - padding).toFloat().coerceAtLeast(adjustedMin)
+            val axisMax = (maxX + padding).toFloat().coerceAtMost(adjustedMax)
+
             chart.xAxis.apply {
-                axisMinimum = adjustedMin
-                axisMaximum = adjustedMax
+                axisMinimum = axisMin
+                axisMaximum = axisMax
                 granularity = THREE_HOURS_MS
                 isGranularityEnabled = true
                 setLabelCount(labelCount, true)
+                setAvoidFirstLastClipping(true)
             }
         }
 
@@ -524,6 +577,8 @@ class MultiChartAdapter(
                 isDragEnabled = true
                 setScaleEnabled(true)
                 setPinchZoom(true)
+                isHighlightPerTapEnabled = true
+                isHighlightPerDragEnabled = true
                 setDrawGridBackground(false)
                 setBackgroundColor(Color.WHITE)
 
@@ -588,7 +643,48 @@ class MultiChartAdapter(
 
                 // Márgenes base (se ajustan dinámicamente según overlay)
                 setExtraOffsets(12f, 18f, 24f, 28f)
+
+                setOnChartGestureListener(object : OnChartGestureListener {
+                    override fun onChartSingleTapped(me: MotionEvent?) {
+                        if (me == null) return
+                        val highlight = getHighlightByTouchPoint(me.x, me.y)
+                        if (highlight == null) {
+                            clearHighlights()
+                        }
+                    }
+
+                    override fun onChartLongPressed(me: MotionEvent?) {}
+
+                    override fun onChartDoubleTapped(me: MotionEvent?) {}
+
+                    override fun onChartScale(me: MotionEvent?, scaleX: Float, scaleY: Float) {}
+
+                    override fun onChartFling(
+                        me1: MotionEvent?,
+                        me2: MotionEvent?,
+                        velocityX: Float,
+                        velocityY: Float
+                    ) {
+                    }
+
+                    override fun onChartGestureStart(
+                        me: MotionEvent?,
+                        lastPerformedGesture: ChartGesture?
+                    ) {
+                    }
+
+                    override fun onChartGestureEnd(
+                        me: MotionEvent?,
+                        lastPerformedGesture: ChartGesture?
+                    ) {
+                    }
+
+                    override fun onChartTranslate(me: MotionEvent?, dX: Float, dY: Float) {}
+                })
             }
+
+            axisOverlay.setOnClickListener { clearHighlights() }
+            itemView.setOnClickListener { clearHighlights() }
         }
 
         private fun updateStats(dataSet: LineDataSet?, unit: String) {

@@ -60,7 +60,7 @@
         <!-- Contenedor del gráfico con ejes adicionales -->
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="420dp"
+            android:layout_height="@dimen/chart_card_height"
             android:layout_marginBottom="12dp"
             android:clipToPadding="false">
 
