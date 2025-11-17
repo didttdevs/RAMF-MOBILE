@@ -9,7 +9,6 @@
     tools:context=".ui.activities.LoginActivity">
 
     <!-- Logo Container -->
-    <!-- Logo Container -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/logoCard"
         android:layout_width="match_parent"

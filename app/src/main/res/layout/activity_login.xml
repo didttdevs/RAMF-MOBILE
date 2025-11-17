@@ -92,27 +92,29 @@
             android:orientation="vertical"
             android:padding="24dp">
 
-            <!-- Campo de usuario -->
+            <!-- Campo de email -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/usernameLayout"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:hint="Usuario"
+                android:hint="Correo electrónico"
                 app:boxBackgroundColor="@android:color/white"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusTopStart="12dp"
                 app:boxStrokeColor="@color/formosa_blue_accent"
-                app:hintTextColor="@color/formosa_blue_primary">
+                app:hintTextColor="@color/formosa_blue_primary"
+                app:helperText="Ingresá el mismo email con el que te registraste"
+                app:helperTextTextColor="@color/text_secondary_gray">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etUsername"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textPersonName"
+                    android:inputType="textEmailAddress"
                     android:textColor="@color/text_primary_dark"
                     android:textSize="16sp" />
 

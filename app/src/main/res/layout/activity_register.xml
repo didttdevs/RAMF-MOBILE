@@ -8,35 +8,36 @@
     android:background="@drawable/formosa_gradient_professional"
     tools:context=".ui.activities.RegisterActivity">
 
-    <!-- Logo Container -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/logoCard"
-        android:layout_width="140dp"
-        android:layout_height="140dp"
-        android:layout_marginTop="60dp"
-        app:cardBackgroundColor="@android:color/white"
-        app:cardCornerRadius="18dp"
-        app:cardElevation="6dp"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="20dp"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
         app:cardPreventCornerOverlap="false"
-        app:strokeWidth="0dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:strokeWidth="0dp">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:padding="16dp">
+            android:padding="20dp">
 
             <ImageView
-                android:layout_width="108dp"
-                android:layout_height="108dp"
-                android:src="@drawable/lg_ramf"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:scaleType="centerInside"
+                android:src="@drawable/lg_ramf"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@color/white" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -64,15 +65,15 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="24dp"
-        android:layout_marginTop="32dp"
         app:cardBackgroundColor="@android:color/white"
         app:cardCornerRadius="16dp"
         app:cardElevation="8dp"
         app:cardPreventCornerOverlap="false"
-        app:strokeWidth="0dp"
+        android:layout_marginTop="25dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/titleTextView">
+        app:layout_constraintTop_toBottomOf="@+id/titleTextView"
+        app:strokeWidth="0dp">
 
         <ScrollView
             android:layout_width="match_parent"
@@ -94,20 +95,20 @@
                     android:layout_marginBottom="16dp"
                     android:hint="Nombre"
                     app:boxBackgroundColor="@android:color/white"
-                    app:boxCornerRadiusTopStart="12dp"
-                    app:boxCornerRadiusTopEnd="12dp"
-                    app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
-                    app:hintTextColor="@color/formosa_blue_primary"
-                    app:boxStrokeColor="@color/formosa_blue_accent">
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxStrokeColor="@color/formosa_blue_accent"
+                    app:hintTextColor="@color/formosa_blue_primary">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etFirstName"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textPersonName"
-                        android:textSize="16sp"
-                        android:textColor="@color/text_primary_dark" />
+                        android:textColor="@color/text_primary_dark"
+                        android:textSize="16sp" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -120,20 +121,20 @@
                     android:layout_marginBottom="16dp"
                     android:hint="Apellido"
                     app:boxBackgroundColor="@android:color/white"
-                    app:boxCornerRadiusTopStart="12dp"
-                    app:boxCornerRadiusTopEnd="12dp"
-                    app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
-                    app:hintTextColor="@color/formosa_blue_primary"
-                    app:boxStrokeColor="@color/formosa_blue_accent">
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxStrokeColor="@color/formosa_blue_accent"
+                    app:hintTextColor="@color/formosa_blue_primary">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etLastName"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textPersonName"
-                        android:textSize="16sp"
-                        android:textColor="@color/text_primary_dark" />
+                        android:textColor="@color/text_primary_dark"
+                        android:textSize="16sp" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -146,20 +147,22 @@
                     android:layout_marginBottom="16dp"
                     android:hint="Correo electrónico"
                     app:boxBackgroundColor="@android:color/white"
-                    app:boxCornerRadiusTopStart="12dp"
-                    app:boxCornerRadiusTopEnd="12dp"
-                    app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
-                    app:hintTextColor="@color/formosa_blue_primary"
-                    app:boxStrokeColor="@color/formosa_blue_accent">
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxStrokeColor="@color/formosa_blue_accent"
+                    app:helperText="Usa un correo válido, será tu usuario para ingresar"
+                    app:helperTextTextColor="@color/text_secondary_gray"
+                    app:hintTextColor="@color/formosa_blue_primary">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etEmail"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textEmailAddress"
-                        android:textSize="16sp"
-                        android:textColor="@color/text_primary_dark" />
+                        android:textColor="@color/text_primary_dark"
+                        android:textSize="16sp" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -172,22 +175,24 @@
                     android:layout_marginBottom="16dp"
                     android:hint="Contraseña"
                     app:boxBackgroundColor="@android:color/white"
-                    app:boxCornerRadiusTopStart="12dp"
-                    app:boxCornerRadiusTopEnd="12dp"
-                    app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
-                    app:hintTextColor="@color/formosa_blue_primary"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
                     app:boxStrokeColor="@color/formosa_blue_accent"
                     app:endIconMode="password_toggle"
-                    app:endIconTint="@color/formosa_blue_accent">
+                    app:endIconTint="@color/formosa_blue_accent"
+                    app:helperText="Mínimo 8 caracteres con mayúscula, minúscula y número"
+                    app:helperTextTextColor="@color/text_secondary_gray"
+                    app:hintTextColor="@color/formosa_blue_primary">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etPassword"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textPassword"
-                        android:textSize="16sp"
-                        android:textColor="@color/text_primary_dark" />
+                        android:textColor="@color/text_primary_dark"
+                        android:textSize="16sp" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -200,22 +205,24 @@
                     android:layout_marginBottom="24dp"
                     android:hint="Confirmar contraseña"
                     app:boxBackgroundColor="@android:color/white"
-                    app:boxCornerRadiusTopStart="12dp"
-                    app:boxCornerRadiusTopEnd="12dp"
-                    app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
-                    app:hintTextColor="@color/formosa_blue_primary"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
                     app:boxStrokeColor="@color/formosa_blue_accent"
                     app:endIconMode="password_toggle"
-                    app:endIconTint="@color/formosa_blue_accent">
+                    app:endIconTint="@color/formosa_blue_accent"
+                    app:helperText="Repite la contraseña para confirmarla"
+                    app:helperTextTextColor="@color/text_secondary_gray"
+                    app:hintTextColor="@color/formosa_blue_primary">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etConfirmPassword"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textPassword"
-                        android:textSize="16sp"
-                        android:textColor="@color/text_primary_dark" />
+                        android:textColor="@color/text_primary_dark"
+                        android:textSize="16sp" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
