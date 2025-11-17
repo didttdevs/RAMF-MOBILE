@@ -3,13 +3,14 @@ package com.cocido.ramfapp.ui.activities
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.cocido.ramfapp.databinding.ActivityReportEditBinding
 import com.cocido.ramfapp.models.CreateReportRequest
 import com.cocido.ramfapp.models.UpdateReportRequest
 import com.cocido.ramfapp.network.RetrofitClient
+import com.cocido.ramfapp.ui.components.showErrorMessage
+import com.cocido.ramfapp.ui.components.showInfoMessage
 import com.cocido.ramfapp.utils.AuthManager
 import kotlinx.coroutines.launch
 
@@ -159,7 +160,7 @@ class ReportEditActivity : AppCompatActivity() {
     private fun loadReportData() {
         // TODO: Implementar carga de datos del reporte para edición
         // Por ahora, solo mostrar un mensaje
-        Toast.makeText(this, "Cargando datos del reporte...", Toast.LENGTH_SHORT).show()
+        showInfoMessage("Cargando datos del reporte...")
     }
     
     private fun createReport() {
@@ -242,7 +243,7 @@ class ReportEditActivity : AppCompatActivity() {
     }
     
     private fun showError(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        showErrorMessage(message)
     }
     
     override fun onSupportNavigateUp(): Boolean {

@@ -4,10 +4,10 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
-import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.cocido.ramfapp.databinding.ActivityResetPasswordBinding
 import com.cocido.ramfapp.network.RetrofitClient
+import com.cocido.ramfapp.ui.components.showErrorMessage
 import kotlinx.coroutines.launch
 
 /**
@@ -169,7 +169,7 @@ class ResetPasswordActivity : BaseActivity() {
     }
 
     private fun showError(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        showErrorMessage(message)
     }
 
     companion object {

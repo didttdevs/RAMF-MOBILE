@@ -11,7 +11,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 
 import androidx.lifecycle.lifecycleScope
@@ -22,6 +21,9 @@ import com.cocido.ramfapp.models.LoginResponse
 import com.cocido.ramfapp.models.User
 import com.cocido.ramfapp.models.CreateProfileRequest
 import com.cocido.ramfapp.network.RetrofitClient
+import com.cocido.ramfapp.ui.components.showErrorMessage
+import com.cocido.ramfapp.ui.components.showInfoMessage
+import com.cocido.ramfapp.ui.components.showSuccessMessage
 import com.cocido.ramfapp.ui.dialogs.LoginSettingsDialogFragment
 import com.cocido.ramfapp.utils.AuthManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -52,6 +54,7 @@ class LoginActivity : BaseActivity() {
     private lateinit var btnLogin: Button
     private lateinit var btnGoogle: MaterialButton
     private lateinit var tvRegisterLink: TextView
+    private lateinit var forgotPasswordLink: TextView
     private lateinit var btnSettings: ImageView
     private lateinit var googleSignInClient: com.google.android.gms.auth.api.signin.GoogleSignInClient
     private lateinit var sharedPreferences: SharedPreferences
@@ -110,6 +113,7 @@ class LoginActivity : BaseActivity() {
         btnLogin = findViewById(R.id.btnLogin)
         btnGoogle = findViewById(R.id.btnGoogle)
         tvRegisterLink = findViewById(R.id.tvRegisterLink)
+        forgotPasswordLink = findViewById(R.id.forgotPasswordLink)
         btnSettings = findViewById(R.id.btnSettings)
     }
     
@@ -119,7 +123,7 @@ class LoginActivity : BaseActivity() {
             val password = etPassword.text.toString().trim()
 
             if (username.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this, "Por favor, ingrese usuario y contraseña", Toast.LENGTH_SHORT).show()
+                showInfoMessage("Ingresá tu email y contraseña para continuar")
                 return@setOnClickListener
             }
 
@@ -134,6 +138,10 @@ class LoginActivity : BaseActivity() {
         // Agrega el evento para ir a la pantalla de registro
         tvRegisterLink.setOnClickListener {
             goToRegisterActivity()
+        }
+
+        forgotPasswordLink.setOnClickListener {
+            startActivity(Intent(this, ForgotPasswordActivity::class.java))
         }
         
         // Agrega el evento para cambiar layout
@@ -180,7 +188,7 @@ class LoginActivity : BaseActivity() {
         val message = intent.getStringExtra("message")
         
         if (sessionExpired && !message.isNullOrEmpty()) {
-            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+            showInfoMessage(message)
         }
     }
 
@@ -200,7 +208,7 @@ class LoginActivity : BaseActivity() {
                         // Validar que el token no esté vacío
                         if (loginResponse.accessToken.isBlank()) {
                             Log.e("LoginActivity", "Login response received but accessToken is empty")
-                            Toast.makeText(this@LoginActivity, "Error: Token de acceso vacío", Toast.LENGTH_LONG).show()
+                            showErrorMessage("Error: Token de acceso vacío")
                             return@launch
                         }
                         
@@ -214,7 +222,7 @@ class LoginActivity : BaseActivity() {
                         val savedToken = AuthManager.getAccessToken()
                         if (savedToken.isNullOrBlank()) {
                             Log.e("LoginActivity", "Token not saved correctly after login")
-                            Toast.makeText(this@LoginActivity, "Error al guardar sesión", Toast.LENGTH_LONG).show()
+                            showErrorMessage("Error al guardar sesión")
                             return@launch
                         }
 
@@ -231,11 +239,11 @@ class LoginActivity : BaseActivity() {
                             }
                         }
 
-                        Toast.makeText(this@LoginActivity, "Login exitoso", Toast.LENGTH_SHORT).show()
+                        showSuccessMessage("Login exitoso")
                         goToMainActivity()
                     } else {
                         Log.e("LoginActivity", "Login response body is null")
-                        Toast.makeText(this@LoginActivity, "Error en login: Respuesta inválida", Toast.LENGTH_LONG).show()
+                        showErrorMessage("Error en login: respuesta inválida")
                     }
                 } else {
                     val errorMessage = when (response.code()) {
@@ -244,10 +252,10 @@ class LoginActivity : BaseActivity() {
                         404 -> "Usuario no encontrado"
                         else -> "Error en login: ${response.code()} - ${response.message()}"
                     }
-                    Toast.makeText(this@LoginActivity, errorMessage, Toast.LENGTH_LONG).show()
+                    showErrorMessage(errorMessage)
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@LoginActivity, "Error de conexión: ${e.message}", Toast.LENGTH_LONG).show()
+                showErrorMessage("Error de conexión: ${e.message}")
             }
         }
     }
@@ -258,7 +266,7 @@ class LoginActivity : BaseActivity() {
             val signInIntent = googleSignInClient.signInIntent
             googleSignInLauncher.launch(signInIntent)
         } catch (e: Exception) {
-            Toast.makeText(this, "Error al iniciar Google Sign-In: ${e.message}", Toast.LENGTH_LONG).show()
+            showErrorMessage("Error al iniciar Google Sign-In: ${e.message}")
         }
     }
 
@@ -268,7 +276,7 @@ class LoginActivity : BaseActivity() {
             val task: Task<GoogleSignInAccount> = GoogleSignIn.getSignedInAccountFromIntent(data)
             handleSignInResult(task)
         } catch (e: Exception) {
-            Toast.makeText(this, "Error procesando resultado de Google: ${e.message}", Toast.LENGTH_LONG).show()
+            showErrorMessage("Error procesando resultado de Google: ${e.message}")
         }
     }
 
@@ -281,7 +289,7 @@ class LoginActivity : BaseActivity() {
             val idToken = account.idToken // El token de Google para la autenticación
             // Aquí puedes enviar el idToken a tu backend para la verificación
 
-            Toast.makeText(this, "Login exitoso con Google", Toast.LENGTH_SHORT).show()
+            showSuccessMessage("Login exitoso con Google")
             // Ahora guarda el usuario y token de Google
             saveGoogleUserData(account)
 
@@ -296,7 +304,7 @@ class LoginActivity : BaseActivity() {
                 else -> "Error de Google Sign-In (${e.statusCode}): ${e.message}"
             }
 
-            Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+            showErrorMessage(errorMessage)
         }
     }
 
@@ -313,7 +321,7 @@ class LoginActivity : BaseActivity() {
         // El backend solo espera el idToken, extrae el resto del payload del token
         val idToken = account.idToken
         if (idToken.isNullOrEmpty()) {
-            Toast.makeText(this@LoginActivity, "Error: No se obtuvo token de Google", Toast.LENGTH_LONG).show()
+            showErrorMessage("Error: No se obtuvo token de Google")
             return
         }
 
@@ -349,11 +357,11 @@ class LoginActivity : BaseActivity() {
                             }
                         }
 
-                        Toast.makeText(this@LoginActivity, "Login exitoso con Google", Toast.LENGTH_SHORT).show()
+                        showSuccessMessage("Login exitoso con Google")
                         goToMainActivity()
                     } else {
                         Log.e(TAG, "Google login failed: Response body is null")
-                        Toast.makeText(this@LoginActivity, "Error: Respuesta vacía del servidor", Toast.LENGTH_LONG).show()
+                        showErrorMessage("Error: Respuesta vacía del servidor")
                     }
                 } else {
                     Log.e(TAG, "Google login failed: HTTP ${response.code()} - ${response.message()}")
@@ -364,11 +372,11 @@ class LoginActivity : BaseActivity() {
                         500 -> "Error interno del servidor"
                         else -> "Error en login con Google: ${response.code()} - ${response.message()}"
                     }
-                    Toast.makeText(this@LoginActivity, errorMessage, Toast.LENGTH_LONG).show()
+                    showErrorMessage(errorMessage)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Google login exception", e)
-                Toast.makeText(this@LoginActivity, "Error de conexión: ${e.message}", Toast.LENGTH_LONG).show()
+                showErrorMessage("Error de conexión: ${e.message}")
             }
         }
     }

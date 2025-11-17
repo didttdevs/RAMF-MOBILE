@@ -129,12 +129,12 @@
     <color name="md_theme_light_surfaceContainerHighest">#E0E0E0</color>
     
     <!-- Button State Colors -->
-    <color name="button_text_color">#1976D2</color>
+    <color name="button_text_color">#FFFFFF</color>
     <color name="button_text_color_disabled">#BDBDBD</color>
-    <color name="button_background_color">#E3F2FD</color>
-    <color name="button_background_color_pressed">#BBDEFB</color>
-    <color name="button_background_color_disabled">#F5F5F5</color>
-    <color name="button_stroke_color">#1976D2</color>
-    <color name="button_stroke_color_disabled">#E0E0E0</color>
+    <color name="button_background_color">@color/formosa_blue_accent</color>
+    <color name="button_background_color_pressed">@color/formosa_blue_dark</color>
+    <color name="button_background_color_disabled">@color/formosa_blue_light</color>
+    <color name="button_stroke_color">#2E5BBA</color>
+    <color name="button_stroke_color_disabled">#BCCADF</color>
     
 </resources>

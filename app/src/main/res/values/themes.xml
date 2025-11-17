@@ -53,20 +53,28 @@
         <item name="android:windowTranslucentNavigation">false</item>
     </style>
     
-    <!-- Material 3 Button Theme -->
-    <style name="Widget.Material3.Button" parent="Widget.Material3.Button">
-        <item name="backgroundTint">@color/button_background_color_selector</item>
-        <item name="android:textColor">@color/button_text_color_selector</item>
-        <item name="strokeColor">@color/button_stroke_color_selector</item>
+    <style name="Button.Ramf.Primary" parent="Widget.MaterialComponents.Button">
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">@color/button_text_color</item>
+        <item name="backgroundTint">@color/button_primary_background</item>
+        <item name="cornerRadius">12dp</item>
         <item name="rippleColor">@color/formosa_blue_light</item>
+        <item name="android:paddingLeft">16dp</item>
+        <item name="android:paddingRight">16dp</item>
     </style>
     
-    <!-- Material 3 Outlined Button Theme -->
-    <style name="Widget.Material3.Button.OutlinedButton" parent="Widget.Material3.Button.OutlinedButton">
-        <item name="backgroundTint">@color/button_background_color_selector</item>
-        <item name="android:textColor">@color/button_text_color_selector</item>
-        <item name="strokeColor">@color/button_stroke_color_selector</item>
+    <style name="Button.Ramf.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">@color/formosa_blue_primary</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="strokeColor">@color/formosa_blue_primary</item>
+        <item name="strokeWidth">2dp</item>
         <item name="rippleColor">@color/formosa_blue_light</item>
+        <item name="backgroundTint">@android:color/transparent</item>
     </style>
     
     <!-- Material 3 Text Button Theme -->

@@ -8,7 +8,6 @@ import android.view.View
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -27,6 +26,8 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.card.MaterialCardView
+import com.cocido.ramfapp.ui.components.showErrorMessage
+import com.cocido.ramfapp.ui.components.showInfoMessage
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -133,7 +134,7 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
         }
 
         btnNotifications.setOnClickListener {
-            Toast.makeText(this, "Notificaciones - En desarrollo", Toast.LENGTH_SHORT).show()
+            showInfoMessage("Notificaciones en desarrollo")
         }
 
         btnCloseStationInfo.setOnClickListener {
@@ -188,7 +189,7 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
         lifecycleScope.launch {
             viewModel.uiState.collect { uiState ->
                 uiState.error?.let { errorMessage ->
-                    Toast.makeText(this@MapActivity, errorMessage, Toast.LENGTH_LONG).show()
+                    showErrorMessage(errorMessage)
                     Log.e(TAG, "Error: $errorMessage")
                 }
             }
@@ -410,10 +411,10 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
                 }
                 viewModel.fetchWidgetData(stationId)
             } else {
-                Toast.makeText(this, "Estación no encontrada", Toast.LENGTH_SHORT).show()
+                showInfoMessage("Estación no encontrada")
             }
         } else {
-            Toast.makeText(this, "Estación no encontrada", Toast.LENGTH_SHORT).show()
+            showInfoMessage("Estación no encontrada")
         }
     }
     
@@ -454,11 +455,7 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
                     grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     enableMyLocation()
                 } else {
-                    Toast.makeText(
-                        this,
-                        "Permiso de ubicación denegado",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    showErrorMessage("Permiso de ubicación denegado")
                 }
             }
         }

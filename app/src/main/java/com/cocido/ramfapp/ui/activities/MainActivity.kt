@@ -20,6 +20,7 @@ import com.cocido.ramfapp.utils.Constants as UtilConstants
 import com.cocido.ramfapp.models.*
 import com.cocido.ramfapp.ui.activities.FullScreenChartsActivity
 import com.cocido.ramfapp.utils.AuthManager
+import com.cocido.ramfapp.ui.components.showErrorMessage
 import com.cocido.ramfapp.utils.SecurityLogger
 import com.cocido.ramfapp.viewmodels.WeatherStationViewModel
 import com.google.android.material.card.MaterialCardView
@@ -263,7 +264,7 @@ class MainActivity : BaseActivity() {
             "Configuración" -> "Configuración - En desarrollo"
             else -> "$featureName - Funcionalidad limitada por la API"
         }
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        showErrorMessage(message)
         Log.d(TAG, "Feature in development accessed: $featureName")
     }
 
@@ -468,7 +469,7 @@ class MainActivity : BaseActivity() {
     private fun handleError(error: String) {
         if (error.isNotEmpty()) {
             // Show user-friendly error message
-            Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+            showErrorMessage(error)
             Log.e(TAG, "UI Error: $error")
 
             // Log security event for error tracking

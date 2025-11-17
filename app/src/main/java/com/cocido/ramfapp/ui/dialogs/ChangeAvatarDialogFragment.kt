@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.ViewModelProvider
@@ -18,6 +17,9 @@ import com.cocido.ramfapp.databinding.DialogChangeAvatarBinding
 import com.cocido.ramfapp.utils.AuthManager
 import com.cocido.ramfapp.viewmodels.ProfileViewModel
 import com.cocido.ramfapp.viewmodels.ProfileViewModelFactory
+import com.cocido.ramfapp.ui.components.showErrorMessage
+import com.cocido.ramfapp.ui.components.showInfoMessage
+import com.cocido.ramfapp.ui.components.showSuccessMessage
 
 /**
  * Dialog fragment para cambiar el avatar del usuario
@@ -76,7 +78,7 @@ class ChangeAvatarDialogFragment : DialogFragment() {
     private fun setupListeners() {
         binding.btnTakePhoto.setOnClickListener {
             // TODO: Implement camera capture
-            Toast.makeText(requireContext(), "Funcionalidad de cámara próximamente", Toast.LENGTH_SHORT).show()
+            requireContext().showInfoMessage("Funcionalidad de cámara próximamente")
         }
         
         binding.btnChooseFromGallery.setOnClickListener {
@@ -135,13 +137,13 @@ class ChangeAvatarDialogFragment : DialogFragment() {
                 is com.cocido.ramfapp.utils.Resource.Success -> {
                     binding.btnSaveAvatar.isEnabled = true
                     binding.btnSaveAvatar.text = "Guardar"
-                    Toast.makeText(requireContext(), "Avatar actualizado correctamente", Toast.LENGTH_SHORT).show()
+                    requireContext().showSuccessMessage("Avatar actualizado correctamente")
                     dismiss()
                 }
                 is com.cocido.ramfapp.utils.Resource.Error -> {
                     binding.btnSaveAvatar.isEnabled = true
                     binding.btnSaveAvatar.text = "Guardar"
-                    Toast.makeText(requireContext(), "Error: ${state.message}", Toast.LENGTH_LONG).show()
+                    requireContext().showErrorMessage("Error: ${state.message}")
                 }
                 else -> {}
             }

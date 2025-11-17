@@ -57,15 +57,16 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"
-                        android:hint="Título del Reporte"
                         app:startIconDrawable="@drawable/ic_title"
                         app:helperText="Mínimo 5 caracteres"
-                        app:helperTextTextColor="@color/text_secondary_gray">
+                        app:helperTextTextColor="@color/text_secondary_gray"
+                        app:hintEnabled="false">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etTitle"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:hint="Título del Reporte"
                             android:inputType="textCapSentences"
                             android:maxLines="2"
                             android:maxLength="100" />
@@ -78,15 +79,16 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"
-                        android:hint="Descripción"
                         app:startIconDrawable="@drawable/ic_description"
                         app:helperText="Mínimo 10 caracteres"
-                        app:helperTextTextColor="@color/text_secondary_gray">
+                        app:helperTextTextColor="@color/text_secondary_gray"
+                        app:hintEnabled="false">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etDescription"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:hint="Descripción"
                             android:inputType="textCapSentences|textMultiLine"
                             android:maxLines="5"
                             android:maxLength="1000" />
@@ -99,15 +101,16 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"
-                        android:hint="Estación"
                         app:startIconDrawable="@drawable/ic_location"
                         app:helperText="Nombre de la estación meteorológica"
-                        app:helperTextTextColor="@color/text_secondary_gray">
+                        app:helperTextTextColor="@color/text_secondary_gray"
+                        app:hintEnabled="false">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etStation"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:hint="Estación"
                             android:inputType="textCapWords"
                             android:maxLines="1"
                             android:maxLength="50" />

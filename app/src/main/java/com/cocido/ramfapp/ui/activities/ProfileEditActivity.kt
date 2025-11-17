@@ -9,7 +9,6 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -24,6 +23,9 @@ import com.cocido.ramfapp.databinding.ActivityProfileEditBinding
 import com.cocido.ramfapp.models.User
 import com.cocido.ramfapp.models.UpdateProfileRequest
 import com.cocido.ramfapp.repository.ProfileRepository
+import com.cocido.ramfapp.ui.components.showErrorMessage
+import com.cocido.ramfapp.ui.components.showInfoMessage
+import com.cocido.ramfapp.ui.components.showSuccessMessage
 import com.cocido.ramfapp.utils.TokenManager
 import com.cocido.ramfapp.utils.ImageUtils
 import com.cocido.ramfapp.viewmodels.ProfileViewModel
@@ -180,7 +182,7 @@ class ProfileEditActivity : BaseActivity() {
                 }
                 is com.cocido.ramfapp.utils.Resource.Success -> {
                     showLoading(false)
-                    Toast.makeText(this, "Perfil actualizado exitosamente", Toast.LENGTH_SHORT).show()
+                    showSuccessMessage("Perfil actualizado exitosamente")
                     setResult(RESULT_OK)
                     finish()
                 }
@@ -199,7 +201,7 @@ class ProfileEditActivity : BaseActivity() {
                 }
                 is com.cocido.ramfapp.utils.Resource.Success -> {
                     showLoading(false)
-                    Toast.makeText(this, "Contraseña cambiada exitosamente", Toast.LENGTH_SHORT).show()
+                    showSuccessMessage("Contraseña cambiada exitosamente")
                 }
                 is com.cocido.ramfapp.utils.Resource.Error -> {
                     showLoading(false)
@@ -216,7 +218,7 @@ class ProfileEditActivity : BaseActivity() {
                 }
                 is com.cocido.ramfapp.utils.Resource.Success -> {
                     showLoading(false)
-                    Toast.makeText(this, "Avatar actualizado exitosamente", Toast.LENGTH_SHORT).show()
+                    showSuccessMessage("Avatar actualizado exitosamente")
                 }
                 is com.cocido.ramfapp.utils.Resource.Error -> {
                     showLoading(false)
@@ -233,7 +235,7 @@ class ProfileEditActivity : BaseActivity() {
                 }
                 is com.cocido.ramfapp.utils.Resource.Success -> {
                     showLoading(false)
-                    Toast.makeText(this, "Cuenta eliminada exitosamente", Toast.LENGTH_SHORT).show()
+                    showSuccessMessage("Cuenta eliminada exitosamente")
                     // Navegar al login
                     val intent = Intent(this, LoginActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -372,7 +374,7 @@ class ProfileEditActivity : BaseActivity() {
     
     private fun showChangePasswordDialog() {
         // TODO: Implementar diálogo de cambio de contraseña
-        Toast.makeText(this, "Cambio de contraseña próximamente", Toast.LENGTH_SHORT).show()
+        showInfoMessage("Cambio de contraseña próximamente")
     }
     
     private fun showImageSourceDialog() {
@@ -457,7 +459,7 @@ class ProfileEditActivity : BaseActivity() {
     }
     
     private fun showError(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        showErrorMessage(message)
     }
     
     override fun onSupportNavigateUp(): Boolean {

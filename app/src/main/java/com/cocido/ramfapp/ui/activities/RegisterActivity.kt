@@ -6,7 +6,6 @@ import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
-import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import com.cocido.ramfapp.R
@@ -14,6 +13,9 @@ import com.cocido.ramfapp.models.LoginResponse
 import com.cocido.ramfapp.models.RegisterRequest
 import com.cocido.ramfapp.network.RetrofitClient
 import com.cocido.ramfapp.utils.AuthManager
+import com.cocido.ramfapp.ui.components.showErrorMessage
+import com.cocido.ramfapp.ui.components.showInfoMessage
+import com.cocido.ramfapp.ui.components.showSuccessMessage
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -67,37 +69,37 @@ class RegisterActivity : BaseActivity() {
 
     private fun validateFields(firstName: String, lastName: String, email: String, password: String): Boolean {
         if (firstName.isEmpty()) {
-            Toast.makeText(this, "Por favor, ingrese su nombre", Toast.LENGTH_SHORT).show()
+            showInfoMessage("Por favor, ingresa tu nombre")
             return false
         }
 
         if (lastName.isEmpty()) {
-            Toast.makeText(this, "Por favor, ingrese su apellido", Toast.LENGTH_SHORT).show()
+            showInfoMessage("Por favor, ingresa tu apellido")
             return false
         }
 
         if (email.isEmpty()) {
-            Toast.makeText(this, "Por favor, ingrese su email", Toast.LENGTH_SHORT).show()
+            showInfoMessage("Por favor, ingresa tu email")
             return false
         }
 
         if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            Toast.makeText(this, "Por favor, ingrese un email válido", Toast.LENGTH_SHORT).show()
+            showInfoMessage("Por favor, ingresa un email válido")
             return false
         }
 
         if (password.isEmpty()) {
-            Toast.makeText(this, "Por favor, ingrese su contraseña", Toast.LENGTH_SHORT).show()
+            showInfoMessage("Por favor, ingresa tu contraseña")
             return false
         }
 
         if (password.length < 8) {
-            Toast.makeText(this, "La contraseña debe tener al menos 8 caracteres", Toast.LENGTH_SHORT).show()
+            showInfoMessage("La contraseña debe tener al menos 8 caracteres")
             return false
         }
         
         if (!isValidPassword(password)) {
-            Toast.makeText(this, "La contraseña debe contener al menos una mayúscula, una minúscula y un número", Toast.LENGTH_LONG).show()
+            showInfoMessage("Incluí al menos una mayúscula, una minúscula y un número")
             return false
         }
 
@@ -119,7 +121,7 @@ class RegisterActivity : BaseActivity() {
                 val response = RetrofitClient.authService.register(registerRequest)
                 
                 if (response.isSuccessful) {
-                    Toast.makeText(this@RegisterActivity, "Cuenta creada exitosamente. Ahora puedes iniciar sesión.", Toast.LENGTH_LONG).show()
+                    showSuccessMessage("Cuenta creada exitosamente. Ahora puedes iniciar sesión.")
                     goToLoginActivity()
                 } else {
                     val errorMessage = when (response.code()) {
@@ -128,10 +130,10 @@ class RegisterActivity : BaseActivity() {
                         422 -> "Datos inválidos. Verifica la información ingresada"
                         else -> "Error en registro: ${response.message()}"
                     }
-                    Toast.makeText(this@RegisterActivity, errorMessage, Toast.LENGTH_LONG).show()
+                    showErrorMessage(errorMessage)
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@RegisterActivity, "Error de conexión: ${e.message}", Toast.LENGTH_LONG).show()
+                showErrorMessage("Error de conexión: ${e.message}")
             }
         }
     }

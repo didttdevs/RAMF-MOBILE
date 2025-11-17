@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.cocido.ramfapp.R
+import com.cocido.ramfapp.ui.components.showInfoMessage
 import com.cocido.ramfapp.utils.AuthManager
 import kotlinx.coroutines.launch
 
@@ -132,8 +133,7 @@ class UserProfileActivity : BaseActivity() {
     
     
     private fun openPrivacySettings() {
-        // Funcionalidad de configuración de privacidad
-        android.widget.Toast.makeText(this, "Configuración de privacidad", android.widget.Toast.LENGTH_SHORT).show()
+        showInfoMessage("Configuración de privacidad próximamente")
     }
     
     companion object {

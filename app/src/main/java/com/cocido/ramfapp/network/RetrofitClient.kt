@@ -70,7 +70,7 @@ object RetrofitClient {
         val publicEndpoints = listOf(
             "/auth/login",
             "/auth/register",
-            "/auth/forgot-password",
+            "/auth/request-password-reset",
             "/auth/reset-password",
             "/auth/login/google",
             "/stations",

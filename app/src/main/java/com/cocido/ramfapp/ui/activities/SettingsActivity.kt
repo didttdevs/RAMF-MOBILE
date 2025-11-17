@@ -3,13 +3,15 @@ package com.cocido.ramfapp.ui.activities
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.cocido.ramfapp.R
 import com.cocido.ramfapp.adapters.SettingsAdapter
 import com.cocido.ramfapp.databinding.ActivitySettingsBinding
 import com.cocido.ramfapp.models.SettingsItem
+import com.cocido.ramfapp.ui.components.showErrorMessage
+import com.cocido.ramfapp.ui.components.showInfoMessage
+import com.cocido.ramfapp.ui.components.showSuccessMessage
 import com.cocido.ramfapp.utils.TokenManager
 import com.cocido.ramfapp.utils.SharedPreferencesManager
 import kotlinx.coroutines.launch
@@ -292,32 +294,32 @@ class SettingsActivity : BaseActivity() {
     
     private fun navigateToNotifications() {
         // TODO: Implementar configuración de notificaciones
-        Toast.makeText(this, "Configuración de notificaciones próximamente", Toast.LENGTH_SHORT).show()
+        showInfoMessage("Configuración de notificaciones próximamente")
     }
     
     private fun navigateToLanguage() {
         // TODO: Implementar selección de idioma
-        Toast.makeText(this, "Selección de idioma próximamente", Toast.LENGTH_SHORT).show()
+        showInfoMessage("Selección de idioma próximamente")
     }
     
     private fun navigateToSync() {
         // TODO: Implementar sincronización
-        Toast.makeText(this, "Sincronización próximamente", Toast.LENGTH_SHORT).show()
+        showInfoMessage("Sincronización próximamente")
     }
     
     private fun navigateToStorage() {
         // TODO: Implementar gestión de almacenamiento
-        Toast.makeText(this, "Gestión de almacenamiento próximamente", Toast.LENGTH_SHORT).show()
+        showInfoMessage("Gestión de almacenamiento próximamente")
     }
     
     private fun navigateToExport() {
         // TODO: Implementar exportación de datos
-        Toast.makeText(this, "Exportación de datos próximamente", Toast.LENGTH_SHORT).show()
+        showInfoMessage("Exportación de datos próximamente")
     }
     
     private fun navigateToContact() {
         // ContactActivity eliminado - no es core para app móvil
-        Toast.makeText(this, "Contacto próximamente", Toast.LENGTH_SHORT).show()
+        showInfoMessage("Contacto próximamente")
     }
     
     private fun navigateToTutorial() {
@@ -327,28 +329,28 @@ class SettingsActivity : BaseActivity() {
     
     private fun navigateToPrivacy() {
         // TODO: Implementar política de privacidad
-        Toast.makeText(this, "Política de privacidad próximamente", Toast.LENGTH_SHORT).show()
+        showInfoMessage("Política de privacidad próximamente")
     }
     
     private fun navigateToTerms() {
         // TODO: Implementar términos y condiciones
-        Toast.makeText(this, "Términos y condiciones próximamente", Toast.LENGTH_SHORT).show()
+        showInfoMessage("Términos y condiciones próximamente")
     }
     
     private fun navigateToAbout() {
         // AboutActivity eliminado - no es core para app móvil
-        Toast.makeText(this, "Acerca de próximamente", Toast.LENGTH_SHORT).show()
+        showInfoMessage("Acerca de próximamente")
     }
     
     private fun toggleTheme(enabled: Boolean) {
         sharedPrefs.setDarkThemeEnabled(enabled)
         // TODO: Aplicar tema inmediatamente
-        Toast.makeText(this, "Tema ${if (enabled) "oscuro" else "claro"} activado", Toast.LENGTH_SHORT).show()
+        showSuccessMessage("Tema ${if (enabled) "oscuro" else "claro"} activado")
     }
     
     private fun toggleOfflineMode(enabled: Boolean) {
         sharedPrefs.setOfflineModeEnabled(enabled)
-        Toast.makeText(this, "Modo offline ${if (enabled) "activado" else "desactivado"}", Toast.LENGTH_SHORT).show()
+        showInfoMessage("Modo offline ${if (enabled) "activado" else "desactivado"}")
     }
     
     private fun showLogoutDialog() {
@@ -389,7 +391,7 @@ class SettingsActivity : BaseActivity() {
                 finish()
                 
             } catch (e: Exception) {
-                Toast.makeText(this@SettingsActivity, "Error al cerrar sesión: ${e.message}", Toast.LENGTH_LONG).show()
+                showErrorMessage("Error al cerrar sesión: ${e.message}")
             } finally {
                 showLoading(false)
             }
@@ -402,10 +404,10 @@ class SettingsActivity : BaseActivity() {
                 showLoading(true)
                 
                 // TODO: Implementar eliminación de cuenta
-                Toast.makeText(this@SettingsActivity, "Eliminación de cuenta próximamente", Toast.LENGTH_LONG).show()
+                showInfoMessage("Eliminación de cuenta próximamente")
                 
             } catch (e: Exception) {
-                Toast.makeText(this@SettingsActivity, "Error al eliminar cuenta: ${e.message}", Toast.LENGTH_LONG).show()
+                showErrorMessage("Error al eliminar cuenta: ${e.message}")
             } finally {
                 showLoading(false)
             }

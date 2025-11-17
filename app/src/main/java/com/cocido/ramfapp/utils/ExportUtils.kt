@@ -6,7 +6,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.util.Log
-import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.cocido.ramfapp.BuildConfig
 import com.cocido.ramfapp.models.ChartDataGroup
@@ -16,6 +15,7 @@ import com.cocido.ramfapp.models.WeatherData
 import com.cocido.ramfapp.models.WeatherStation
 import com.cocido.ramfapp.models.WidgetData
 import com.cocido.ramfapp.models.getPoints
+import com.cocido.ramfapp.ui.components.showErrorMessage
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
@@ -301,7 +301,7 @@ object ExportUtils {
 
             val resolved = shareIntent.resolveActivity(context.packageManager)
             if (targetPackage != null && resolved == null) {
-                Toast.makeText(context, "Aplicación no instalada", Toast.LENGTH_SHORT).show()
+                context.showErrorMessage("Aplicación no instalada")
                 return
             }
 
@@ -315,7 +315,7 @@ object ExportUtils {
 
         } catch (e: Exception) {
             Log.e(TAG, "Error sharing file", e)
-            Toast.makeText(context, "Error al compartir archivo: ${e.message}", Toast.LENGTH_LONG).show()
+            context.showErrorMessage("Error al compartir archivo: ${e.message}")
         }
     }
 
@@ -337,7 +337,7 @@ object ExportUtils {
 
         } catch (e: Exception) {
             Log.e(TAG, "Error opening file", e)
-            Toast.makeText(context, "No se encontró aplicación para abrir el archivo", Toast.LENGTH_LONG).show()
+            context.showErrorMessage("No se encontró aplicación para abrir el archivo")
         }
     }
 

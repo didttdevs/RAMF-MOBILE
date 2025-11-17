@@ -136,19 +136,20 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="16dp"
-                            android:hint="DNI"
                             app:boxBackgroundColor="@android:color/white"
                             app:boxCornerRadiusTopStart="16dp"
                             app:boxCornerRadiusTopEnd="16dp"
                             app:boxCornerRadiusBottomStart="16dp"
                             app:boxCornerRadiusBottomEnd="16dp"
-                            app:hintTextColor="@color/formosa_blue_primary"
-                            app:boxStrokeColor="@color/formosa_blue_accent">
+                            app:boxStrokeColor="@color/formosa_blue_accent"
+                            app:hintEnabled="false"
+                            app:hintTextColor="@color/formosa_blue_primary">
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etDni"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
+                                android:hint="DNI"
                                 android:inputType="number"
                                 android:textSize="16sp"
                                 android:textColor="@color/text_primary_dark" />
@@ -162,19 +163,20 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="16dp"
-                            android:hint="Teléfono"
                             app:boxBackgroundColor="@android:color/white"
                             app:boxCornerRadiusTopStart="16dp"
                             app:boxCornerRadiusTopEnd="16dp"
                             app:boxCornerRadiusBottomStart="16dp"
                             app:boxCornerRadiusBottomEnd="16dp"
-                            app:hintTextColor="@color/formosa_blue_primary"
-                            app:boxStrokeColor="@color/formosa_blue_accent">
+                            app:boxStrokeColor="@color/formosa_blue_accent"
+                            app:hintEnabled="false"
+                            app:hintTextColor="@color/formosa_blue_primary">
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etPhone"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
+                                android:hint="Teléfono"
                                 android:inputType="phone"
                                 android:textSize="16sp"
                                 android:textColor="@color/text_primary_dark" />
@@ -188,19 +190,20 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="16dp"
-                            android:hint="Nombre de la Empresa"
                             app:boxBackgroundColor="@android:color/white"
                             app:boxCornerRadiusTopStart="16dp"
                             app:boxCornerRadiusTopEnd="16dp"
                             app:boxCornerRadiusBottomStart="16dp"
                             app:boxCornerRadiusBottomEnd="16dp"
-                            app:hintTextColor="@color/formosa_blue_primary"
-                            app:boxStrokeColor="@color/formosa_blue_accent">
+                            app:boxStrokeColor="@color/formosa_blue_accent"
+                            app:hintEnabled="false"
+                            app:hintTextColor="@color/formosa_blue_primary">
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etEnterpriseName"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
+                                android:hint="Nombre de la Empresa"
                                 android:inputType="textPersonName"
                                 android:textSize="16sp"
                                 android:textColor="@color/text_primary_dark" />
@@ -214,19 +217,20 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="24dp"
-                            android:hint="Posición Laboral"
                             app:boxBackgroundColor="@android:color/white"
                             app:boxCornerRadiusTopStart="16dp"
                             app:boxCornerRadiusTopEnd="16dp"
                             app:boxCornerRadiusBottomStart="16dp"
                             app:boxCornerRadiusBottomEnd="16dp"
-                            app:hintTextColor="@color/formosa_blue_primary"
-                            app:boxStrokeColor="@color/formosa_blue_accent">
+                            app:boxStrokeColor="@color/formosa_blue_accent"
+                            app:hintEnabled="false"
+                            app:hintTextColor="@color/formosa_blue_primary">
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etJobPosition"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
+                                android:hint="Posición Laboral"
                                 android:inputType="textPersonName"
                                 android:textSize="16sp"
                                 android:textColor="@color/text_primary_dark" />

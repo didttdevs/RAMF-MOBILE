@@ -7,9 +7,10 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
-import android.widget.Toast
 import com.cocido.ramfapp.R
 import com.cocido.ramfapp.databinding.ActivityImageCropBinding
+import com.cocido.ramfapp.ui.components.showErrorMessage
+import com.cocido.ramfapp.ui.components.showInfoMessage
 import com.cocido.ramfapp.utils.ImageUtils
 import java.io.File
 import java.io.FileOutputStream
@@ -53,7 +54,7 @@ class ImageCropActivity : BaseActivity() {
             originalImageUri = Uri.parse(imageUriString)
             displayImage()
         } else {
-            Toast.makeText(this, "Error al cargar la imagen", Toast.LENGTH_SHORT).show()
+            showErrorMessage("Error al cargar la imagen")
             finish()
         }
     }
@@ -135,7 +136,7 @@ class ImageCropActivity : BaseActivity() {
     }
     
     private fun showError(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        showErrorMessage(message)
     }
     
     override fun onSupportNavigateUp(): Boolean {

@@ -50,7 +50,7 @@ interface AuthService {
     /**
      * Solicitar reset de contraseña
      */
-    @POST("auth/forgot-password")
+    @POST("auth/request-password-reset")
     suspend fun requestPasswordReset(@Body request: ForgotPasswordRequest): Response<ApiResponse<Void>>
     
     /**

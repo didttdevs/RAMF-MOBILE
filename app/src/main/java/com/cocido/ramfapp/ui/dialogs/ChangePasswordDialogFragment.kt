@@ -8,7 +8,6 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.ViewModelProvider
 import com.cocido.ramfapp.R
@@ -18,6 +17,8 @@ import com.cocido.ramfapp.utils.Resource
 import com.cocido.ramfapp.viewmodels.ProfileViewModel
 import com.cocido.ramfapp.viewmodels.ProfileViewModelFactory
 import android.content.Context
+import com.cocido.ramfapp.ui.components.showErrorMessage
+import com.cocido.ramfapp.ui.components.showSuccessMessage
 
 /**
  * Dialog fragment para cambiar la contraseña del usuario
@@ -104,7 +105,7 @@ class ChangePasswordDialogFragment : DialogFragment() {
                 }
                 is Resource.Success -> {
                     showLoading(false)
-                    Toast.makeText(requireContext(), "Contraseña cambiada exitosamente", Toast.LENGTH_SHORT).show()
+                    requireContext().showSuccessMessage("Contraseña cambiada exitosamente")
                     dismiss()
                 }
                 is Resource.Error -> {
@@ -112,7 +113,7 @@ class ChangePasswordDialogFragment : DialogFragment() {
                     // El mensaje del Exception ya viene formateado desde ProfileRepository
                     // con el mensaje específico del backend (Password not match, etc.)
                     val errorMessage = state.message ?: "Error al cambiar la contraseña"
-                    Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_LONG).show()
+                    requireContext().showErrorMessage(errorMessage)
                 }
                 null -> {}
             }

@@ -3,12 +3,13 @@ package com.cocido.ramfapp.ui.activities
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.cocido.ramfapp.databinding.ActivityReportDetailBinding
 import com.cocido.ramfapp.models.Report
 import com.cocido.ramfapp.network.RetrofitClient
+import com.cocido.ramfapp.ui.components.showErrorMessage
+import com.cocido.ramfapp.ui.components.showInfoMessage
 import com.cocido.ramfapp.utils.AuthManager
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -274,7 +275,7 @@ class ReportDetailActivity : AppCompatActivity() {
     
     private fun downloadAttachment(attachment: com.cocido.ramfapp.models.ReportAttachment) {
         // TODO: Implementar descarga de adjuntos
-        Toast.makeText(this, "Descargando ${attachment.filename}...", Toast.LENGTH_SHORT).show()
+        showInfoMessage("Descargando ${attachment.filename}...")
     }
     
     private fun showLoading(loading: Boolean) {
@@ -285,7 +286,7 @@ class ReportDetailActivity : AppCompatActivity() {
     }
     
     private fun showError(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        showErrorMessage(message)
     }
     
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

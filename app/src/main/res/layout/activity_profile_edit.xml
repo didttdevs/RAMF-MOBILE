@@ -149,7 +149,6 @@
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
                             android:layout_weight="1"
-                            android:hint="Nombre"
                             app:boxBackgroundColor="@android:color/white"
                             app:boxCornerRadiusTopStart="16dp"
                             app:boxCornerRadiusTopEnd="16dp"
@@ -157,6 +156,7 @@
                             app:boxCornerRadiusBottomEnd="16dp"
                             app:boxStrokeColor="@color/formosa_blue_accent"
                             app:boxStrokeWidth="2dp"
+                            app:hintEnabled="false"
                             app:startIconDrawable="@drawable/ic_person"
                             app:startIconTint="@color/formosa_blue_primary">
 
@@ -164,6 +164,7 @@
                                 android:id="@+id/etName"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
+                                android:hint="Nombre"
                                 android:inputType="textPersonName"
                                 android:maxLines="1" />
 
@@ -175,7 +176,6 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
                             android:layout_weight="1"
-                            android:hint="Apellido"
                             app:boxBackgroundColor="@android:color/white"
                             app:boxCornerRadiusTopStart="16dp"
                             app:boxCornerRadiusTopEnd="16dp"
@@ -183,6 +183,7 @@
                             app:boxCornerRadiusBottomEnd="16dp"
                             app:boxStrokeColor="@color/formosa_blue_accent"
                             app:boxStrokeWidth="2dp"
+                            app:hintEnabled="false"
                             app:startIconDrawable="@drawable/ic_person"
                             app:startIconTint="@color/formosa_blue_primary">
 
@@ -190,6 +191,7 @@
                                 android:id="@+id/etLastName"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
+                                android:hint="Apellido"
                                 android:inputType="textPersonName"
                                 android:maxLines="1" />
 
@@ -203,7 +205,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
-                        android:hint="Correo Electrónico"
                         app:boxBackgroundColor="@color/background_color"
                         app:boxCornerRadiusTopStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"
@@ -211,6 +212,7 @@
                         app:boxCornerRadiusBottomEnd="12dp"
                         app:boxStrokeColor="@color/formosa_blue_primary"
                         app:boxStrokeWidth="2dp"
+                        app:hintEnabled="false"
                         app:startIconDrawable="@drawable/ic_email"
                         app:startIconTint="@color/formosa_blue_primary">
 
@@ -218,6 +220,7 @@
                             android:id="@+id/etEmail"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:hint="Correo Electrónico"
                             android:inputType="textEmailAddress"
                             android:maxLines="1" />
 
@@ -229,7 +232,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
-                        android:hint="Teléfono"
                         app:boxBackgroundColor="@color/background_color"
                         app:boxCornerRadiusTopStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"
@@ -237,6 +239,7 @@
                         app:boxCornerRadiusBottomEnd="12dp"
                         app:boxStrokeColor="@color/formosa_blue_primary"
                         app:boxStrokeWidth="2dp"
+                        app:hintEnabled="false"
                         app:startIconDrawable="@drawable/ic_phone"
                         app:startIconTint="@color/formosa_blue_primary">
 
@@ -244,6 +247,7 @@
                             android:id="@+id/etPhone"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:hint="Teléfono"
                             android:inputType="phone"
                             android:maxLines="1" />
 
@@ -255,7 +259,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
-                        android:hint="DNI"
                         app:boxBackgroundColor="@color/background_color"
                         app:boxCornerRadiusTopStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"
@@ -263,6 +266,7 @@
                         app:boxCornerRadiusBottomEnd="12dp"
                         app:boxStrokeColor="@color/formosa_blue_primary"
                         app:boxStrokeWidth="2dp"
+                        app:hintEnabled="false"
                         app:startIconDrawable="@drawable/ic_description"
                         app:startIconTint="@color/formosa_blue_primary">
 
@@ -270,6 +274,7 @@
                             android:id="@+id/etDni"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:hint="DNI"
                             android:inputType="number"
                             android:maxLines="1" />
 
@@ -311,7 +316,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"
-                        android:hint="Puesto de trabajo"
                         app:boxBackgroundColor="@color/background_color"
                         app:boxCornerRadiusTopStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"
@@ -319,6 +323,7 @@
                         app:boxCornerRadiusBottomEnd="12dp"
                         app:boxStrokeColor="@color/formosa_blue_primary"
                         app:boxStrokeWidth="2dp"
+                        app:hintEnabled="false"
                         app:startIconDrawable="@drawable/ic_priority"
                         app:startIconTint="@color/formosa_blue_primary">
 
@@ -326,6 +331,7 @@
                             android:id="@+id/etJobPosition"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:hint="Puesto de trabajo"
                             android:inputType="text"
                             android:maxLines="1" />
 
@@ -336,7 +342,6 @@
                         android:id="@+id/tilCompany"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Empresa o Institución"
                         app:boxBackgroundColor="@color/background_color"
                         app:boxCornerRadiusTopStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"
@@ -344,6 +349,7 @@
                         app:boxCornerRadiusBottomEnd="12dp"
                         app:boxStrokeColor="@color/formosa_blue_primary"
                         app:boxStrokeWidth="2dp"
+                        app:hintEnabled="false"
                         app:startIconDrawable="@drawable/ic_battery"
                         app:startIconTint="@color/formosa_blue_primary">
 
@@ -351,6 +357,7 @@
                             android:id="@+id/etCompany"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:hint="Empresa o Institución"
                             android:inputType="text"
                             android:maxLines="1" />
 

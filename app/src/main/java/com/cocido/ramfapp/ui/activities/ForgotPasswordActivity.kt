@@ -3,11 +3,11 @@ package com.cocido.ramfapp.ui.activities
 import android.os.Bundle
 import android.util.Patterns
 import android.view.View
-import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.cocido.ramfapp.databinding.ActivityForgotPasswordBinding
 import com.cocido.ramfapp.models.ForgotPasswordRequest
 import com.cocido.ramfapp.network.RetrofitClient
+import com.cocido.ramfapp.ui.components.showErrorMessage
 import kotlinx.coroutines.launch
 
 /**
@@ -28,14 +28,7 @@ class ForgotPasswordActivity : BaseActivity() {
         binding = ActivityForgotPasswordBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupToolbar()
         setupListeners()
-    }
-
-    private fun setupToolbar() {
-        binding.toolbar.setNavigationOnClickListener {
-            onBackPressed()
-        }
     }
 
     private fun setupListeners() {
@@ -44,6 +37,10 @@ class ForgotPasswordActivity : BaseActivity() {
         }
 
         binding.btnBackToLogin.setOnClickListener {
+            finish()
+        }
+
+        binding.btnSuccessDone.setOnClickListener {
             finish()
         }
     }
@@ -96,7 +93,7 @@ class ForgotPasswordActivity : BaseActivity() {
     }
 
     private fun showError(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        showErrorMessage(message)
     }
 }
 

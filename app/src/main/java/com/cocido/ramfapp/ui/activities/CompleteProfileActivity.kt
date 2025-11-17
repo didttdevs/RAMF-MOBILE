@@ -4,13 +4,15 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
-import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.cocido.ramfapp.databinding.ActivityCompleteProfileBinding
 import com.cocido.ramfapp.models.CreateProfileRequest
 import com.cocido.ramfapp.models.UpdateProfileRequest
 import com.cocido.ramfapp.models.User
 import com.cocido.ramfapp.network.RetrofitClient
+import com.cocido.ramfapp.ui.components.showErrorMessage
+import com.cocido.ramfapp.ui.components.showInfoMessage
+import com.cocido.ramfapp.ui.components.showSuccessMessage
 import com.cocido.ramfapp.utils.AuthManager
 import kotlinx.coroutines.launch
 
@@ -40,7 +42,7 @@ class CompleteProfileActivity : BaseActivity() {
         
         // Obtener el usuario actual
         currentUser = AuthManager.getCurrentUser() ?: run {
-            Toast.makeText(this, "Error: Usuario no encontrado", Toast.LENGTH_SHORT).show()
+            showErrorMessage("Error: Usuario no encontrado")
             finish()
             return
         }
@@ -126,7 +128,7 @@ class CompleteProfileActivity : BaseActivity() {
                 val currentUser = AuthManager.getCurrentUser()
                 if (currentUser?.hasProfile() == true) {
                     Log.d(TAG, "User already has profile, redirecting to UserProfileActivity")
-                    Toast.makeText(this@CompleteProfileActivity, "Ya tienes un perfil completado", Toast.LENGTH_SHORT).show()
+                    showInfoMessage("Ya tienes un perfil completado")
                     val intent = android.content.Intent(this@CompleteProfileActivity, UserProfileActivity::class.java)
                     startActivity(intent)
                     finish()
@@ -147,7 +149,7 @@ class CompleteProfileActivity : BaseActivity() {
                 
                 if (response.isSuccessful) {
                     Log.d(TAG, "Profile created successfully")
-                    Toast.makeText(this@CompleteProfileActivity, "Perfil completado exitosamente", Toast.LENGTH_SHORT).show()
+                    showSuccessMessage("Perfil completado exitosamente")
                     
                     // Redirigir a la actividad de perfil
                     val intent = android.content.Intent(this@CompleteProfileActivity, UserProfileActivity::class.java)
@@ -243,7 +245,7 @@ class CompleteProfileActivity : BaseActivity() {
     }
     
     private fun showError(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        showErrorMessage(message)
         Log.e(TAG, message)
     }
     

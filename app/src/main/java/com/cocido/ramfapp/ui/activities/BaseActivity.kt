@@ -2,12 +2,13 @@ package com.cocido.ramfapp.ui.activities
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.cocido.ramfapp.utils.AuthManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.cocido.ramfapp.ui.components.showErrorMessage
+import com.cocido.ramfapp.ui.components.showInfoMessage
 
 /**
  * Activity base con verificación automática de sesión
@@ -191,7 +192,7 @@ abstract class BaseActivity : AppCompatActivity() {
         
         // Mostrar mensaje si se proporciona
         message?.let {
-            Toast.makeText(this, it, Toast.LENGTH_LONG).show()
+            showInfoMessage(it)
         }
         
         // Limpiar stack de activities y redirigir al login
@@ -217,7 +218,7 @@ abstract class BaseActivity : AppCompatActivity() {
      * Manejar error de autenticación
      */
     protected fun handleAuthError(errorMessage: String) {
-        Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+        showErrorMessage(errorMessage)
         redirectToLogin(errorMessage)
     }
     

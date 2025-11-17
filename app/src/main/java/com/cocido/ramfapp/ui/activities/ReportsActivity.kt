@@ -3,7 +3,6 @@ package com.cocido.ramfapp.ui.activities
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.cocido.ramfapp.R
@@ -11,6 +10,7 @@ import com.cocido.ramfapp.databinding.ActivityReportsBinding
 import com.cocido.ramfapp.models.Report
 import com.cocido.ramfapp.models.ReportAuthor
 import com.cocido.ramfapp.ui.adapters.ReportsAdapter
+import com.cocido.ramfapp.ui.components.showInfoMessage
 
 /**
  * Activity simplificado para mostrar reportes
@@ -81,7 +81,7 @@ class ReportsActivity : AppCompatActivity() {
     }
     
     private fun openReportDetail(report: Report) {
-        Toast.makeText(this, "Abriendo reporte: ${report.title}", Toast.LENGTH_SHORT).show()
+        showInfoMessage("Abriendo reporte: ${report.title}")
     }
     
     override fun onSupportNavigateUp(): Boolean {
