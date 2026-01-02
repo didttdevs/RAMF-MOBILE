@@ -152,11 +152,24 @@ object ChartUtils {
     
     fun createTimeFormatter(): ValueFormatter {
         return object : ValueFormatter() {
-            private val timeFormatter = SimpleDateFormat("dd-MM HH:mm", Locale.getDefault())
+            // Formato más corto: solo hora para gráficos de 24h
+            private val shortTimeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+            private val fullTimeFormatter = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
+            private var lastDate: String? = null
 
             override fun getFormattedValue(value: Float): String {
                 return try {
-                    timeFormatter.format(Date(value.toLong()))
+                    val date = Date(value.toLong())
+                    val dayFormatter = SimpleDateFormat("dd/MM", Locale.getDefault())
+                    val currentDay = dayFormatter.format(date)
+                    
+                    // Si es un nuevo día, mostrar fecha completa, sino solo hora
+                    if (lastDate != currentDay) {
+                        lastDate = currentDay
+                        fullTimeFormatter.format(date)
+                    } else {
+                        shortTimeFormatter.format(date)
+                    }
                 } catch (e: Exception) {
                     ""
                 }

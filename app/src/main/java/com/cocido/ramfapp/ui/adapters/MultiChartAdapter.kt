@@ -529,11 +529,19 @@ class MultiChartAdapter(
             val entries = seriesData.flatMap { it.dataSet.values }
             if (entries.isEmpty()) return
 
-            val interval = THREE_HOURS_MS.toDouble()
-            if (interval <= 0.0) return
-
             val minX = entries.minOf { it.x.toDouble() }
             val maxX = entries.maxOf { it.x.toDouble() }
+            
+            // Calcular el rango de tiempo
+            val timeRangeMs = maxX - minX
+            
+            // Ajustar intervalo según el rango de datos
+            val interval = when {
+                timeRangeMs <= TimeUnit.HOURS.toMillis(6) -> TimeUnit.HOURS.toMillis(1).toDouble()
+                timeRangeMs <= TimeUnit.HOURS.toMillis(24) -> TimeUnit.HOURS.toMillis(3).toDouble()
+                timeRangeMs <= TimeUnit.DAYS.toMillis(3) -> TimeUnit.HOURS.toMillis(6).toDouble()
+                else -> TimeUnit.HOURS.toMillis(12).toDouble()
+            }
 
             val minBucket = floor(minX / interval)
             val maxBucket = ceil(maxX / interval)
@@ -542,17 +550,18 @@ class MultiChartAdapter(
             val adjustedMax = (maxBucket * interval).toFloat()
 
             val stepCount = (maxBucket - minBucket).toInt().coerceAtLeast(1)
-            val labelCount = (stepCount + 1).coerceAtMost(12)
+            // Máximo 8 etiquetas para evitar superposición
+            val labelCount = (stepCount + 1).coerceIn(4, 8)
 
             val range = (maxX - minX).coerceAtLeast(interval)
-            val padding = (interval * 0.15).coerceAtMost(range * 0.1)
+            val padding = (interval * 0.1).coerceAtMost(range * 0.05)
             val axisMin = (minX - padding).toFloat().coerceAtLeast(adjustedMin)
             val axisMax = (maxX + padding).toFloat().coerceAtMost(adjustedMax)
 
             chart.xAxis.apply {
                 axisMinimum = axisMin
                 axisMaximum = axisMax
-                granularity = THREE_HOURS_MS
+                granularity = interval.toFloat()
                 isGranularityEnabled = true
                 setLabelCount(labelCount, true)
                 setAvoidFirstLastClipping(true)
@@ -586,7 +595,7 @@ class MultiChartAdapter(
                 xAxis.apply {
                     position = XAxis.XAxisPosition.BOTTOM
                     textColor = ContextCompat.getColor(context, R.color.chart_text_color)
-                    textSize = 10f
+                    textSize = 11f
                     setDrawGridLines(true)
                     gridColor = ContextCompat.getColor(context, R.color.chart_grid_color)
                     gridLineWidth = 0.5f
@@ -596,8 +605,9 @@ class MultiChartAdapter(
                     valueFormatter = ChartUtils.createTimeFormatter()
                     granularity = THREE_HOURS_MS
                     isGranularityEnabled = true
-                    setAvoidFirstLastClipping(false)
-                    labelRotationAngle = 0f
+                    setAvoidFirstLastClipping(true)
+                    labelRotationAngle = -30f  // Rotar ligeramente para mejor legibilidad
+                    yOffset = 5f
                 }
 
                 // Configurar eje Y izquierdo
@@ -628,21 +638,22 @@ class MultiChartAdapter(
                 legend.apply {
                     isEnabled = config.parameters.size > 1
                     textColor = ContextCompat.getColor(context, R.color.chart_text_color)
-                    textSize = 11f
+                    textSize = 12f
                     form = Legend.LegendForm.LINE
                     formLineWidth = 3f
-                    formSize = 10f
-                    verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
+                    formSize = 12f
+                    verticalAlignment = Legend.LegendVerticalAlignment.TOP
                     horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
                     orientation = Legend.LegendOrientation.HORIZONTAL
                     setDrawInside(false)
                     isWordWrapEnabled = true
-                    xEntrySpace = 12f
-                    yEntrySpace = 8f
+                    xEntrySpace = 20f
+                    yEntrySpace = 6f
+                    yOffset = 8f
                 }
 
                 // Márgenes base (se ajustan dinámicamente según overlay)
-                setExtraOffsets(12f, 18f, 24f, 28f)
+                setExtraOffsets(12f, 40f, 24f, 16f)
 
                 setOnChartGestureListener(object : OnChartGestureListener {
                     override fun onChartSingleTapped(me: MotionEvent?) {

@@ -307,9 +307,16 @@ class WeatherStationViewModel : ViewModel() {
             Log.d(TAG, "Refreshing all data for station: $currentStationId")
             securityLogger.logUserSecurityEvent("refresh_data", "main_screen", additionalInfo = currentStationId)
 
+            // Clear cache to force fresh data
+            viewModelScope.launch {
+                repository.clearCache()
+            }
+            
             loadStationData(currentStationId)
         } else {
             Log.w(TAG, "No station selected for refresh")
+            // Ensure loading state is reset even if no station selected
+            updateLoadingState(false)
         }
     }
 

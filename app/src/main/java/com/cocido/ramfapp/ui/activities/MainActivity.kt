@@ -195,6 +195,15 @@ class MainActivity : BaseActivity() {
                 lastRefreshTime = currentTime
                 refreshData()
                 securityLogger.logUserSecurityEvent("refresh_requested", "main_screen")
+                
+                // Safety timeout: stop refresh after 15 seconds max
+                lifecycleScope.launch {
+                    kotlinx.coroutines.delay(15000)
+                    if (swipeRefreshLayout.isRefreshing) {
+                        Log.w(TAG, "Refresh timeout - forcing stop")
+                        swipeRefreshLayout.isRefreshing = false
+                    }
+                }
             } else {
                 swipeRefreshLayout.isRefreshing = false
                 Log.d(TAG, "Refresh request debounced")
@@ -333,14 +342,21 @@ class MainActivity : BaseActivity() {
         lifecycleScope.launch {
             viewModel.widgetData.collect { widgetState ->
                 when {
+                    widgetState.isLoading -> {
+                        // Keep refresh indicator spinning while loading
+                    }
                     widgetState.hasData -> {
                         val widget = widgetState.data!!
                         updateWeatherDisplay(widget)
+                        // Stop refresh indicator when data is loaded
+                        swipeRefreshLayout.isRefreshing = false
                         Log.d(TAG, "Widget data updated for temperature: ${widget.getFormattedTemperature()}")
                     }
                     widgetState.hasError -> {
                         Log.e(TAG, "Widget data error: ${widgetState.error}")
                         displayFallbackWeatherData()
+                        // Stop refresh indicator on error too
+                        swipeRefreshLayout.isRefreshing = false
                     }
                 }
             }

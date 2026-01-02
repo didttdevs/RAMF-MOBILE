@@ -44,10 +44,10 @@ object ChartConfigFactory {
     fun getAllCharts(): List<ChartConfig> {
         return listOf(
             createTempHumChart(),
+            createVpdDewPointChart(),
             createRadiationChart(),
-            createPrecipitationChart(),
             createWindChart(),
-            createEvapotranspirationChart(),
+            createPrecipitationChart(),
             createPressureChart()
         )
     }
@@ -77,22 +77,8 @@ object ChartConfigFactory {
             id = "temp_hum",
             title = "Temperatura y Humedad",
             category = ChartCategory.TEMPERATURE,
-            description = "Humedad relativa, temperatura del aire, radiación y VPD",
+            description = "Temperatura del aire y humedad relativa",
             parameters = listOf(
-                ChartParameter(
-                    key = "humedad",
-                    label = "Humedad relativa (%)",
-                    unit = "%",
-                    color = COLOR_HUMIDITY,
-                    axisPosition = AxisPosition.RIGHT,
-                    axisId = AXIS_HUMIDITY,
-                    sourceGroup = ChartDataGroup.TEMP_HUM,
-                    valueKey = ChartValueKey.HUMEDAD,
-                    seriesOptions = SeriesOptions(
-                        style = SeriesStyle.LINE,
-                        lineWidth = 3f
-                    )
-                ),
                 ChartParameter(
                     key = "temperatura",
                     label = "Temp. aire (°C)",
@@ -104,41 +90,22 @@ object ChartConfigFactory {
                     valueKey = ChartValueKey.TEMPERATURA,
                     seriesOptions = SeriesOptions(
                         style = SeriesStyle.LINE,
-                        lineWidth = 3.2f
+                        lineWidth = 2.5f
                     )
                 ),
                 ChartParameter(
-                    key = "radiacion",
-                    label = "Radiación solar (W/m²)",
-                    unit = "W/m²",
-                    color = COLOR_RADIATION,
+                    key = "humedad",
+                    label = "Humedad (%)",
+                    unit = "%",
+                    color = COLOR_HUMIDITY,
                     axisPosition = AxisPosition.RIGHT,
-                    axisId = AXIS_RADIATION,
-                    sourceGroup = ChartDataGroup.RADIACION,
-                    valueKey = ChartValueKey.RADIACION_SOLAR,
-                    seriesOptions = SeriesOptions(
-                        style = SeriesStyle.AREA,
-                        lineWidth = 1.5f,
-                        fillAlpha = 28,
-                        fillColorOverride = COLOR_RADIATION
-                    ),
-                    scaleFactor = 0.075
-                ),
-                ChartParameter(
-                    key = "vpd",
-                    label = "VPD (kPa)",
-                    unit = "kPa",
-                    color = COLOR_VPD,
-                    axisPosition = AxisPosition.RIGHT,
-                    axisId = AXIS_VPD,
+                    axisId = AXIS_HUMIDITY,
                     sourceGroup = ChartDataGroup.TEMP_HUM,
-                    valueKey = ChartValueKey.VPD,
+                    valueKey = ChartValueKey.HUMEDAD,
                     seriesOptions = SeriesOptions(
-                        style = SeriesStyle.DASHED_LINE,
-                        lineWidth = 2.2f,
-                        dashedIntervals = floatArrayOf(12f, 6f)
-                    ),
-                    scaleFactor = 18.0
+                        style = SeriesStyle.LINE,
+                        lineWidth = 2.5f
+                    )
                 )
             ),
             axes = listOf(
@@ -148,11 +115,10 @@ object ChartConfigFactory {
                     label = "Temperatura",
                     unit = "°C",
                     color = COLOR_TEMPERATURE,
-                    min = 0.0,
-                    labelCount = 7,
+                    labelCount = 6,
                     formatPattern = "#0.0",
                     scaleFactor = 1.0,
-                    forceZeroInRange = true
+                    forceZeroInRange = false
                 ),
                 ChartAxisConfig(
                     id = AXIS_HUMIDITY,
@@ -162,39 +128,76 @@ object ChartConfigFactory {
                     color = COLOR_HUMIDITY,
                     min = 0.0,
                     max = 100.0,
-                    labelCount = 5,
-                    formatPattern = "#0",
-                    scaleFactor = 1.0,
-                    forceZeroInRange = true,
-                    overlayPriority = 2
-                ),
-                ChartAxisConfig(
-                    id = AXIS_RADIATION,
-                    position = AxisPosition.RIGHT,
-                    label = "Radiación",
-                    unit = "W/m²",
-                    color = COLOR_RADIATION,
-                    min = 0.0,
-                    max = 1400.0,
                     labelCount = 6,
                     formatPattern = "#0",
-                    scaleFactor = 0.075,
-                    forceZeroInRange = true,
-                    overlayPriority = 0
+                    scaleFactor = 1.0,
+                    forceZeroInRange = true
+                )
+            )
+        )
+    }
+
+    private fun createVpdDewPointChart(): ChartConfig {
+        return ChartConfig(
+            id = "vpd_dewpoint",
+            title = "VPD y Punto de Rocío",
+            category = ChartCategory.TEMPERATURE,
+            description = "Déficit de presión de vapor y punto de rocío",
+            parameters = listOf(
+                ChartParameter(
+                    key = "vpd",
+                    label = "VPD (kPa)",
+                    unit = "kPa",
+                    color = COLOR_VPD,
+                    axisPosition = AxisPosition.LEFT,
+                    axisId = AXIS_VPD,
+                    sourceGroup = ChartDataGroup.TEMP_HUM,
+                    valueKey = ChartValueKey.VPD,
+                    seriesOptions = SeriesOptions(
+                        style = SeriesStyle.LINE,
+                        lineWidth = 2.5f
+                    )
                 ),
+                ChartParameter(
+                    key = "punto_rocio",
+                    label = "Punto rocío (°C)",
+                    unit = "°C",
+                    color = COLOR_DELTA_T,
+                    axisPosition = AxisPosition.RIGHT,
+                    axisId = AXIS_DELTA_T,
+                    sourceGroup = ChartDataGroup.TEMP_HUM,
+                    valueKey = ChartValueKey.PUNTO_ROCIO,
+                    seriesOptions = SeriesOptions(
+                        style = SeriesStyle.DASHED_LINE,
+                        lineWidth = 2f,
+                        dashedIntervals = floatArrayOf(10f, 5f)
+                    )
+                )
+            ),
+            axes = listOf(
                 ChartAxisConfig(
                     id = AXIS_VPD,
-                    position = AxisPosition.RIGHT,
+                    position = AxisPosition.LEFT,
                     label = "VPD",
                     unit = "kPa",
                     color = COLOR_VPD,
                     min = 0.0,
-                    max = 2.2,
-                    labelValues = listOf(0.0, 0.55, 1.1, 1.65, 2.2),
-                    formatPattern = "#0.00",
-                    scaleFactor = 18.0,
-                    forceZeroInRange = true,
-                    overlayPriority = 1
+                    max = 4.0,
+                    labelCount = 5,
+                    formatPattern = "#0.0",
+                    scaleFactor = 1.0,
+                    forceZeroInRange = true
+                ),
+                ChartAxisConfig(
+                    id = AXIS_DELTA_T,
+                    position = AxisPosition.RIGHT,
+                    label = "Punto de rocío",
+                    unit = "°C",
+                    color = COLOR_DELTA_T,
+                    labelCount = 5,
+                    formatPattern = "#0.0",
+                    scaleFactor = 1.0,
+                    forceZeroInRange = false
                 )
             )
         )
