@@ -5,29 +5,8 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/formosa_gradient_professional"
     tools:context=".ui.activities.LoginActivity">
-
-    <!-- GIF animado de fondo -->
-    <ImageView
-        android:id="@+id/backgroundGif"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="fitXY"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <!-- Overlay oscuro para mejorar legibilidad -->
-    <View
-        android:id="@+id/darkOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#40000000"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
 
     <!-- Logo Container -->
     <com.google.android.material.card.MaterialCardView
@@ -55,36 +34,31 @@
                 android:layout_height="match_parent"
                 android:scaleType="centerInside"
                 android:src="@drawable/lg_ramf"
-                android:tint="@color/white"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@color/white" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Título -->
-
-    <!-- Subtítulo -->
-
     <!-- Card de formulario de login -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/loginCard"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="32dp"
-        android:layout_marginTop="40dp"
-        app:cardBackgroundColor="@android:color/transparent"
+        android:layout_marginTop="20dp"
+        app:cardBackgroundColor="@android:color/white"
         app:cardCornerRadius="16dp"
-        app:cardElevation="0dp"
+        app:cardElevation="8dp"
         app:cardPreventCornerOverlap="false"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/logoCard"
-        app:strokeWidth="0dp"
-        tools:layout_editor_absoluteY="368dp">
+        app:strokeWidth="0dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -92,7 +66,7 @@
             android:orientation="vertical"
             android:padding="24dp">
 
-            <!-- Campo de email -->
+            <!-- Campo de usuario -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/usernameLayout"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -106,9 +80,7 @@
                 app:boxCornerRadiusTopStart="12dp"
                 app:boxStrokeColor="@color/formosa_blue_accent"
                 app:hintEnabled="false"
-                app:hintTextColor="@color/formosa_blue_primary"
-                app:helperText=""
-                app:helperTextTextColor="@color/text_secondary_gray">
+                app:hintTextColor="@color/formosa_blue_primary">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etUsername"
@@ -155,9 +127,15 @@
                 android:id="@+id/forgotPasswordLink"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="end"
                 android:layout_marginBottom="24dp"
-                android:text=" "
-                android:textSize="0sp" />
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="sans-serif"
+                android:text="¿Olvidaste tu contraseña?"
+                android:textColor="@color/formosa_blue_accent"
+                android:textSize="14sp" />
 
             <!-- Botón de login -->
             <com.google.android.material.button.MaterialButton
@@ -216,7 +194,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginBottom="16dp"
-                android:backgroundTint="@color/white"
                 android:drawableStart="@drawable/ic_google"
                 android:drawablePadding="12dp"
                 android:fontFamily="sans-serif-medium"
@@ -262,21 +239,6 @@
         android:textSize="12sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <!-- Botón de configuración (engranaje) -->
-    <ImageView
-        android:id="@+id/btnSettings"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginStart="24dp"
-        android:layout_marginBottom="24dp"
-        android:src="@drawable/ic_settings_white"
-        android:background="?android:attr/selectableItemBackgroundBorderless"
-        android:clickable="true"
-        android:focusable="true"
-        android:alpha="0.6"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

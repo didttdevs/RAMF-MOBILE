@@ -12,6 +12,7 @@ import com.cocido.ramfapp.utils.ApiErrorHandler
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.minutes
@@ -79,6 +80,8 @@ class WeatherRepository {
                     emit(Resource.Error(exception, "Error de conexión: ${exception.message}"))
                 }
             )
+        } catch (e: CancellationException) {
+            throw e // Re-throw cancellation to allow proper coroutine cancellation
         } catch (e: Exception) {
             emit(Resource.Error(e, "Error inesperado: ${e.message}"))
         }
@@ -161,6 +164,8 @@ class WeatherRepository {
                     emit(Resource.Error(exception, "Error de conexión: ${exception.message}"))
                 }
             )
+        } catch (e: CancellationException) {
+            throw e // Re-throw cancellation to allow proper coroutine cancellation
         } catch (e: Exception) {
             emit(Resource.Error(e, "Error inesperado: ${e.message}"))
         }
@@ -243,6 +248,8 @@ class WeatherRepository {
                     emit(Resource.Error(exception, "Error de conexión: ${exception.message}"))
                 }
             )
+        } catch (e: CancellationException) {
+            throw e // Re-throw cancellation to allow proper coroutine cancellation
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error getting historical data", e)
             emit(Resource.Error(e, "Error inesperado: ${e.message}"))
@@ -299,6 +306,8 @@ class WeatherRepository {
                     emit(Resource.Error(exception, "Error de conexión: ${exception.message}"))
                 }
             )
+        } catch (e: CancellationException) {
+            throw e // Re-throw cancellation to allow proper coroutine cancellation
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error getting widget data", e)
             emit(Resource.Error(e, "Error inesperado: ${e.message}"))

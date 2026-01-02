@@ -1,15 +1,11 @@
 package com.cocido.ramfapp.ui.activities
 
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
-import android.widget.FrameLayout
-import android.widget.ImageView
 import android.widget.TextView
-import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
 import androidx.activity.result.contract.ActivityResultContracts
 
@@ -17,31 +13,21 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import com.cocido.ramfapp.R
 import com.cocido.ramfapp.models.LoginRequest
-import com.cocido.ramfapp.models.LoginResponse
-import com.cocido.ramfapp.models.User
-import com.cocido.ramfapp.models.CreateProfileRequest
 import com.cocido.ramfapp.network.RetrofitClient
 import com.cocido.ramfapp.ui.components.showErrorMessage
 import com.cocido.ramfapp.ui.components.showInfoMessage
 import com.cocido.ramfapp.ui.components.showSuccessMessage
-import com.cocido.ramfapp.ui.dialogs.LoginSettingsDialogFragment
 import com.cocido.ramfapp.utils.AuthManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.tasks.Task
-import com.google.gson.Gson
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 
 class LoginActivity : BaseActivity() {
 
     companion object {
         private const val TAG = "LoginActivity"
-        private const val PREFS_NAME = "LoginPrefs"
-        private const val KEY_USE_V2_LAYOUT = "use_v2_layout"
     }
     
     override fun requiresAuthentication(): Boolean {
@@ -55,10 +41,7 @@ class LoginActivity : BaseActivity() {
     private lateinit var btnGoogle: MaterialButton
     private lateinit var tvRegisterLink: TextView
     private lateinit var forgotPasswordLink: TextView
-    private lateinit var btnSettings: ImageView
     private lateinit var googleSignInClient: com.google.android.gms.auth.api.signin.GoogleSignInClient
-    private lateinit var sharedPreferences: SharedPreferences
-    private var isUsingV2Layout = true
 
     // Activity Result Launcher para Google Sign-In
     private val googleSignInLauncher = registerForActivityResult(
@@ -69,15 +52,7 @@ class LoginActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // Inicializar SharedPreferences
-        sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        
-        // Cargar preferencia de layout
-        isUsingV2Layout = sharedPreferences.getBoolean(KEY_USE_V2_LAYOUT, true)
-        
-        // Cargar el layout según la preferencia
-        loadLayout()
+        setContentView(R.layout.activity_login)
         
         AuthManager.initialize(this)
         
@@ -97,16 +72,6 @@ class LoginActivity : BaseActivity() {
         setupListeners()
     }
     
-    private fun loadLayout() {
-        if (isUsingV2Layout) {
-            setContentView(R.layout.activity_login)
-            // Cargar GIF animado de fondo solo para v2
-            loadBackgroundGif()
-        } else {
-            setContentView(R.layout.activity_login_v1)
-        }
-    }
-    
     private fun initViews() {
         etUsername = findViewById(R.id.etUsername)
         etPassword = findViewById(R.id.etPassword)
@@ -114,7 +79,6 @@ class LoginActivity : BaseActivity() {
         btnGoogle = findViewById(R.id.btnGoogle)
         tvRegisterLink = findViewById(R.id.tvRegisterLink)
         forgotPasswordLink = findViewById(R.id.forgotPasswordLink)
-        btnSettings = findViewById(R.id.btnSettings)
     }
     
     private fun setupListeners() {
@@ -142,44 +106,6 @@ class LoginActivity : BaseActivity() {
 
         forgotPasswordLink.setOnClickListener {
             startActivity(Intent(this, ForgotPasswordActivity::class.java))
-        }
-        
-        // Agrega el evento para cambiar layout
-        btnSettings.setOnClickListener {
-            showSettingsDialog()
-        }
-    }
-    
-    private fun showSettingsDialog() {
-        val dialog = LoginSettingsDialogFragment.newInstance(isUsingV2Layout) { selectedVersion ->
-            // Aplicar el nuevo layout
-            if (selectedVersion != isUsingV2Layout) {
-                isUsingV2Layout = selectedVersion
-                
-                // Guardar preferencia
-                sharedPreferences.edit()
-                    .putBoolean(KEY_USE_V2_LAYOUT, isUsingV2Layout)
-                    .apply()
-                
-                // Recargar activity con nuevo layout
-                finish()
-                startActivity(intent)
-            }
-        }
-        dialog.show(supportFragmentManager, "LoginSettingsDialog")
-    }
-    
-    private fun loadBackgroundGif() {
-        try {
-            val backgroundGif = findViewById<ImageView>(R.id.backgroundGif)
-            Glide.with(this)
-                .asGif()
-                .load(R.drawable.anim_baniado)
-                .override(1920, 1080)  // Forzar alta resolución
-                .fitCenter()
-                .into(backgroundGif)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error loading background GIF", e)
         }
     }
     

@@ -11,7 +11,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.cocido.ramfapp.R
-import com.cocido.ramfapp.ui.components.showInfoMessage
 import com.cocido.ramfapp.utils.AuthManager
 import kotlinx.coroutines.launch
 
@@ -33,7 +32,6 @@ class UserProfileActivity : BaseActivity() {
     private lateinit var tvUserDni: TextView
     private lateinit var tvUserCompany: TextView
     private lateinit var btnChangePassword: com.google.android.material.button.MaterialButton
-    private lateinit var btnPrivacySettings: com.google.android.material.button.MaterialButton
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,7 +56,6 @@ class UserProfileActivity : BaseActivity() {
         tvUserDni = findViewById(R.id.tvUserDni)
         tvUserCompany = findViewById(R.id.tvUserCompany)
         btnChangePassword = findViewById(R.id.btnChangePassword)
-        btnPrivacySettings = findViewById(R.id.btnPrivacySettings)
     }
 
     private fun setupListeners() {
@@ -66,14 +63,8 @@ class UserProfileActivity : BaseActivity() {
             finish()
         }
         
-        
         btnChangePassword.setOnClickListener {
             openChangePassword()
-        }
-        
-        
-        btnPrivacySettings.setOnClickListener {
-            openPrivacySettings()
         }
     }
 
@@ -129,11 +120,6 @@ class UserProfileActivity : BaseActivity() {
     private fun openChangePassword() {
         val dialog = com.cocido.ramfapp.ui.dialogs.ChangePasswordDialogFragment.newInstance()
         dialog.show(supportFragmentManager, "ChangePasswordDialog")
-    }
-    
-    
-    private fun openPrivacySettings() {
-        showInfoMessage("Configuración de privacidad próximamente")
     }
     
     companion object {

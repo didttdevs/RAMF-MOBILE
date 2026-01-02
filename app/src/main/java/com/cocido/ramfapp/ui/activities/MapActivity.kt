@@ -40,7 +40,6 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
     }
 
     private lateinit var btnBack: ImageButton
-    private lateinit var btnNotifications: ImageButton
     private lateinit var stationInfoCard: MaterialCardView
     private lateinit var temperatureContainer: LinearLayout
     private lateinit var currentConditionsContainer: View
@@ -102,7 +101,6 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
 
     private fun initViews() {
         btnBack = findViewById(R.id.btnBack)
-        btnNotifications = findViewById(R.id.btnNotifications)
         stationInfoCard = findViewById(R.id.stationInfoCard)
         temperatureContainer = findViewById(R.id.temperatureContainer)
         currentConditionsContainer = findViewById(R.id.currentConditionsContainer)
@@ -131,10 +129,6 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
     private fun setupListeners() {
         btnBack.setOnClickListener {
             finish()
-        }
-
-        btnNotifications.setOnClickListener {
-            showInfoMessage("Notificaciones en desarrollo")
         }
 
         btnCloseStationInfo.setOnClickListener {

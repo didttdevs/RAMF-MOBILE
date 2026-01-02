@@ -467,7 +467,6 @@
                         android:id="@+id/btnChangePassword"
                         android:layout_width="match_parent"
                         android:layout_height="56dp"
-                        android:layout_marginBottom="20dp"
                         android:text="Cambiar Contraseña"
                         android:textColor="@android:color/white"
                         android:textSize="16sp"
@@ -480,24 +479,6 @@
                         app:rippleColor="@color/formosa_blue_light"
                         app:strokeWidth="0dp"
                         style="@style/Widget.MaterialComponents.Button" />
-
-                    <!-- Privacy Settings Button -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnPrivacySettings"
-                        android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:text="Configuración de Privacidad"
-                        android:textColor="@color/formosa_blue_primary"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:fontFamily="sans-serif-medium"
-                        android:drawableStart="@drawable/ic_settings"
-                        android:drawablePadding="12dp"
-                        app:strokeColor="@color/formosa_blue_accent"
-                        app:strokeWidth="1dp"
-                        app:iconTint="@color/formosa_blue_primary"
-                        app:cornerRadius="12dp"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
                 </LinearLayout>
 
