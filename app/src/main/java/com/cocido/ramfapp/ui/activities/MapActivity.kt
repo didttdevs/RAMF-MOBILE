@@ -8,9 +8,11 @@ import android.view.View
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
+
 import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import com.cocido.ramfapp.R
@@ -25,7 +27,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.material.card.MaterialCardView
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.cocido.ramfapp.ui.components.showErrorMessage
 import com.cocido.ramfapp.ui.components.showInfoMessage
 import java.text.SimpleDateFormat
@@ -40,13 +42,17 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
     }
 
     private lateinit var btnBack: ImageButton
-    private lateinit var stationInfoCard: MaterialCardView
-    private lateinit var temperatureContainer: LinearLayout
-    private lateinit var currentConditionsContainer: View
-    private lateinit var precipitationContainer: View
+    private lateinit var stationInfoBottomSheet: NestedScrollView
+    private lateinit var bottomSheetBehavior: BottomSheetBehavior<NestedScrollView>
+    private lateinit var mainDataContainer: View
+    
+    // Header
     private lateinit var tvStationName: TextView
     private lateinit var tvStationUpdated: TextView
     private lateinit var tvStationStatus: TextView
+    private lateinit var btnCloseStationInfo: ImageButton
+    
+    // Main Data
     private lateinit var tvTempCurrent: TextView
     private lateinit var tvTempMax: TextView
     private lateinit var tvTempMin: TextView
@@ -56,12 +62,13 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
     private lateinit var tvWindSpeed: TextView
     private lateinit var tvWindDirection: TextView
     private lateinit var tvSolarRadiation: TextView
+    
+    // Rain Cards Values
     private lateinit var tvRain1h: TextView
     private lateinit var tvRainToday: TextView
     private lateinit var tvRain24h: TextView
     private lateinit var tvRain48h: TextView
     private lateinit var tvRain7d: TextView
-    private lateinit var btnCloseStationInfo: ImageButton
     
     private lateinit var mMap: GoogleMap
     private lateinit var mapFragment: SupportMapFragment
@@ -101,13 +108,22 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
 
     private fun initViews() {
         btnBack = findViewById(R.id.btnBack)
-        stationInfoCard = findViewById(R.id.stationInfoCard)
-        temperatureContainer = findViewById(R.id.temperatureContainer)
-        currentConditionsContainer = findViewById(R.id.currentConditionsContainer)
-        precipitationContainer = findViewById(R.id.precipitationContainer)
+        
+        // Bottom Sheet init
+        stationInfoBottomSheet = findViewById(R.id.stationInfoBottomSheet)
+        bottomSheetBehavior = BottomSheetBehavior.from(stationInfoBottomSheet)
+        // Set initial state to hidden
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
+        
+        mainDataContainer = findViewById(R.id.mainDataContainer)
+        
+        // Header
         tvStationName = findViewById(R.id.tvStationName)
         tvStationUpdated = findViewById(R.id.tvStationUpdated)
         tvStationStatus = findViewById(R.id.tvStationStatus)
+        btnCloseStationInfo = findViewById(R.id.btnCloseStationInfo)
+        
+        // Main Data
         tvTempCurrent = findViewById(R.id.tvTempCurrent)
         tvTempMax = findViewById(R.id.tvTempMax)
         tvTempMin = findViewById(R.id.tvTempMin)
@@ -117,23 +133,46 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
         tvWindSpeed = findViewById(R.id.tvWindSpeed)
         tvWindDirection = findViewById(R.id.tvWindDirection)
         tvSolarRadiation = findViewById(R.id.tvSolarRadiation)
-        tvRain1h = findViewById(R.id.tvRain1h)
-        tvRainToday = findViewById(R.id.tvRainToday)
-        tvRain24h = findViewById(R.id.tvRain24h)
-        tvRain48h = findViewById(R.id.tvRain48h)
-        tvRain7d = findViewById(R.id.tvRain7d)
-        btnCloseStationInfo = findViewById(R.id.btnCloseStationInfo)
-        stationInfoCard.visibility = View.GONE
+        
+        // Initialize Rain Cards (Binding nested views)
+        setupRainCard(R.id.cardRain1h, "1h")?.let { tvRain1h = it }
+        setupRainCard(R.id.cardRainToday, "Hoy")?.let { tvRainToday = it }
+        setupRainCard(R.id.cardRain24h, "24h")?.let { tvRain24h = it }
+        setupRainCard(R.id.cardRain48h, "48h")?.let { tvRain48h = it }
+        setupRainCard(R.id.cardRain7d, "7d")?.let { tvRain7d = it }
     }
+    
+    private fun setupRainCard(cardId: Int, label: String): TextView? {
+        val card = findViewById<View>(cardId) ?: return null
+        val tvPeriod = card.findViewById<TextView>(R.id.tvRainPeriod)
+        val tvValue = card.findViewById<TextView>(R.id.tvRainValue)
+        tvPeriod.text = label
+        return tvValue
+    }
+
+// Removed invalid import
 
     private fun setupListeners() {
         btnBack.setOnClickListener {
-            finish()
+            onBackPressedDispatcher.onBackPressed()
         }
 
         btnCloseStationInfo.setOnClickListener {
             hideStationInfoCard()
         }
+        
+        // Handle Back Press to close sheet if open
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (bottomSheetBehavior.state != BottomSheetBehavior.STATE_HIDDEN && 
+                    bottomSheetBehavior.state != BottomSheetBehavior.STATE_COLLAPSED) {
+                    hideStationInfoCard()
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
     }
     
     private fun setupObservers() {
@@ -198,8 +237,8 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
             isZoomControlsEnabled = false
             isCompassEnabled = false
             isMyLocationButtonEnabled = false
-            isScrollGesturesEnabled = false
-            isZoomGesturesEnabled = false
+            isScrollGesturesEnabled = true // Enable scroll to explore
+            isZoomGesturesEnabled = true
             isTiltGesturesEnabled = false
             isRotateGesturesEnabled = false
         }
@@ -225,6 +264,11 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
         mMap.setOnMarkerClickListener { marker ->
             showStationInfo(marker)
             true
+        }
+        
+         // Close sheet on map click
+        mMap.setOnMapClickListener { 
+            hideStationInfoCard()
         }
         
         // Si ya tenemos estaciones, agregar marcadores
@@ -317,30 +361,31 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
     }
 
     private fun showStationBaseInfo(station: WeatherStation) {
-        stationInfoCard.visibility = View.VISIBLE
+        expandBottomSheet()
         tvStationName.text = station.name ?: station.id
         tvStationUpdated.text = "Actualizado: --"
         showStationLoading()
     }
 
     private fun showStationLoading() {
-        stationInfoCard.visibility = View.VISIBLE
         tvStationStatus.visibility = View.VISIBLE
         tvStationStatus.text = "Cargando datos..."
-        temperatureContainer.visibility = View.GONE
-        currentConditionsContainer.visibility = View.GONE
-        precipitationContainer.visibility = View.GONE
+        mainDataContainer.visibility = View.INVISIBLE // Keep layout bounds but hide content
     }
 
     private fun showStationData(station: WeatherStation, widgetData: WidgetData) {
-        stationInfoCard.visibility = View.VISIBLE
+        // Ensure sheet is visible
+        if (bottomSheetBehavior.state == BottomSheetBehavior.STATE_HIDDEN) {
+             expandBottomSheet()
+        }
+        
         tvStationName.text = station.name ?: widgetData.stationName ?: station.id
         tvStationUpdated.text = "Actualizado: ${formatTimestamp(widgetData.lastUpdate ?: widgetData.timestamp)}"
+        
         tvStationStatus.visibility = View.GONE
-        temperatureContainer.visibility = View.VISIBLE
-        currentConditionsContainer.visibility = View.VISIBLE
-        precipitationContainer.visibility = View.VISIBLE
-
+        mainDataContainer.visibility = View.VISIBLE
+        
+        // Update Views
         tvTempCurrent.text = widgetData.getFormattedTemperature()
         tvTempMax.text = widgetData.getFormattedMaxTemperature()
         tvTempMin.text = widgetData.getFormattedMinTemperature()
@@ -350,27 +395,29 @@ class MapActivity : BaseActivity(), OnMapReadyCallback {
         tvWindSpeed.text = widgetData.getFormattedWindSpeed()
         tvWindDirection.text = widgetData.getWindDirectionText()
         tvSolarRadiation.text = widgetData.getFormattedSolarRadiation()
-        tvRain1h.text = widgetData.getFormattedRainLastHour()
-        tvRainToday.text = widgetData.getFormattedRainToday()
-        tvRain24h.text = widgetData.getFormattedRain24h()
-        tvRain48h.text = widgetData.getFormattedRain48h()
-        tvRain7d.text = widgetData.getFormattedRain7d()
+        
+        tvRain1h.text = widgetData.getFormattedRainLastHour().replace(" mm", "")
+        tvRainToday.text = widgetData.getFormattedRainToday().replace(" mm", "")
+        tvRain24h.text = widgetData.getFormattedRain24h().replace(" mm", "")
+        tvRain48h.text = widgetData.getFormattedRain48h().replace(" mm", "")
+        tvRain7d.text = widgetData.getFormattedRain7d().replace(" mm", "")
     }
 
     private fun showStationError(message: String?) {
-        stationInfoCard.visibility = View.VISIBLE
         tvStationStatus.visibility = View.VISIBLE
         tvStationStatus.text = message ?: "No se pudieron cargar los datos"
-        temperatureContainer.visibility = View.GONE
-        currentConditionsContainer.visibility = View.GONE
-        precipitationContainer.visibility = View.GONE
+        mainDataContainer.visibility = View.INVISIBLE
         tvStationUpdated.text = "Actualizado: --"
     }
 
     private fun hideStationInfoCard() {
-        stationInfoCard.visibility = View.GONE
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
         selectedStationId = null
         updateMarkerSelection(null)
+    }
+    
+    private fun expandBottomSheet() {
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
     }
 
     private fun formatTimestamp(rawTimestamp: String?): String {
